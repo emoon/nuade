@@ -60,6 +60,7 @@ typedef struct Mm4Channel {
 // The software registers of a voice: what the sequencer leaves for the mixer.
 typedef struct Mm8Voice {
     bool started;    // a sample was started in this tick
+    int instrument;  // of the sample it started
     uint32_t sample; // the sample it plays first (offset in the instrument block, 0 = none) and its length
     uint16_t length;
     uint32_t loop_sample; // the repeat (0 = none)

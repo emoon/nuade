@@ -29,7 +29,8 @@ static NuadePlayerOpenResult emsv6_open(const NuadeSongSource* source) {
                                     .subsong_count = 1,
                                     .default_subsong = 0,
                                     .timebase_hz = EMS6_TIMEBASE_HZ,
-                                    .display_voices = ems6_track_count(player) };
+                                    .display_voices = ems6_track_count(player),
+                                    .player_mutes = true };
     return result;
 }
 

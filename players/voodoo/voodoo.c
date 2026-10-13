@@ -1625,9 +1625,12 @@ static void sync_voice(VsModule* m, int channel) {
         c->latched = true;
     }
 
+    // A muted voice or instrument keeps running; only its volume is dropped.
     const bool silent = c->period == 0;
+    const bool muted
+        = nuade_voice_muted(m->output, index) || nuade_instrument_muted(m->output, m->voices[channel].last_instrument);
     nuade_voice_set_pitch(m->output, index, silent ? 0.0 : nuade_paula_period_hz(c->period));
-    nuade_voice_set_volume(m->output, index, silent ? 0.0f : (float)c->volume / 64.0f);
+    nuade_voice_set_volume(m->output, index, (silent || muted) ? 0.0f : (float)c->volume / 64.0f);
     nuade_voice_set_pan(m->output, index, channel_pan(channel));
 }
 

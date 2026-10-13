@@ -124,6 +124,7 @@ static void init_voice(const RhstPlayer* p, RhstVoice* v, uint32_t voice) {
         .track_pos = 4,
         .stream = m->data + rhst_module_u32(m, list),
         .env_start = first,
+        .instrument = 0,
         .env_at = first,
         .step_count = 1,
         .mixer_mask = m->mixer_mask[voice],
@@ -326,7 +327,8 @@ static StepResult step_voice(RhstPlayer* p, RhstVoice* v) {
         } else if (byte < RHST_INSTRUMENT_FIRST) {
             p->tempo = (uint16_t)(byte - RHST_TEMPO_FIRST + 1);
         } else if (byte < RHST_ENVELOPE_FIRST) {
-            v->env_start = rhst_module_instrument(m, (uint32_t)(byte - RHST_INSTRUMENT_FIRST));
+            v->instrument = byte - RHST_INSTRUMENT_FIRST;
+            v->env_start = rhst_module_instrument(m, (uint32_t)v->instrument);
             v->env_at = v->env_start;
         } else if (byte < RHST_LENGTH_FIRST) {
             v->start_volume = (uint8_t)(byte - RHST_ENVELOPE_FIRST);
@@ -544,6 +546,30 @@ static void output_always(RhstPlayer* p) {
     fourth->period = NOISE_FOURTH_PERIOD;
 }
 
+// The instrument driving a channel, -1 for the silent fourth channel.
+static int32_t channel_instrument(const RhstPlayer* p, uint32_t channel) {
+    return channel < RHST_RAW_VOICES ? p->voices[channel].instrument : -1;
+}
+
+// A muted channel plays on at volume 0; the player's own volume state is untouched.
+static void sync_channel(RhstPlayer* p, uint32_t channel, NuadeVoices* voices) {
+    NuadePaulaChannel* paula = &p->paula[channel];
+    const uint8_t volume = paula->volume;
+    if (nuade_voice_muted(voices, channel) || nuade_instrument_muted(voices, channel_instrument(p, channel))) {
+        paula->volume = 0;
+    }
+    nuade_paula_channel_sync(paula, channel, voices);
+    paula->volume = volume;
+}
+
+uint32_t rhst_voice_info(const RhstPlayer* player, NuadeVoiceInfo* out, uint32_t cap) {
+    const uint32_t count = cap < RHST_CHANNELS ? cap : RHST_CHANNELS;
+    for (uint32_t i = 0; i < count; i++) {
+        out[i] = (NuadeVoiceInfo) { .note = -1, .instrument = channel_instrument(player, i) };
+    }
+    return count;
+}
+
 RhstTickResult rhst_tick(RhstPlayer* player, NuadeVoices* voices) {
     player->song_ended = false;
     // The fourth channel's audio interrupt: it restarts the short waveform
@@ -561,7 +587,7 @@ RhstTickResult rhst_tick(RhstPlayer* player, NuadeVoices* voices) {
     }
     store_voices(player);
     for (uint32_t i = 0; i < RHST_CHANNELS; i++) {
-        nuade_paula_channel_sync(&player->paula[i], i, voices);
+        sync_channel(player, i, voices);
     }
     return (RhstTickResult) { .looped = player->song_ended, .ended = player->ended };
 }

@@ -100,6 +100,7 @@ typedef struct ScrVoice {
     bool loop_armed; // the audio interrupt of the channel is enabled
     uint32_t loop_start;
     uint16_t loop_words;
+    int32_t instrument; // the number the last sample command set, -1 before one
     uint32_t wraps_seen;
     bool halted; // the voice reads commands for ever in the replayer, or the data is not modelled
     NuadePaulaChannel paula;
@@ -108,6 +109,10 @@ typedef struct ScrVoice {
 struct ScrPlayer {
     ScrModule* module;
     ScrVoice voices[SCR_VOICES];
+    // A sound is a module offset set by a sample command. Each distinct offset gets the next number the first time a
+    // command sets it, so a number stays the same for the same song whatever the audio interrupts write to AUDxLC.
+    uint32_t* sample_starts; // the offset of each number
+    uint32_t sample_count;
     uint8_t master_volume;
     bool playing;
     bool stop_pending; // the stop routine has not run yet

@@ -195,13 +195,15 @@ static void silent_block(Mm8* e, Mm8Channel* ch) {
     ch->last_period = 0;
 }
 
-void mm8_mix_channel(Mm8* e, uint32_t c) {
+void mm8_mix_channel(Mm8* e, uint32_t c, const NuadeVoices* mutes) {
     Mm8Channel* ch = &e->channel[c];
     const Mm8Mixer* mixer = e->core.song->pair_uses_020[c] ? &mm8_mixer_020 : &mm8_mixer_68k;
     Mm8Voice* voice[2]
         = { &e->voice[mm8_pair_voice_index(c, MM8_VOICE_A)], &e->voice[mm8_pair_voice_index(c, MM8_VOICE_B)] };
     Mm8Block b = { .e = e, .ch = ch, .rec = { voice[0], voice[1] }, .out = ch->buffer[0] };
     for (int i = 0; i < 2; i++) {
+        b.muted[i] = nuade_voice_muted(mutes, mm8_pair_voice_index(c, i))
+                     || nuade_instrument_muted(mutes, voice[i]->instrument);
         load_stream(&ch->stream[i], voice[i], &ch->phase);
         const bool has = ch->stream[i].remaining != 0;
         ch->pair_period[i] = has ? voice[i]->period : MM8_NO_PERIOD;

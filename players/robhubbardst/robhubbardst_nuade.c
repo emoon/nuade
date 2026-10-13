@@ -24,7 +24,8 @@ static NuadePlayerOpenResult robhubbardst_open(const NuadeSongSource* source) {
     result.info = (NuadeSongInfo) { .voice_count = RHST_VOICES,
                                     .subsong_count = (uint32_t)rhst_subsong_count(player),
                                     .default_subsong = 0,
-                                    .timebase_hz = RHST_TIMEBASE_HZ };
+                                    .timebase_hz = RHST_TIMEBASE_HZ,
+                                    .player_mutes = true };
     return result;
 }
 
@@ -44,6 +45,10 @@ static NuadeTickResult robhubbardst_tick(void* user_data, NuadeVoices* voices) {
                                         | (tick.ended ? NuadeTick_Ended : 0) };
 }
 
+static uint32_t robhubbardst_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
+    return rhst_voice_info((const RhstPlayer*)user_data, out, cap);
+}
+
 static void robhubbardst_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Rob Hubbard ST");
@@ -60,6 +65,7 @@ const NuadePlayer nuade_player_robhubbardst = {
     .close = robhubbardst_close,
     .start = robhubbardst_start,
     .tick = robhubbardst_tick,
+    .voice_info = robhubbardst_voice_info,
     .metadata = robhubbardst_metadata,
 };
 

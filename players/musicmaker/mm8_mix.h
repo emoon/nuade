@@ -42,6 +42,7 @@ typedef struct Mm8Block {
     Mm8* e;
     Mm8Channel* ch;
     const Mm8Voice* rec[2];
+    bool muted[2]; // the voice is left out of the mix (it is still stepped through its data)
     int8_t* out;
     uint16_t channel_period;
     uint16_t need[2];  // bytes of each voice the rest of the block takes

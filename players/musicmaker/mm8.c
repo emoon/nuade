@@ -104,6 +104,9 @@ static void run_tick(Mm8* e) {
         Mm8Voice* r = &e->voice[v];
         const MmStep step = resolve_resume(r, mm_core_step(core, (uint32_t)v));
         apply_step(r, &step);
+        if (step.has_sample) {
+            r->instrument = core->voice[v].instrument;
+        }
         mm_core_update(core, (uint32_t)v, &step);
         if (core->tempo_requested) {
             core->tempo_requested = false;
@@ -148,7 +151,7 @@ MmTickResult mm8_tick(Mm8* e, NuadeVoices* voices) {
     run_tick(e);
     for (uint32_t c = 0; c < MM8_CHANNELS; c++) {
         Mm8Channel* ch = &e->channel[c];
-        mm8_mix_channel(e, c);
+        mm8_mix_channel(e, c, voices);
         ch->paula.len_words = ch->len_words;
         int8_t* mixed = ch->buffer[0];
         ch->buffer[0] = ch->buffer[1];

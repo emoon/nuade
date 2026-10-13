@@ -29,8 +29,9 @@ static inline uint16_t mm8_silent_words(uint16_t tempo) {
 }
 
 // The mixer: the next block of channel `c` from its voice pair (voices 2c + 1 and 2c), into the channel's buffer; the
-// period, volume and length of the block are left in the channel.
-void mm8_mix_channel(Mm8* e, uint32_t c);
+// period, volume and length of the block are left in the channel. A voice that `mutes` has muted (or whose instrument
+// it has) is mixed as silence.
+void mm8_mix_channel(Mm8* e, uint32_t c, const NuadeVoices* mutes);
 
 // Rows of the volume table: row v scales a sample to v / 64.
 void mm8_build_tables(int8_t* tables);

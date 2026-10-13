@@ -104,6 +104,7 @@ static void start_sample(Context* c, int index) {
         return;
     }
     v->stopped = false;
+    v->instrument = t->instrument;
     const E6Sample sample = e6_module_sample(c->m, t->instrument);
     t->wavetable = sample.kind == E6SampleKind_Wavetable;
     v->pointer = sample.data;

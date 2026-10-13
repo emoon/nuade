@@ -24,9 +24,11 @@ static NuadePlayerOpenResult musicmaker_open(const NuadeSongSource* source) {
                                     .subsong_count = 1,
                                     .default_subsong = 0,
                                     .timebase_hz = mm_timebase_hz(player),
-                                    // the 8 voice replayer mixes its tracks into the Paula voices: show the tracks
+                                    // the 8 voice replayer mixes its tracks into the Paula voices: show the tracks, and
+                                    // leave a muted one out of the mix
                                     .display_voices
                                     = mm_track_count(player) != mm_voice_count(player) ? mm_track_count(player) : 0 };
+    result.info.player_mutes = result.info.display_voices != 0;
     return result;
 }
 

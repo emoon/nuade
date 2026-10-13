@@ -27,7 +27,8 @@ static NuadePlayerOpenResult voodoo_open(const NuadeSongSource* source) {
     result.info = (NuadeSongInfo) { .voice_count = VOODOO_NUADE_VOICES,
                                     .subsong_count = (uint32_t)vs_subsong_count(module),
                                     .default_subsong = 0,
-                                    .timebase_hz = VS_TICK_HZ };
+                                    .timebase_hz = VS_TICK_HZ,
+                                    .player_mutes = true };
     return result;
 }
 

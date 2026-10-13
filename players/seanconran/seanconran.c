@@ -122,6 +122,24 @@ static uint32_t next_offset24(ScrPlayer* p, ScrVoice* v) {
     return offset;
 }
 
+// Sample numbers
+
+// A sample command sets the voice's sample; a dry run needs no numbers.
+static void select_sample(ScrPlayer* p, uint32_t index, uint32_t offset) {
+    if (p->proving) {
+        return;
+    }
+    const uint32_t start = offset & ~1u;
+    uint32_t number = 0;
+    while (number < p->sample_count && p->sample_starts[number] != start) {
+        number++;
+    }
+    if (number == p->sample_count) {
+        p->sample_starts[p->sample_count++] = start;
+    }
+    p->voices[index].instrument = (int32_t)number;
+}
+
 // Audio interrupts
 //
 // All four interrupts run the same handler, which serves the lowest voice that has its interrupt enabled: it writes
@@ -288,6 +306,7 @@ static void start_voice(ScrPlayer* p, uint32_t index, uint32_t subsong) {
         .pitch_bias = build->start_pitch_bias,
         .pitch_shift = initial_pitch_shift(build, index),
         .volume_index = (uint8_t)(index + (build->volume_start_zero ? 0 : 1)),
+        .instrument = -1,
     };
     const ScrCommand next = (ScrCommand)build->commands[index][SCR_COMMAND_SLOT_NEXT];
     next_stream(p, v, index, build->marker_rechecked ? next : ScrCommand_NextPlain);
@@ -316,6 +335,7 @@ bool scr_start(ScrPlayer* player, int subsong, NuadeVoices* voices) {
         return false;
     }
     start_player(player, (uint32_t)subsong);
+    player->sample_count = 0;
     for (uint32_t i = 0; i < SCR_VOICES; i++) {
         nuade_voice_stop(voices, i);
         NuadeVoiceState state;
@@ -391,6 +411,7 @@ static SampleRecord read_sample_record(ScrPlayer* p, uint32_t at) {
 // A sample start with the repeat chained by the audio interrupt.
 static void start_sample_loop(ScrPlayer* p, ScrVoice* v, uint32_t index, uint32_t record_at) {
     const SampleRecord record = read_sample_record(p, record_at);
+    select_sample(p, index, record.start);
     v->paula.lc = sample_at(p, record.start);
     v->paula.len_words = record.words;
     v->sample_set = true;
@@ -447,15 +468,21 @@ static Flow run_command(ScrPlayer* p, ScrVoice* v, uint32_t index, ScrCommand co
         case ScrCommand_SampleLoop:
             start_sample_loop(p, v, index, next_word_offset(p, v));
             return Flow_Continue;
-        case ScrCommand_Sample:
-            v->paula.lc = sample_at(p, next_offset24(p, v));
+        case ScrCommand_Sample: {
+            const uint32_t offset = next_offset24(p, v);
+            select_sample(p, index, offset);
+            v->paula.lc = sample_at(p, offset);
             v->sample_set = true;
             return Flow_Continue;
-        case ScrCommand_SampleOpen:
-            v->paula.lc = sample_at(p, next_offset24(p, v));
+        }
+        case ScrCommand_SampleOpen: {
+            const uint32_t offset = next_offset24(p, v);
+            select_sample(p, index, offset);
+            v->paula.lc = sample_at(p, offset);
             v->paula.len_words = 0;
             v->sample_set = true;
             return Flow_Continue;
+        }
         case ScrCommand_MasterVolume:
             set_master_volume(p, next_byte(p, v));
             return Flow_Continue;
@@ -592,6 +619,18 @@ static void write_volumes(ScrPlayer* p) {
     }
 }
 
+// A muted voice or sample plays at volume 0 while the replayer's volume stays as it computed it.
+static void sync_voice(ScrPlayer* p, uint32_t index, NuadeVoices* voices) {
+    NuadePaulaChannel* paula = &p->voices[index].paula;
+    const int32_t sample = p->voices[index].instrument;
+    const uint8_t volume = paula->volume;
+    if (nuade_voice_muted(voices, index) || (sample >= 0 && nuade_instrument_muted(voices, sample))) {
+        paula->volume = 0;
+    }
+    nuade_paula_channel_sync(paula, index, voices);
+    paula->volume = volume;
+}
+
 ScrTickResult scr_tick(ScrPlayer* p, NuadeVoices* voices) {
     p->looped = false;
     for (uint32_t i = 0; i < SCR_VOICES && !p->hung; i++) {
@@ -612,7 +651,7 @@ ScrTickResult scr_tick(ScrPlayer* p, NuadeVoices* voices) {
         }
     }
     for (uint32_t i = 0; i < SCR_VOICES; i++) {
-        nuade_paula_channel_sync(&p->voices[i].paula, i, voices);
+        sync_voice(p, i, voices);
     }
     return (ScrTickResult) { .looped = p->looped, .ended = !p->playing };
 }
@@ -734,12 +773,16 @@ ScrPlayer* scr_create(const uint8_t* data, size_t size) {
     if (module == nullptr) {
         return nullptr;
     }
+    // A sample command is at least 3 bytes of the module, so no more distinct starts than that can be set.
     ScrPlayer* player = (ScrPlayer*)calloc(1, sizeof(ScrPlayer));
-    if (player == nullptr || !streams_are_modelled(module)) {
+    uint32_t* starts = (uint32_t*)calloc(module->size / 3 + 1, sizeof(uint32_t));
+    if (player == nullptr || starts == nullptr || !streams_are_modelled(module)) {
         scr_module_close(module);
         free(player);
+        free(starts);
         return nullptr;
     }
+    player->sample_starts = starts;
     player->module = module;
 
     return player;
@@ -755,6 +798,7 @@ bool scr_probe(const uint8_t* data, size_t size) {
 void scr_destroy(ScrPlayer* player) {
     if (player != nullptr) {
         scr_module_close(player->module);
+        free(player->sample_starts);
     }
     free(player);
 }

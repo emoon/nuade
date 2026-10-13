@@ -24,7 +24,8 @@ static NuadePlayerOpenResult seanconran_open(const NuadeSongSource* source) {
     result.info = (NuadeSongInfo) { .voice_count = SCR_VOICES,
                                     .subsong_count = (uint32_t)scr_subsong_count(player),
                                     .default_subsong = 0,
-                                    .timebase_hz = SCR_TIMEBASE_HZ };
+                                    .timebase_hz = SCR_TIMEBASE_HZ,
+                                    .player_mutes = true };
     return result;
 }
 
@@ -44,6 +45,15 @@ static NuadeTickResult seanconran_tick(void* user_data, NuadeVoices* voices) {
                                         | (tick.ended ? NuadeTick_Ended : 0) };
 }
 
+static uint32_t seanconran_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
+    const ScrPlayer* player = (const ScrPlayer*)user_data;
+    const uint32_t count = cap < SCR_VOICES ? cap : SCR_VOICES;
+    for (uint32_t i = 0; i < count; i++) {
+        out[i] = (NuadeVoiceInfo) { .note = -1, .instrument = player->voices[i].instrument };
+    }
+    return count;
+}
+
 static void seanconran_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Sean Conran");
@@ -61,6 +71,7 @@ const NuadePlayer nuade_player_seanconran = {
     .start = seanconran_start,
     .tick = seanconran_tick,
     .metadata = seanconran_metadata,
+    .voice_info = seanconran_voice_info,
 };
 
 ScrPlayer* scr_from_nuade(NuadeSong* song) {

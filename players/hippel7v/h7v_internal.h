@@ -107,6 +107,9 @@ void h7v_write_repeat(H7vVoice* voice);
 // One tick of a voice: the sequences and effects. Leaves AUDxPER / AUDxVOL (and the sample registers) in voice->paula.
 void h7v_voice_tick(H7vModule* module, H7vSong* song, H7vVoice* voice);
 
+// Whether the track, or the instrument it plays, is muted
+bool h7v_track_muted(const H7vSong* song, int track, const NuadeVoices* voices);
+
 // The mixer
 
 void h7v_mixer_init(H7vMixer* mixer, bool hard_clip, int8_t tempo_offset);
@@ -117,4 +120,4 @@ void h7v_mixer_set_tempo(H7vMixer* mixer, int8_t tempo_offset);
 void h7v_mixer_voices_update(H7vMixer* mixer, H7vSong* song);
 
 // Steps and volumes from the voices' periods and volumes, then the next buffer
-void h7v_mixer_mix(H7vMixer* mixer, const H7vSong* song);
+void h7v_mixer_mix(H7vMixer* mixer, const H7vSong* song, const NuadeVoices* voices);

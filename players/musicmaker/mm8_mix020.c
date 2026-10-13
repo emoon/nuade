@@ -107,10 +107,14 @@ static void select_routine(Mm8Block* b) {
     b->plan020 = p;
 }
 
-// The next byte of a voice, through the volume table when the voice is the scaled one.
+// The next byte of a voice, through the volume table when the voice is the scaled one. A muted voice goes through its
+// data as before and gives silence.
 
-static int8_t fetch(const MmBlock* data, uint32_t* ptr, const int8_t* row) {
+static int8_t fetch(const MmBlock* data, uint32_t* ptr, const int8_t* row, bool muted) {
     const uint8_t sample = mm_u8(data, (*ptr)++);
+    if (muted) {
+        return 0;
+    }
     return row != nullptr ? row[sample] : (int8_t)sample;
 }
 
@@ -126,35 +130,37 @@ static void run(Mm8Block* b, uint32_t m, uint32_t taken[2]) {
     Mm8Stream* ys = &ch->stream[pl->y];
     uint32_t px = xs->ptr;
     uint32_t py = ys->ptr;
+    const bool x_muted = b->muted[pl->x];
+    const bool y_muted = b->muted[pl->y];
     uint16_t phase = ch->phase;
     int8_t held = 0;
     taken[0] = 0;
     taken[1] = 0;
     if (pl->use_x && pl->x_slow) {
-        held = fetch(data, &px, x_row);
+        held = fetch(data, &px, x_row, x_muted);
     } else if (pl->use_y && pl->y_slow) {
-        held = fetch(data, &py, nullptr);
+        held = fetch(data, &py, nullptr, y_muted);
     }
     for (uint32_t n = 0; n < m; n++) {
         int8_t o = 0;
         if (pl->use_x && pl->use_y) {
             if (pl->x_slow) {
-                o = (int8_t)(fetch(data, &py, nullptr) + held);
+                o = (int8_t)(fetch(data, &py, nullptr, y_muted) + held);
             } else if (pl->y_slow) {
-                o = (int8_t)(fetch(data, &px, x_row) + held);
+                o = (int8_t)(fetch(data, &px, x_row, x_muted) + held);
             } else {
-                const int8_t sx = fetch(data, &px, x_row);
-                o = (int8_t)(sx + fetch(data, &py, nullptr));
+                const int8_t sx = fetch(data, &px, x_row, x_muted);
+                o = (int8_t)(sx + fetch(data, &py, nullptr, y_muted));
             }
         } else if (pl->use_x) {
-            o = pl->x_slow ? held : fetch(data, &px, x_row);
+            o = pl->x_slow ? held : fetch(data, &px, x_row, x_muted);
         }
         b->out[n] = o;
         if (pl->x_slow || pl->y_slow) {
             const uint32_t sum = (uint32_t)phase + pl->step;
             phase = (uint16_t)sum;
             if (sum > 0xFFFF) {
-                held = pl->x_slow ? fetch(data, &px, x_row) : fetch(data, &py, nullptr);
+                held = pl->x_slow ? fetch(data, &px, x_row, x_muted) : fetch(data, &py, nullptr, y_muted);
             }
         }
     }

@@ -26,7 +26,8 @@ static NuadePlayerOpenResult hippel7v_open(const NuadeSongSource* source) {
                                     .default_subsong = 0,
                                     .timebase_hz = H7V_TIMEBASE_HZ,
                                     // four of the seven tracks are mixed into one Paula voice: show the tracks
-                                    .display_voices = H7V_TRACKS };
+                                    .display_voices = H7V_TRACKS,
+                                    .player_mutes = true };
     return result;
 }
 

@@ -139,16 +139,21 @@ static void advance(H7vMixVoice* m) {
     }
 }
 
-void h7v_mixer_mix(H7vMixer* mixer, const H7vSong* song) {
+void h7v_mixer_mix(H7vMixer* mixer, const H7vSong* song, const NuadeVoices* voices) {
     for (int i = 0; i < H7V_MIXED_TRACKS; i++) {
         set_step(&mixer->voice[i], &song->voices[H7V_PAULA_TRACKS + i]);
+    }
+    // A muted voice reads the silent row of the volume table; its position and step go on as they would
+    uint8_t volume[H7V_MIXED_TRACKS];
+    for (int i = 0; i < H7V_MIXED_TRACKS; i++) {
+        volume[i] = h7v_track_muted(song, H7V_PAULA_TRACKS + i, voices) ? 0 : mixer->voice[i].volume;
     }
     int8_t* out = mixer->buffer[mixer->next];
     for (uint32_t n = 0; n < (uint32_t)mixer->words * 2; n++) {
         uint32_t sum = 0;
         for (int i = 0; i < H7V_MIXED_TRACKS; i++) {
             const H7vMixVoice* m = &mixer->voice[i];
-            sum += mixer->volume_table[m->volume][(uint8_t)m->end[(int16_t)(m->pos & 0xFFFF)]];
+            sum += mixer->volume_table[volume[i]][(uint8_t)m->end[(int16_t)(m->pos & 0xFFFF)]];
         }
         out[n] = (int8_t)mixer->clip_table[sum];
         for (int i = 0; i < H7V_MIXED_TRACKS; i++) {

@@ -207,8 +207,8 @@ static uint32_t step_position(uint32_t position, uint32_t step) {
 
 // Mix `count` samples of one voice into `out` (written for the first voice of a side, added for the others).
 
-static void mix_voice(const Ems6Mixer* mx, const Ems6Module* m, Ems6MixVoice* v, int16_t* out, uint32_t count,
-                      bool first) {
+static void mix_voice(const Ems6Mixer* mx, const Ems6Module* m, Ems6MixVoice* v, uint32_t track, int16_t* out,
+                      uint32_t count, bool first) {
     if (v->period == 0 || v->stopped) {
         if (first) {
             zero_words(out, count);
@@ -224,7 +224,11 @@ static void mix_voice(const Ems6Mixer* mx, const Ems6Module* m, Ems6MixVoice* v,
     }
     const uint32_t step = voice_step(v->period);
     const uint32_t row_index = (uint16_t)((uint16_t)(v->volume * mx->master_volume) >> 6);
-    const int16_t* row = row_index < VOLUME_ROWS ? mx->volume_table + row_index * SAMPLE_VALUES : mx->volume_table;
+    // A muted voice runs through its sample as before and adds silence: row 0 of the table is all zero.
+    const bool muted = mx->mutes != nullptr
+                       && (nuade_voice_muted(mx->mutes, track) || nuade_instrument_muted(mx->mutes, v->instrument));
+    const int16_t* row
+        = row_index < VOLUME_ROWS && !muted ? mx->volume_table + row_index * SAMPLE_VALUES : mx->volume_table;
     uint32_t pointer = v->pointer;
     uint32_t position = v->position;
     uint32_t to_end = (uint32_t)v->remaining;
@@ -281,7 +285,7 @@ static void mix_voice(const Ems6Mixer* mx, const Ems6Module* m, Ems6MixVoice* v,
 static void mix_side(Ems6Mixer* mx, const Ems6Module* m, E6Side side, uint32_t count) {
     bool first = true;
     for (int i = side; i < E6_TRACKS; i += E6_SIDES) {
-        mix_voice(mx, m, &mx->voices[i], mx->mix[side], count, first);
+        mix_voice(mx, m, &mx->voices[i], (uint32_t)i, mx->mix[side], count, first);
         first = false;
         if (mx->channels == 1) {
             break;

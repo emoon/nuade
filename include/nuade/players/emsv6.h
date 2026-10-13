@@ -80,6 +80,7 @@ typedef struct Ems6MixVoice {
     uint32_t position; // 16.16: the whole bytes from `pointer` in the high word, the fraction in the low word
     bool looping;
     bool stopped;
+    uint8_t instrument; // of the sample the voice plays (for the instrument mutes)
 } Ems6MixVoice;
 
 typedef struct Ems6SplitEntry {
@@ -89,6 +90,7 @@ typedef struct Ems6SplitEntry {
 
 typedef struct Ems6Mixer {
     Ems6MixVoice voices[E6_TRACKS];
+    const NuadeVoices* mutes;    // the mute state a block is mixed under; set by each tick
     int16_t* volume_table;       // 65 rows of 256 words: [volume][sample byte]
     Ems6SplitEntry* split_table; // [16-bit value >> 1]
     int16_t* mix[E6_SIDES];

@@ -257,6 +257,7 @@ Ems6TickResult ems6_tick(Ems6Player* player, NuadeVoices* voices) {
     } else {
         answer_audio_interrupts(player, voices);
         Ems6Mixer* mx = &player->mixer;
+        mx->mutes = voices;
         mx->read_pos = (mx->read_pos + mx->per_tick) & E6_READ_POS_MASK;
         mix_ahead(player);
         if (!player->finished && e6_sequencer_finished(&player->seq)) {

@@ -82,6 +82,7 @@ typedef struct RhstVoice {
     uint32_t track_pos; // of the next entry
     uint16_t slide_total;
     uint32_t env_start; // the semitone list
+    int32_t instrument; // its number
     uint32_t env_at;
     int16_t slide_step;
     uint16_t slide_delay;
@@ -155,6 +156,9 @@ int rhst_subsong_count(const RhstPlayer* player);
 bool rhst_start(RhstPlayer* player, int subsong, NuadeVoices* voices);
 
 RhstTickResult rhst_tick(RhstPlayer* player, NuadeVoices* voices);
+
+// The instrument driving each channel.
+uint32_t rhst_voice_info(const RhstPlayer* player, NuadeVoiceInfo* out, uint32_t cap);
 
 // The player's state behind a song it opened; 0 when the song is another player's.
 RhstPlayer* rhst_from_nuade(NuadeSong* song);

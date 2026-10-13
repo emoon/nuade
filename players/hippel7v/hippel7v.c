@@ -70,6 +70,13 @@ bool h7v_start(H7vPlayer* player, int subsong, uint32_t sample_rate, NuadeVoices
     return true;
 }
 
+// A track that is muted, or whose current instrument is, stays out of the stereo mix.
+
+bool h7v_track_muted(const H7vSong* song, int track, const NuadeVoices* voices) {
+    return nuade_voice_muted(voices, (uint32_t)track)
+           || nuade_instrument_muted(voices, song->voices[track].last_instrument);
+}
+
 static void apply_sequencer_output(H7vMixer* mixer, H7vSequencerOutput output) {
     if (output.tempo_changed) {
         h7v_mixer_set_tempo(mixer, output.tempo_offset);
@@ -161,12 +168,15 @@ H7vTickResult h7v_tick(H7vPlayer* player, NuadeVoices* voices) {
         run_sequencers(player, 0, H7V_PAULA_TRACKS);
     }
 
-    h7v_mixer_mix(mixer, s);
+    h7v_mixer_mix(mixer, s, voices);
     mixer->next ^= 1;
     output->volume = H7V_MIX_VOLUME;
 
     for (int i = 0; i < H7V_PAULA_TRACKS; i++) {
         nuade_paula_channel_sync(&s->voices[i].paula, k_paula_channel[i], voices);
+        if (h7v_track_muted(s, i, voices)) {
+            nuade_voice_set_volume(voices, k_paula_channel[i], 0.0f);
+        }
     }
     nuade_paula_channel_sync(output, MIX_CHANNEL, voices);
     return (H7vTickResult) { .length = playing_words * 2 * output->period + margin, .looped = s->looped };

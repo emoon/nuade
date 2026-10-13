@@ -327,7 +327,9 @@ static void run(Mm8Block* b, uint32_t m, uint32_t taken[2]) {
                     continue;
                 }
                 const uint8_t sample = mm_u8(data, ptr[i]);
-                sum = (int8_t)(sum + (pl->scaled == i ? b->row[sample] : (int8_t)sample));
+                if (!b->muted[i]) {
+                    sum = (int8_t)(sum + (pl->scaled == i ? b->row[sample] : (int8_t)sample));
+                }
                 ptr[i] += pl->step[i].stepped ? pl->step[i].advance[j] : 1u;
             }
             b->out[written++] = sum;
