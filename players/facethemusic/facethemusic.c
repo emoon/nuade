@@ -1296,7 +1296,7 @@ static void ftm_sync_voice(FtmModule* m, uint32_t index) {
         nuade_voice_play(m->nuade_voices, index, &sample, c->sample_offset);
     }
 
-    const bool silent = c->muted || c->period == 0;
+    const bool silent = c->period == 0;
     nuade_voice_set_pitch(m->nuade_voices, index, silent ? 0.0 : (double)c->period);
     nuade_voice_set_volume(m->nuade_voices, index, silent ? 0.0f : (float)c->volume / 64.0f);
     nuade_voice_set_pan(m->nuade_voices, index, c->panning == 0 ? -1.0f : 1.0f);
@@ -1378,13 +1378,6 @@ int ftm_channel_count(const FtmModule* module) {
     if (!module)
         return 0;
     return module->active_channel_count;
-}
-
-void ftm_set_channel_mask(FtmModule* module, uint32_t mask) {
-    if (!module)
-        return;
-    for (int i = 0; i < module->active_channel_count; i++)
-        module->channels[i].muted = ((mask >> i) & 1) == 0;
 }
 
 uint32_t ftm_loop_count(const FtmModule* module) {

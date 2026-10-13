@@ -261,7 +261,6 @@ typedef struct FtmGlobalInfo {
 
 // Paula registers of one channel, written during a tick and handed to the voices at its end.
 typedef struct FtmChannel {
-    bool muted;
     bool play_pending; // a new sample starts at the end of this tick
     int8_t* sample_data;
     uint32_t sample_data_size;
@@ -320,7 +319,6 @@ int ftm_subsong_count(const FtmModule* module);
 bool ftm_start(FtmModule* module, int subsong, NuadeVoices* voices);
 
 int ftm_channel_count(const FtmModule* module);
-void ftm_set_channel_mask(FtmModule* module, uint32_t mask);
 
 // Runs one player tick and sets the voices. True when the song passed its loop point.
 bool ftm_tick(FtmModule* module);

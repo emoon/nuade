@@ -1202,7 +1202,7 @@ static void sync_voice(DmModule* m, int channel) {
     c->play_pending = false;
     c->latch_pending = false;
 
-    const bool silent = c->muted || c->period == 0;
+    const bool silent = c->period == 0;
     nuade_voice_set_pitch(m->voices, index, silent ? 0.0 : nuade_paula_period_hz(c->period));
     nuade_voice_set_volume(m->voices, index, silent ? 0.0f : (float)c->volume / 64.0f);
     nuade_voice_set_pan(m->voices, index, channel_pan(m, channel));
@@ -1395,14 +1395,6 @@ int dm_channel_count(const DmModule* module) {
     if (!module)
         return 0;
     return module->number_of_channels;
-}
-
-void dm_set_channel_mask(DmModule* module, uint32_t mask) {
-    if (!module)
-        return;
-
-    for (int i = 0; i < module->number_of_channels; i++)
-        module->channels[i].muted = ((mask >> i) & 1) == 0;
 }
 
 const char* dm_title(const DmModule* module) {

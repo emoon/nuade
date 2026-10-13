@@ -167,7 +167,6 @@ typedef struct SmChannel {
     uint16_t volume;   // 0-256
     bool active;       // the voice is playing (read back from the mixer at the start of a tick)
     bool play_pending; // a new sample starts at the end of this tick
-    bool muted;
     int16_t sample_number;
 } SmChannel;
 
@@ -212,7 +211,6 @@ int sm_subsong_count(const SmModule* module);
 bool sm_start(SmModule* module, int subsong, NuadeVoices* voices);
 
 int sm_channel_count(const SmModule* module);
-void sm_set_channel_mask(SmModule* module, uint32_t mask);
 
 // Run one player tick and set the voices. Returns true when the song passed its loop point during the tick.
 bool sm_tick(SmModule* module);

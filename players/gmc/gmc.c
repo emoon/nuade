@@ -475,7 +475,7 @@ static void sync_voice(GmcModule* m, uint32_t index) {
     }
     c->play_pending = false;
 
-    const bool silent = c->muted || c->period == 0;
+    const bool silent = c->period == 0;
     nuade_voice_set_pitch(m->voices, index, silent ? 0.0 : nuade_paula_period_hz(c->period));
     nuade_voice_set_volume(m->voices, index, silent ? 0.0f : (float)c->volume / 64.0f);
     nuade_voice_set_pan(m->voices, index, (index == 0 || index == 3) ? -1.0f : 1.0f);
@@ -545,14 +545,6 @@ bool gmc_start(GmcModule* module, int subsong, NuadeVoices* voices) {
 int gmc_channel_count(const GmcModule* module) {
     (void)module;
     return 4;
-}
-
-void gmc_set_channel_mask(GmcModule* module, uint32_t mask) {
-    if (!module)
-        return;
-
-    for (int i = 0; i < 4; i++)
-        module->channels[i].muted = ((mask >> i) & 1) == 0;
 }
 
 // Display

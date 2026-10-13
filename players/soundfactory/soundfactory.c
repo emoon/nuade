@@ -1358,7 +1358,7 @@ static void sf_sync_voice(SfModule* m, int channel) {
     }
     c->play_pending = false;
 
-    const bool silent = c->muted || c->period == 0;
+    const bool silent = c->period == 0;
     nuade_voice_set_pitch(m->nuade_voices, index, silent ? 0.0 : nuade_paula_period_hz(c->period));
     nuade_voice_set_volume(m->nuade_voices, index, silent ? 0.0f : (float)c->volume / 64.0f);
     nuade_voice_set_pan(m->nuade_voices, index, sf_channel_pan(channel));
@@ -1450,13 +1450,6 @@ bool sf_start(SfModule* module, int subsong, NuadeVoices* voices) {
 int sf_channel_count(const SfModule* module) {
     (void)module;
     return 4;
-}
-
-void sf_set_channel_mask(SfModule* module, uint32_t mask) {
-    if (!module)
-        return;
-    for (int i = 0; i < 4; i++)
-        module->channels[i].muted = ((mask >> i) & 1) == 0;
 }
 
 // Edit API

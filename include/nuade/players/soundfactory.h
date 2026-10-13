@@ -128,7 +128,6 @@ typedef struct SfSongInfo {
 
 typedef struct SfChannel {
     bool active;
-    bool muted;
     int8_t* sample_data;
     uint32_t sample_offset;
     uint32_t sample_length;
@@ -191,7 +190,6 @@ int sf_subsong_count(const SfModule* module);
 bool sf_start(SfModule* module, int subsong, NuadeVoices* voices);
 
 int sf_channel_count(const SfModule* module);
-void sf_set_channel_mask(SfModule* module, uint32_t mask);
 
 // Run one player tick and set the voices.
 SfTickEvents sf_tick(SfModule* module);

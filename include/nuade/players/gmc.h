@@ -94,7 +94,6 @@ typedef struct GmcChannel {
     uint16_t volume;
     bool active;
     bool play_pending;
-    bool muted;
 } GmcChannel;
 
 struct GmcModule {
@@ -130,7 +129,6 @@ int gmc_subsong_count(const GmcModule* module);
 bool gmc_start(GmcModule* module, int subsong, NuadeVoices* voices);
 
 int gmc_channel_count(const GmcModule* module);
-void gmc_set_channel_mask(GmcModule* module, uint32_t mask);
 
 // One 50 Hz player tick; the voices carry the result. True when the song passed its loop point during the tick.
 bool gmc_tick(GmcModule* module);

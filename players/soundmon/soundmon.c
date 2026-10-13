@@ -1228,7 +1228,7 @@ static void sync_voice(SmModule* m, int voice) {
     }
     c->play_pending = false;
 
-    const bool silent = c->muted || c->period == 0;
+    const bool silent = c->period == 0;
     nuade_voice_set_pitch(m->voices, index, silent ? 0.0 : nuade_paula_period_hz(c->period));
     nuade_voice_set_volume(m->voices, index, silent ? 0.0f : (float)c->volume / 256.0f);
     nuade_voice_set_pan(m->voices, index, (voice == 0 || voice == 3) ? -1.0f : 1.0f);
@@ -1354,14 +1354,6 @@ bool sm_start(SmModule* module, int subsong, NuadeVoices* voices) {
 int sm_channel_count(const SmModule* module) {
     (void)module;
     return 4;
-}
-
-void sm_set_channel_mask(SmModule* module, uint32_t mask) {
-    if (!module)
-        return;
-
-    for (int i = 0; i < 4; i++)
-        module->channels[i].muted = ((mask >> i) & 1) == 0;
 }
 
 const char* sm_title(const SmModule* module) {
