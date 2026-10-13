@@ -49,6 +49,26 @@ static void spl_nuade_metadata(void* user_data, const NuadeMetadataSink* sink) {
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Sound Programming Language");
 }
 
+// The sound a voice plays is the sample of its instrument record: the sample's word offset in the module (a start the
+// record holds as an address, or relative to the build's sample base), or the sample number of the Table family.
+static int32_t spl_nuade_instrument(const SplPlayer* player, const SplRecord* record) {
+    const SplBuild* build = player->module->build;
+    if (build->family == SplFamily_Table) {
+        return (int32_t)record->sample_number;
+    }
+    const uint32_t offset = record->sample >= build->load_base ? record->sample - build->load_base : record->sample;
+    return (int32_t)(offset >> 1);
+}
+
+static uint32_t spl_nuade_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
+    const SplPlayer* player = (const SplPlayer*)user_data;
+    const uint32_t count = cap < SPL_VOICES ? cap : SPL_VOICES;
+    for (uint32_t i = 0; i < count; i++) {
+        out[i] = (NuadeVoiceInfo) { .note = -1, .instrument = spl_nuade_instrument(player, &player->voices[i].record) };
+    }
+    return count;
+}
+
 const NuadePlayer nuade_player_spl = {
     .api_version = NUADE_PLAYER_API_VERSION,
     .id = "spl",
@@ -61,6 +81,7 @@ const NuadePlayer nuade_player_spl = {
     .start = spl_nuade_start,
     .tick = spl_nuade_tick,
     .metadata = spl_nuade_metadata,
+    .voice_info = spl_nuade_voice_info,
 };
 
 SplPlayer* spl_from_nuade(NuadeSong* song) {

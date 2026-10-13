@@ -47,6 +47,16 @@ static void ntsp_nuade_metadata(void* user_data, const NuadeMetadataSink* sink) 
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "NTSP-system");
 }
 
+static uint32_t ntsp_nuade_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
+    (void)user_data;
+    const uint32_t n = cap < NTSP_VOICES ? cap : NTSP_VOICES;
+    for (uint32_t i = 0; i < n; i++) {
+        // Every voice plays its own stream of samples: the voice is the sound.
+        out[i] = (NuadeVoiceInfo) { .note = -1, .instrument = (int32_t)i };
+    }
+    return n;
+}
+
 const NuadePlayer nuade_player_ntsp = {
     .api_version = NUADE_PLAYER_API_VERSION,
     .id = "ntsp",
@@ -59,6 +69,7 @@ const NuadePlayer nuade_player_ntsp = {
     .start = ntsp_nuade_start,
     .tick = ntsp_nuade_tick,
     .metadata = ntsp_nuade_metadata,
+    .voice_info = ntsp_nuade_voice_info,
 };
 
 NtspPlayer* ntsp_from_nuade(NuadeSong* song) {

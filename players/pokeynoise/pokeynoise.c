@@ -213,6 +213,10 @@ PnTickResult pn_tick(PnPlayer* player, NuadeVoices* voices) {
     return (PnTickResult) { .length = PN_TICK_LENGTH };
 }
 
+uint32_t pn_voice_wave(const PnPlayer* player, uint32_t voice) {
+    return player->voices[voice].wave;
+}
+
 PnVoiceState pn_voice_state(const PnPlayer* player, uint32_t voice) {
     const PnVoice* v = &player->voices[voice];
     return (PnVoiceState) { .period = v->period, .volume = v->volume };

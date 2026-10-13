@@ -4,6 +4,7 @@
 #include <nuade/player.h>
 
 #include "nuade_tracker.h"
+#include "pn_internal.h"
 #include <nuade/players/pokeynoise.h>
 #include <stdio.h>
 
@@ -51,7 +52,8 @@ static uint32_t pokeynoise_voice_info(void* user_data, NuadeVoiceInfo* out, uint
     const uint32_t n = cap < PN_VOICES ? cap : PN_VOICES;
     for (uint32_t i = 0; i < n; i++) {
         const PnVoiceState v = pn_voice_state(player, i);
-        out[i] = (NuadeVoiceInfo) { .note = nuade_period_to_note((uint32_t)v.period), .instrument = 0 };
+        out[i] = (NuadeVoiceInfo) { .note = nuade_period_to_note((uint32_t)v.period),
+                                    .instrument = (int32_t)pn_voice_wave(player, i) };
     }
     return n;
 }

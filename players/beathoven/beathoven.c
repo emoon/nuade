@@ -29,7 +29,15 @@ void bth_wrap_track(BthVoice* v) {
 
 int bth_instrument_index(const BthPlayer* p, uint32_t record, uint32_t record_bytes) {
     const BthHeader* h = &p->header;
-    return record >= h->samples && record < h->samples_end ? (int)((record - h->samples) / record_bytes) : -1;
+    if (record == 0) {
+        return -1;
+    }
+    // The table's end is the address of its last record. A record outside the table (an indexed init's own list) is
+    // told by the low half of its address (the mixer's instrument numbers are 16 bit), which no table index reaches.
+    if (record >= h->samples && record <= h->samples_end) {
+        return (int)((record - h->samples) / record_bytes);
+    }
+    return (int)(record & 0xFFFF);
 }
 
 uint16_t bth_table_word(const BthPlayer* p, uint32_t address) {

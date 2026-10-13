@@ -77,6 +77,9 @@ PnSongRange pn_info_song_range(const PnInfo* info);
 #define PN_SILENT_WORDS 4u
 extern const int8_t pn_wave_data[PN_WAVE_BYTES];
 
+// The waveform (byte offset into pn_wave_data) the voice plays.
+uint32_t pn_voice_wave(const PnPlayer* player, uint32_t voice);
+
 // What one POKEY channel plays: the waveform, its period and volume.
 typedef struct PnSound {
     uint32_t wave; // byte offset into pn_wave_data

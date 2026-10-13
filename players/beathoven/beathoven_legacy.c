@@ -74,6 +74,7 @@ static void start_sample(const BthPlayer* p, BthVoice* v) {
     bth_set_address(p, v, instrument.sample, (uint16_t)(instrument.length >> 1));
     nuade_paula_channel_dma_on(&v->paula);
     bth_set_address(p, v, p->replayer.silent, 1);
+    v->instrument = bth_instrument_index(p, v->instrument_address, BTH_LEGACY_INSTRUMENT_BYTES);
 }
 
 // The helper's job to set the period and the volume of the instrument
@@ -122,7 +123,6 @@ static void start_note(const BthPlayer* p, BthVoice* v, const Command* command, 
     set_period(p, v, period);
     v->command += BTH_COMMAND_SHORT_BYTES;
     v->note = nuade_period_to_note(period);
-    v->instrument = bth_instrument_index(p, v->instrument_address, BTH_LEGACY_INSTRUMENT_BYTES);
 }
 
 // The commands up to the next note, rest or arpeggio

@@ -282,3 +282,24 @@ GmCell gm_cell(const GmPlayer* player, uint32_t order, uint32_t voice, uint32_t 
 int gm_voice_note(const GmPlayer* player, uint32_t voice) {
     return voice < GM_VOICES ? player->voices[voice].note : -1;
 }
+
+// The waveform a voice plays is its instrument: the four waveforms of the module, then the ones of the percussion
+// commands.
+int gm_voice_instrument(const GmPlayer* player, uint32_t voice) {
+    if (voice >= GM_VOICES) {
+        return -1;
+    }
+    const int8_t* wave = player->voices[voice].paula.lc;
+    for (uint32_t i = 0; i < GM_VOICES; i++) {
+        if (wave == gm_wave(&player->module, i)) {
+            return (int)i;
+        }
+    }
+    if (wave == k_ramp_wave) {
+        return GM_VOICES;
+    }
+    if (wave == player->noise) {
+        return GM_VOICES + 1;
+    }
+    return GM_VOICES + 2;
+}

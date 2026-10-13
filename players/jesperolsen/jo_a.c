@@ -600,7 +600,7 @@ JoTickResult jo_a_tick(JoA* a, const JoModule* m, NuadeVoices* voices) {
 JoVoiceState jo_a_voice_state(const JoA* a, int voice) {
     const JoAVoice* v = &a->voices[voice];
     if (a->version == nullptr) {
-        return jo_shown_state(false, 0, 0);
+        return jo_shown_state(false, 0, -1);
     }
     return jo_shown_state(v->started && !v->rest, a->paula[voice].period,
                           (uint16_t)(v->sample_entry - a->version->first_entry) / SAMPLE_RECORD_SIZE);

@@ -63,3 +63,7 @@ uint16_t gm_period(uint8_t note);
 
 // A percussion command byte (0xC8..0xCF).
 bool gm_is_command(uint8_t entry);
+
+// The instrument of the sound `voice` has started: the number of the waveform it plays. The module's waveforms are 0..3
+// (the voice's own at start), the percussion commands add 4 (ramp), 5 (noise) and 6 (the first 32 bytes of a pattern).
+int gm_voice_instrument(const GmPlayer* player, uint32_t voice);

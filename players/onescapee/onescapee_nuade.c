@@ -47,6 +47,16 @@ static void onescapee_nuade_metadata(void* user_data, const NuadeMetadataSink* s
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "onEscapee");
 }
 
+static uint32_t onescapee_nuade_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
+    (void)user_data;
+    const uint32_t n = cap < ONESCAPEE_VOICES ? cap : ONESCAPEE_VOICES;
+    for (uint32_t i = 0; i < n; i++) {
+        // Every voice plays its own stream of samples: the voice is the sound.
+        out[i] = (NuadeVoiceInfo) { .note = -1, .instrument = (int32_t)i };
+    }
+    return n;
+}
+
 const NuadePlayer nuade_player_onescapee = {
     .api_version = NUADE_PLAYER_API_VERSION,
     .id = "onescapee",
@@ -59,6 +69,7 @@ const NuadePlayer nuade_player_onescapee = {
     .start = onescapee_nuade_start,
     .tick = onescapee_nuade_tick,
     .metadata = onescapee_nuade_metadata,
+    .voice_info = onescapee_nuade_voice_info,
 };
 
 OnEscapeePlayer* onescapee_from_nuade(NuadeSong* song) {

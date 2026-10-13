@@ -214,10 +214,11 @@ static inline JoTickResult jo_song_end_result(JoSongEnd* end, bool voices_play) 
     return result;
 }
 
-// The display state of a voice: the note of its period once a note has started
+// The display state of a voice: the note of its period once a note has started; the instrument is the one the voice
+// has loaded, also while a rest or a zero period hides the note
 static inline JoVoiceState jo_shown_state(bool playing, uint16_t period, int instrument) {
     if (!playing || period == 0) {
-        return (JoVoiceState) { .note = -1, .instrument = -1 };
+        return (JoVoiceState) { .note = -1, .instrument = instrument };
     }
     return (JoVoiceState) { .note = nuade_period_to_note(period), .instrument = instrument };
 }

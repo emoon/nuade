@@ -207,10 +207,15 @@ DlVoiceState dl_voice_state(const DlPlayer* player, int voice) {
         return (DlVoiceState) { .note = -1, .instrument = -1 };
     }
     const DlVoice* v = &player->engine.voices[voice];
-    int instrument = -1;
+    // A record of the table is told by its index. The records that are not in it (the short immediate ones, and all of
+    // a Deli module's) by the low half of their address (the mixer's instrument numbers are 16 bit), which no table
+    // index reaches.
+    int instrument = v->sample_record != 0 ? (int)(v->sample_record & 0xFFFF) : -1;
     if (v->sample_record >= player->first_sample_record) {
         const uint32_t offset = v->sample_record - player->first_sample_record;
-        instrument = offset % DL_SAMPLE_RECORD_SIZE == 0 ? (int)(offset / DL_SAMPLE_RECORD_SIZE) : -1;
+        if (offset % DL_SAMPLE_RECORD_SIZE == 0) {
+            instrument = (int)(offset / DL_SAMPLE_RECORD_SIZE);
+        }
     }
     return (DlVoiceState) { .note = v->note, .instrument = instrument };
 }

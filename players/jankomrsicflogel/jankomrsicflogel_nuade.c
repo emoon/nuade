@@ -63,11 +63,25 @@ static void jankomrsicflogel_metadata(void* user_data, const NuadeMetadataSink* 
     }
 }
 
+// The waveform a voice plays is its instrument: 1 the first, 2 the second, 3 the fourth voice's own.
+static int32_t waveform_number(const JmfPlayer* player, uint32_t voice) {
+    const int8_t* lc = player->voices[voice].paula.lc;
+    const JmfModule* module = &player->module;
+    if (lc == (const int8_t*)module->bytes + module->wave_a) {
+        return 1;
+    }
+    if (lc == (const int8_t*)module->bytes + module->wave_b) {
+        return 2;
+    }
+    return lc == (const int8_t*)module->bytes + module->idle_wave ? 3 : -1;
+}
+
 static uint32_t jankomrsicflogel_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const JmfPlayer* player = (const JmfPlayer*)user_data;
     const uint32_t n = cap < JMF_VOICES ? cap : JMF_VOICES;
     for (uint32_t i = 0; i < n; i++) {
-        out[i] = (NuadeVoiceInfo) { .note = nuade_period_to_note(jmf_voice_period(player, i)), .instrument = -1 };
+        out[i] = (NuadeVoiceInfo) { .note = nuade_period_to_note(jmf_voice_period(player, i)),
+                                    .instrument = waveform_number(player, i) };
     }
     return n;
 }

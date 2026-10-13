@@ -53,12 +53,18 @@ static void fredgray_metadata(void* user_data, const NuadeMetadataSink* sink) {
     sink->set_tag(sink->ctx, NUADE_META_TOOL, fg_version_name(player));
 }
 
+// The wave a voice loops is its sound: its offset in the module image names it.
+static int32_t voice_wave(const FgPlayer* player, int voice) {
+    const int8_t* lc = player->voices[voice].paula.lc;
+    return lc != nullptr ? (int32_t)(lc - (const int8_t*)player->work.image) : -1;
+}
+
 static uint32_t fredgray_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const FgPlayer* player = (const FgPlayer*)user_data;
     const uint32_t count = cap < FG_VOICES ? cap : FG_VOICES;
     for (uint32_t i = 0; i < count; i++) {
         const FgVoiceState state = fg_voice_state(player, (int)i);
-        out[i] = (NuadeVoiceInfo) { .note = state.note, .instrument = -1 };
+        out[i] = (NuadeVoiceInfo) { .note = state.note, .instrument = voice_wave(player, (int)i) };
     }
     return count;
 }

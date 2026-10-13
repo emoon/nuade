@@ -31,6 +31,7 @@
 
 #define DM2_BLOCK_BYTES 64 // 16 rows of 4 bytes
 #define DM2_ROW_MASK 0x3f
+#define DM2_INSTRUMENT_COUNT 127 // words of the instrument offset table
 
 // Instrument record (in the image, $ is the offset in the record).
 #define INST_LENGTH 0x00        // sound length in words
@@ -86,7 +87,7 @@ static void locate_song(const Dm2Module* m, Dm2Vars* v) {
     v->blocks = p;
     p += block_bytes;
     v->inst_offsets = p;
-    p += 0xfe;
+    p += 2 * DM2_INSTRUMENT_COUNT;
     const uint32_t inst_bytes = rd16(m, p);
     p += 2;
     v->inst_base = p;
@@ -583,10 +584,21 @@ int dm2_order_count(const Dm2Module* module) {
     return count;
 }
 
+// The instrument number of the voice's current instrument data. Before its first note a voice plays the data at the
+// start of the instrument area, which is the instrument with offset 0, if the song has one.
+static int current_instrument(const Dm2Module* module, const Dm2Voice* v) {
+    if (v->shown_instrument >= 0)
+        return v->shown_instrument;
+    for (uint32_t n = 1; n <= DM2_INSTRUMENT_COUNT; n++)
+        if (rd16(module, module->vars.inst_offsets + 2 * (n - 1)) == v->instrument - module->vars.inst_base)
+            return (int)n;
+    return -1;
+}
+
 Dm2VoiceState dm2_voice_state(const Dm2Module* module, int voice) {
     const Dm2Voice* v = &module->voice[voice];
     return (Dm2VoiceState) { .note = v->shown_instrument >= 0 ? note_of_index(module, v->shown_note) : -1,
-                             .instrument = v->shown_instrument,
+                             .instrument = current_instrument(module, v),
                              .order = v->shown_track_pos / 2,
                              .row = v->shown_row / 4,
                              .speed = module->vars.speed + 1 };

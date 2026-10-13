@@ -3,6 +3,7 @@
 
 #include <nuade/player.h>
 
+#include "gm_internal.h"
 #include "nuade_base.h"
 #include "nuade_tracker.h"
 #include <nuade/players/gluemon.h>
@@ -72,8 +73,10 @@ static uint32_t gluemon_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_
     const GmPosition p = gm_position(player);
     const uint32_t n = cap < GM_VOICES ? cap : GM_VOICES;
     for (uint32_t i = 0; i < n; i++) {
-        out[i]
-            = (NuadeVoiceInfo) { .note = gm_voice_note(player, i), .instrument = -1, .order = p.order, .row = p.row };
+        out[i] = (NuadeVoiceInfo) { .note = gm_voice_note(player, i),
+                                    .instrument = gm_voice_instrument(player, i),
+                                    .order = p.order,
+                                    .row = p.row };
     }
     return n;
 }

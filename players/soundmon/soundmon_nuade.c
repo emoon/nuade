@@ -54,10 +54,7 @@ static void soundmon_metadata(void* user_data, const NuadeMetadataSink* sink) {
         sink->set_tag(sink->ctx, NUADE_META_TITLE, sm_title(module));
     }
     for (uint32_t i = 0; i < SOUNDMON_INSTRUMENTS; i++) {
-        const char* name = sm_get_instrument_name(module, (int)i);
-        if (name[0] != '\0') {
-            sink->add_instrument(sink->ctx, i, name);
-        }
+        sink->add_instrument(sink->ctx, i, sm_get_instrument_name(module, (int)i));
     }
 }
 
@@ -78,7 +75,8 @@ static uint32_t soundmon_voice_info(void* user_data, NuadeVoiceInfo* out, uint32
     const SmPosition p = sm_position(module);
     const uint32_t n = cap < SOUNDMON_NUADE_VOICES ? cap : SOUNDMON_NUADE_VOICES;
     for (uint32_t i = 0; i < n; i++) {
-        const SmVoiceState v = sm_voice_state(module, (int)i);
+        // SoundMon's voice n plays on Paula channel 3 - n
+        const SmVoiceState v = sm_voice_state(module, (int)(SOUNDMON_NUADE_VOICES - 1 - i));
         out[i] = (NuadeVoiceInfo) { .note = v.note != 0 ? v.note + SOUNDMON_NOTE_BASE : -1,
                                     .instrument = v.instrument != 0 ? v.instrument - 1 : -1,
                                     .order = (uint32_t)p.step,

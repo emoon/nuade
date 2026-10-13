@@ -725,5 +725,5 @@ AoVoiceState ao_voice_state(const AoPlayer* player, int voice) {
         return (AoVoiceState) { .note = -1, .instrument = -1 };
     }
     const AoVoice* v = &player->song.voices[voice];
-    return (AoVoiceState) { .note = v->note, .instrument = v->note >= 0 ? v->instrument : -1 };
+    return (AoVoiceState) { .note = v->note, .instrument = v->instrument };
 }
