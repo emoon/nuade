@@ -126,7 +126,7 @@ static uint32_t audiosculpture_voice_info(void* user_data, NuadeVoiceInfo* out, 
     for (uint32_t i = 0; i < n; i++) {
         const AscVoiceState v = asc_voice_state(player, (int)i);
         out[i] = (NuadeVoiceInfo) { .note = nuade_period_to_note(v.period),
-                                    .instrument = v.instrument != 0 ? v.instrument - 1 : -1,
+                                    .instrument = v.instrument != 0 ? v.instrument : -1,
                                     .order = p.order,
                                     .row = p.row };
     }

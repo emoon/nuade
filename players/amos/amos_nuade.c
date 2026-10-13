@@ -52,10 +52,7 @@ static void amos_nuade_metadata(void* user_data, const NuadeMetadataSink* sink) 
         sink->set_tag(sink->ctx, NUADE_META_TITLE, amos_title(player));
     }
     for (int i = 0; i < AMOS_SAMPLES; i++) {
-        const char* name = amos_sample_name(player, i);
-        if (name[0] != '\0') {
-            sink->add_instrument(sink->ctx, (uint32_t)i, name);
-        }
+        sink->add_instrument(sink->ctx, (uint32_t)i, amos_sample_name(player, i));
     }
 }
 

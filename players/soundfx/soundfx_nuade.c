@@ -52,6 +52,10 @@ static void soundfx_metadata(void* user_data, const NuadeMetadataSink* sink) {
         const char* name = sfx_instrument_name(module, (int)i);
         if (name[0] != '\0') {
             sink->add_instrument(sink->ctx, i, name);
+        } else if (module->samples[i].length != 0) {
+            char unnamed[16];
+            snprintf(unnamed, sizeof(unnamed), "Sample %u", i + 1);
+            sink->add_instrument(sink->ctx, i, unnamed);
         }
     }
 }

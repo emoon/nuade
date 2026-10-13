@@ -54,10 +54,7 @@ static void syntracker_metadata(void* user_data, const NuadeMetadataSink* sink) 
     const StkPlayer* player = (const StkPlayer*)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "SynTracker");
     for (int i = 0; i < STK_INSTRUMENTS; i++) {
-        const char* name = stk_instrument_name(player, i);
-        if (name[0] != '\0') {
-            sink->add_instrument(sink->ctx, (uint32_t)i, name);
-        }
+        sink->add_instrument(sink->ctx, (uint32_t)i, stk_instrument_name(player, i));
     }
 }
 

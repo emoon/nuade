@@ -75,11 +75,9 @@ static uint32_t musicassembler_voice_info(void* user_data, NuadeVoiceInfo* out, 
 static void musicassembler_metadata(void* user_data, const NuadeMetadataSink* sink) {
     const MaModule* module = (const MaModule*)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Music Assembler");
-    for (int i = 0; i < ma_sample_count(module); i++) {
-        const char* name = ma_sample_name(module, i);
-        if (name[0] != '\0') {
-            sink->add_instrument(sink->ctx, (uint32_t)i, name);
-        }
+    for (int i = 0; i < ma_instrument_count(module); i++) {
+        const int sample = (int)ma_instrument_get_param(module, i, "sampleNumber");
+        sink->add_instrument(sink->ctx, (uint32_t)i, ma_sample_name(module, sample));
     }
 }
 

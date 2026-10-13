@@ -46,10 +46,7 @@ static void jamcracker_metadata(void* user_data, const NuadeMetadataSink* sink) 
     const JcPlayer* player = (const JcPlayer*)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "JamCracker");
     for (int i = 0; i < jc_instrument_count(player); i++) {
-        const char* name = jc_instrument_name(player, i);
-        if (name[0] != '\0') {
-            sink->add_instrument(sink->ctx, (uint32_t)i, name);
-        }
+        sink->add_instrument(sink->ctx, (uint32_t)i, jc_instrument_name(player, i));
     }
 }
 

@@ -50,10 +50,7 @@ static void oktalyzer_metadata(void* user_data, const NuadeMetadataSink* sink) {
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Oktalyzer");
     const int count = okt_get_instrument_count(module);
     for (int i = 0; i < count; i++) {
-        const char* name = okt_instrument_name(module, i);
-        if (name[0] != '\0') {
-            sink->add_instrument(sink->ctx, (uint32_t)i, name);
-        }
+        sink->add_instrument(sink->ctx, (uint32_t)i, okt_instrument_name(module, i));
     }
 }
 

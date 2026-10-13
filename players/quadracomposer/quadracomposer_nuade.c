@@ -66,8 +66,8 @@ static void quadracomposer_metadata(void* user_data, const NuadeMetadataSink* si
     }
     for (uint32_t i = 0; i < QUADRACOMPOSER_SAMPLE_SLOTS; i++) {
         const char* name = qc_sample_name(module, (int)i);
-        if (name[0] != '\0') {
-            sink->add_instrument(sink->ctx, i, name);
+        if (name[0] != '\0' || module->samples[i].length != 0) {
+            sink->add_instrument(sink->ctx, i + 1, name);
         }
     }
 }
@@ -96,7 +96,7 @@ static uint32_t quadracomposer_voice_info(void* user_data, NuadeVoiceInfo* out, 
     for (uint32_t i = 0; i < n; i++) {
         const QcVoiceState v = qc_voice_state(module, (int)i);
         out[i] = (NuadeVoiceInfo) { .note = v.note != 0 ? v.note - 1 + QUADRACOMPOSER_NOTE_BASE : -1,
-                                    .instrument = v.sample != 0 ? v.sample - 1 : -1,
+                                    .instrument = v.sample != 0 ? v.sample : -1,
                                     .order = (uint32_t)p.position,
                                     .row = (uint32_t)p.row };
     }
