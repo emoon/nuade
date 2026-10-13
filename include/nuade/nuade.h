@@ -158,8 +158,9 @@ uint32_t nuade_scope(NuadeSong* song, uint32_t voice, float* out, uint32_t cap);
 // is rendered in short slices, and the slice that reaches it is the last.
 void nuade_set_repeat_count(NuadeSong* song, uint32_t count);
 
-// Stereo width, 0..1: 1 (the default) keeps each voice's pan, the Amiga's hard left/right for most players; 0 is mono.
-// Returns false (and changes nothing) outside 0..1.
+// Stereo width, 0..2: 1 (the default) keeps each voice's pan, the Amiga's hard left/right for most players; 0 is mono.
+// Above 1 widens: each side also gets an inverted copy of the other (at 2 a hard-left voice is 1.5 left, -0.5 right).
+// The mono sum (L + R) is the same at every value. Returns false (and changes nothing) outside 0..2.
 bool nuade_set_stereo_separation(NuadeSong* song, float separation);
 
 // Metadata

@@ -27,7 +27,7 @@ struct NuadeVoices {
     u32 voice_count;
     u32 sample_rate;
     u64 frame;      // output frames mixed since reset
-    f32 separation; // scales every pan: 1 = as the player set it, 0 = mono
+    f32 separation; // scales every pan: 1 = as the player set it, 0 = mono, 2 = widest
     NuadeVoiceObserver observer;
     void* observer_user;
     NuadeVoice* voices;

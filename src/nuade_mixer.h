@@ -13,8 +13,9 @@ void nuade_mixer_reset(NuadeVoices* mixer, u32 sample_rate);
 
 void nuade_mixer_set_observer(NuadeVoices* mixer, NuadeVoiceObserver observer, void* user);
 
-// Scale every voice's pan by `separation` (0..1) when mixing; 1 (the default) mixes the pans as set. Kept across
-// nuade_mixer_reset. Events and the voice state report the pan the player set.
+// Scale every voice's pan by `separation` (0..2) when mixing; 1 (the default) mixes the pans as set, above 1 a pan
+// goes past +-1 and the far side gets a negative gain. Kept across nuade_mixer_reset. Events and the voice state report
+// the pan the player set.
 void nuade_mixer_set_separation(NuadeVoices* mixer, f32 separation);
 
 // Add `frames` frames of output to `stereo` (interleaved) starting at frame `offset`. `voice_out` is 0 or one buffer

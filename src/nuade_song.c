@@ -494,8 +494,8 @@ static float* const* meter_buffers(NuadeSong* song, u32 frames) {
 }
 
 // Stereo separation for a self-rendering player, on its finished mix: keeps the mid (L + R) and scales the side
-// (L - R). For voices panned hard left or right this is the same as scaling their pans, as the mixer does.
-static void narrow_stereo(float* stereo, u32 frames, f32 separation) {
+// (L - R). This is the same as scaling every voice's pan, as the mixer does.
+static void apply_separation(float* stereo, u32 frames, f32 separation) {
     if (separation == 1.0f) {
         return;
     }
@@ -521,7 +521,7 @@ NuadeRenderResult nuade_render(NuadeSong* song, float* stereo, float* const* voi
         result = render_ticked(song, stereo, metered, frames);
     } else {
         result = render_raw_sliced(song, stereo, metered, frames);
-        narrow_stereo(stereo, result.frames, song->stereo_separation);
+        apply_separation(stereo, result.frames, song->stereo_separation);
         if (result.frames != 0) {
             // A self-rendering player is stamped once per call; its state is read after the call.
             nuade_viz_record(song->viz, song->position, song->player, song->user_data, nullptr, (NuadeGridClock) { 0 });
@@ -873,7 +873,7 @@ void nuade_set_repeat_count(NuadeSong* song, uint32_t count) {
 }
 
 bool nuade_set_stereo_separation(NuadeSong* song, float separation) {
-    if (song == nullptr || !(separation >= 0.0f && separation <= 1.0f)) {
+    if (song == nullptr || !(separation >= 0.0f && separation <= 2.0f)) {
         return false;
     }
     song->stereo_separation = separation;
