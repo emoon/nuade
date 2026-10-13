@@ -19,15 +19,26 @@
 #define SDR_WAVE_PRESETS 16
 
 // The memory the replayer addresses. UADE loads the module at SDR_MODULE_BASE and the sample file behind it; the rest
-// of the chip memory the song can reach is zero, except UADE's own data below the module. A read there is something
-// this port does not model: it sets `stray`, and a module whose playback does that is refused.
+// of the chip memory the song can reach is zero, except UADE's own data below the module. The code of the player is
+// modelled, and the zeros behind it; a read of the rest of UADE's data is something this port does not model: it sets
+// `stray`, and a module whose playback does that is refused.
 
 #define SDR_MODULE_BASE 0x11000u
+// UADE also holds a copy of the player's file below the module; its code image sits at SDR_PLAYER_BASE.
+#define SDR_PLAYER_BASE 0x9024u
+#define SDR_PLAYER_BYTES 0x1B0Cu
+// Behind that copy of the file, up to the loaded player, the memory is zero.
+#define SDR_PLAYER_ZERO_FROM 0xABBCu
+#define SDR_PLAYER_ZERO_TO 0xE008u
 
 // Bytes at a module offset (an address less SDR_MODULE_BASE, as the replayer adds the base itself).
 uint8_t sdr_u8(SdrMemory* memory, uint32_t offset);
 uint16_t sdr_u16(SdrMemory* memory, uint32_t offset);
 uint32_t sdr_u32(SdrMemory* memory, uint32_t offset);
+
+// Does the address, as an offset from the module, lie in the zero memory that runs on to the end of the address space
+// (from the Kickstart area up)?
+bool sdr_is_open_zero_memory(uint32_t offset);
 
 // The sample the channel plays from a sample file offset: null when the memory there is not modelled (`stray` set).
 // Memory outside the sample file is zero.
@@ -74,7 +85,9 @@ typedef enum SdrRomTable {
 
 // The word at a byte offset from the start of a table. The tables follow each other in the player's data, and a
 // lookup that runs past the end of one reads the next; before the first table and after the last it is zero.
-uint16_t sdr_rom_word(SdrRomTable table, int32_t offset, bool* stray);
+uint16_t sdr_rom_word(SdrMemory* memory, SdrRomTable table, int32_t offset);
+// A byte at an offset from the start of the player's code (SDR_PLAYER_BYTES in all).
+uint8_t sdr_player_byte(uint32_t offset, bool* stray);
 // A byte of waveform preset `index`: presets 0..15 are pulse waves.
 int8_t sdr_wave_preset_byte(uint32_t index, uint32_t position, bool* stray);
 

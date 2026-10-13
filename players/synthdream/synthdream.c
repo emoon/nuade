@@ -151,7 +151,7 @@ static uint16_t next_word(SdrPlayer* p, SdrVoice* v) {
 
 static void start_slide(SdrPlayer* p, SdrVoice* v, SdrRomTable table, uint16_t delay, uint16_t distance) {
     v->slide_delay = delay;
-    v->slide_ratio = sdr_rom_word(table, (int16_t)distance, &p->memory.stray);
+    v->slide_ratio = sdr_rom_word(&p->memory, table, (int16_t)distance);
     v->slide = RATIO_ONE;
 }
 
@@ -274,11 +274,29 @@ static bool is_modifier_word(uint16_t word) {
     return word >= FIRST_MODIFIER && (uint16_t)(word - FIRST_MODIFIER) < 0x8000;
 }
 
+// A command word that is no entry of the handler table makes the replayer jump to the player's code plus a word read
+// at that distance from the table. Reading zero there lands on the start of the table itself, and 0x001A on its entry
+// at 0x1A; the table's words run as instructions: the one at the start is an `ori.l` that the 0x00DE behind it cannot
+// follow (a CMP2 with an addressing mode it does not allow), the other is an ANDI to an address register. Both are
+// illegal instructions, and the replayer does not recover from the exception.
+
+#define JUMP_TABLE 0xF36u
+#define JUMP_TABLE_ANDI 0xF50u
+
+static bool word_runs_illegal_instruction(uint16_t word) {
+    bool stray = false;
+    const uint32_t at = JUMP_TABLE + (uint32_t)(int32_t)(int16_t)word;
+    const int16_t distance = (int16_t)(sdr_player_byte(at, &stray) << 8 | sdr_player_byte(at + 1, &stray));
+    const uint32_t target = JUMP_TABLE + (uint32_t)(int32_t)distance;
+    return !stray && (target == JUMP_TABLE || target == JUMP_TABLE_ANDI);
+}
+
 // The commands of one stream entry: a note and its modifiers. False for a word the replayer cannot handle.
 
 static bool run_commands(SdrPlayer* p, SdrVoice* v) {
     const uint16_t first = next_word(p, v);
     if (!is_command_word(first)) {
+        p->crashed = word_runs_illegal_instruction(first);
         return false;
     }
     if (first < FIRST_MODIFIER) {
@@ -292,6 +310,7 @@ static bool run_commands(SdrPlayer* p, SdrVoice* v) {
     for (uint16_t word = sdr_u16(&p->memory, v->commands); is_modifier_word(word);
          word = sdr_u16(&p->memory, v->commands)) {
         if (!is_command_word(word) || ++modifiers > MAX_MODIFIERS) {
+            p->crashed = !is_command_word(word) && word_runs_illegal_instruction(word);
             return false;
         }
         run_modifier(p, v, word);
@@ -344,7 +363,7 @@ static bool fetch_commands(SdrPlayer* p, SdrVoice* v, int index) {
         }
         load_track_entry(p, v);
     }
-    p->unmodelled = true;
+    p->unmodelled = !p->crashed;
     v->ended = true;
     return false;
 }
@@ -385,16 +404,15 @@ static int16_t pitch_table_value(SdrPlayer* p, SdrVoice* v) {
 
 static uint16_t note_period(SdrPlayer* p, SdrVoice* v) {
     const int16_t offset = (int16_t)(uint16_t)(note_index(v) * 2);
-    const uint16_t period = sdr_rom_word(SdrRomTable_Period, offset, &p->memory.stray);
+    const uint16_t period = sdr_rom_word(&p->memory, SdrRomTable_Period, offset);
     if (v->instrument.pitch_table == 0) {
         return period;
     }
     const int16_t bend = pitch_table_value(p, v);
     if (bend >= 0) {
-        return scale_period(period,
-                            sdr_rom_word(SdrRomTable_PeriodUp, (int16_t)(uint16_t)(bend * 2), &p->memory.stray));
+        return scale_period(period, sdr_rom_word(&p->memory, SdrRomTable_PeriodUp, (int16_t)(uint16_t)(bend * 2)));
     }
-    return scale_period(period, sdr_rom_word(SdrRomTable_PeriodDown, (int16_t)(uint16_t)(-bend * 2), &p->memory.stray));
+    return scale_period(period, sdr_rom_word(&p->memory, SdrRomTable_PeriodDown, (int16_t)(uint16_t)(-bend * 2)));
 }
 
 // A slide changes the period by a ratio that itself changes by `slide_ratio` every tick, after its delay.
@@ -419,9 +437,9 @@ static uint16_t detuned_period(SdrPlayer* p, const SdrVoice* v, uint16_t period)
         return period;
     }
     if (detune > 0) {
-        return scale_period(period, sdr_rom_word(SdrRomTable_PeriodUp, detune, &p->memory.stray));
+        return scale_period(period, sdr_rom_word(&p->memory, SdrRomTable_PeriodUp, detune));
     }
-    return scale_period(period, sdr_rom_word(SdrRomTable_PeriodDown, (int16_t)(uint16_t)-detune, &p->memory.stray));
+    return scale_period(period, sdr_rom_word(&p->memory, SdrRomTable_PeriodDown, (int16_t)(uint16_t)-detune));
 }
 
 // The waveform of a synthesised note: a pulse preset with one byte lowered. The table entry's upper byte is both the
@@ -516,7 +534,7 @@ void sdr_voice_tick(SdrPlayer* p, int index) {
 
 SdrTickResult sdr_tick(SdrPlayer* p, NuadeVoices* voices) {
     p->song_ended = false;
-    for (int i = 0; i < SDR_VOICES; i++) {
+    for (int i = 0; i < SDR_VOICES && !p->crashed; i++) {
         if (!p->voices[i].ended) {
             sdr_voice_tick(p, i);
         }
@@ -524,7 +542,7 @@ SdrTickResult sdr_tick(SdrPlayer* p, NuadeVoices* voices) {
     for (int i = 0; i < SDR_VOICES; i++) {
         nuade_paula_channel_sync(&p->voices[i].paula, (uint32_t)i, voices);
     }
-    return (SdrTickResult) { .looped = p->song_ended };
+    return (SdrTickResult) { .looped = p->song_ended, .ended = p->crashed };
 }
 
 // InitSound: each voice starts at the first entry of its track. A track that is empty (starts with 0xFF) ends at once
@@ -555,6 +573,7 @@ bool sdr_start(SdrPlayer* p, int subsong) {
     }
     memcpy(p->voice_pending_reload, p->voice_pending, sizeof(p->voice_pending));
     p->song_ended = false;
+    p->crashed = false;
     return true;
 }
 
@@ -584,7 +603,7 @@ bool sdr_probe(const uint8_t* data, size_t size) {
         return false;
     }
     p->memory.samples_unknown = true;
-    const bool ok = sdr_check_module(&p->memory) && !p->memory.stray && sdr_prove_module(p);
+    const bool ok = sdr_check_module(&p->memory) && !p->memory.stray;
     sdr_destroy(p);
     return ok;
 }

@@ -46,6 +46,7 @@ typedef struct SdrCreateResult {
 
 typedef struct SdrTickResult {
     bool looped; // the eagleplayer's SongEnd was called during the tick
+    bool ended;  // the replayer crashed in the tick: nothing plays after it
 } SdrTickResult;
 
 typedef struct SdrVoiceState {
@@ -157,14 +158,14 @@ struct SdrPlayer {
     bool voice_pending_reload[SDR_VOICES];
     bool song_ended;
     bool unmodelled; // a command the replayer cannot run (see run_commands)
+    bool crashed;    // a command made the 68000 execute an illegal instruction, which ends the replayer
     uint64_t work;   // steps taken, for the proof's budget
 };
 
 // Does the file name start with "sdr." (any case), as the eagleplayer's prefix?
 bool sdr_name_matches(const char* filename);
 
-// What open accepts, as far as the module alone decides: Check2, the InitPlayer size check and the proof that the song
-// only reads memory the port models (the sample file is not known here, so memory behind the module may hold anything).
+// What open accepts, as far as the module alone decides: Check2 and the InitPlayer size check.
 bool sdr_probe(const uint8_t* data, size_t size);
 
 // Copies the module and loads its sample file (ExtLoad) through `io`; `path` is the song's url.

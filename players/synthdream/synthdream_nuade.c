@@ -61,7 +61,11 @@ static bool synthdream_start(void* user_data, uint32_t subsong, uint32_t sample_
 
 static NuadeTickResult synthdream_tick(void* user_data, NuadeVoices* voices) {
     const SdrTickResult tick = sdr_tick((SdrPlayer*)user_data, voices);
-    return (NuadeTickResult) { .length = SDR_TICK_LENGTH, .flags = tick.looped ? NuadeTick_Looped : NuadeTick_None };
+    uint32_t flags = tick.looped ? NuadeTick_Looped : NuadeTick_None;
+    if (tick.ended) {
+        flags |= NuadeTick_Ended;
+    }
+    return (NuadeTickResult) { .length = SDR_TICK_LENGTH, .flags = flags };
 }
 
 static void synthdream_metadata(void* user_data, const NuadeMetadataSink* sink) {

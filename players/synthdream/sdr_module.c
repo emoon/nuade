@@ -18,9 +18,9 @@
 #define PREFIX_LENGTH 4
 #define MODULE_PREFIX "sdr."
 
-// UADE's memory as a song sees it. The chip memory is 2 MB; below ZERO_FROM it holds UADE's own data and the player,
-// above it only the module and the sample file. From 0x200000 up it reads zeros (nothing, or the Kickstart area),
-// except for the custom chips and the CIAs.
+// UADE's memory as a song sees it. The chip memory is 2 MB; below ZERO_FROM it holds UADE's own data, the player (a
+// copy of its file, and the loaded segments) and zeros between them, above it only the module and the sample file. From
+// 0x200000 up it reads zeros (nothing, or the Kickstart area), except for the custom chips and the CIAs.
 #define ZERO_FROM 0xFC00u
 #define CHIP_END 0x200000u
 #define SLOW_END 0xA00000u
@@ -30,6 +30,7 @@
 #define MAX_SAMPLE_BYTES 0x20000u // AUDxLEN 0 plays 65536 words
 
 typedef enum SdrRegion {
+    SdrRegion_Player,
     SdrRegion_Module,
     SdrRegion_Samples,
     SdrRegion_Zero,
@@ -37,6 +38,12 @@ typedef enum SdrRegion {
 } SdrRegion;
 
 static SdrRegion region_of(const SdrMemory* memory, uint32_t address) {
+    if (address - SDR_PLAYER_BASE < SDR_PLAYER_BYTES) {
+        return SdrRegion_Player;
+    }
+    if (address >= SDR_PLAYER_ZERO_FROM && address < SDR_PLAYER_ZERO_TO) {
+        return SdrRegion_Zero;
+    }
     if (address - SDR_MODULE_BASE < memory->module_size) {
         return SdrRegion_Module;
     }
@@ -48,12 +55,21 @@ static SdrRegion region_of(const SdrMemory* memory, uint32_t address) {
     return zero ? SdrRegion_Zero : SdrRegion_Stray;
 }
 
+bool sdr_is_open_zero_memory(uint32_t offset) {
+    return SDR_MODULE_BASE + offset >= KICKSTART_START && SDR_MODULE_BASE + offset >= SDR_MODULE_BASE;
+}
+
 uint8_t sdr_u8(SdrMemory* memory, uint32_t offset) {
     const uint32_t address = SDR_MODULE_BASE + offset;
     switch (region_of(memory, address)) {
+        case SdrRegion_Player:
+            return sdr_player_byte(address - SDR_PLAYER_BASE, &memory->stray);
         case SdrRegion_Module:
             return memory->module[offset];
         case SdrRegion_Samples:
+            if (!memory->samples_unknown) {
+                return memory->samples[address - memory->sample_base];
+            }
             break;
         case SdrRegion_Zero:
             return 0;

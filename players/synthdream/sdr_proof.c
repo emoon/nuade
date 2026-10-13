@@ -7,7 +7,7 @@
 #include "sdr_internal.h"
 #include <stdlib.h>
 
-#define PROOF_WORK 0x1000000u // steps of all the voices of all the subsongs together
+#define PROOF_WORK 0x4000000u // steps of all the voices of all the subsongs together
 #define SNAPSHOTS 16          // track starts compared against
 
 static bool same_cursor(const SdrCursor* a, const SdrCursor* b) {
@@ -42,10 +42,13 @@ static bool same_state(const SdrVoice* a, const SdrVoice* b) {
            && a->period == b->period && a->volume == b->volume;
 }
 
-// Run one voice of one subsong until it ends or its state at the start of the track repeats. False when it cannot be
-// shown to, or the song asks for something the port does not model.
+// Run one voice of one subsong until it ends or its state at the start of the track repeats. A voice whose stream has
+// run into zero memory repeats too: every fetch there reads the same command, so its state repeats, the stream address
+// apart. `song_end` is the tick at which the replayer crashes, if a voice has been found to crash: nothing runs after
+// it, and a voice that crashes sooner lowers it. False when it cannot be shown to repeat, or the song asks for
+// something the port does not model.
 
-static bool prove_voice(const SdrPlayer* player, int subsong, int voice, uint64_t* budget) {
+static bool prove_voice(const SdrPlayer* player, int subsong, int voice, uint64_t* budget, uint64_t* song_end) {
     SdrPlayer* run = malloc(sizeof(SdrPlayer));
     SdrVoice* seen = malloc(SNAPSHOTS * sizeof(SdrVoice));
     if (run == nullptr || seen == nullptr) {
@@ -58,14 +61,33 @@ static bool prove_voice(const SdrPlayer* player, int subsong, int voice, uint64_
     run->work = 0;
     int snapshots = 0;
     uint32_t loops = 0;
+    uint64_t tick = 0;
+    bool zero_fetch_seen = false;
+    SdrVoice zero_fetch = { 0 };
     bool proven = false;
     while (run->work < *budget && !run->memory.stray && !run->unmodelled) {
         const SdrVoice* v = &run->voices[voice];
-        if (v->ended) {
+        if (v->ended || tick > *song_end) {
             proven = true;
             break;
         }
+        if (v->left == 0 && sdr_is_open_zero_memory(v->commands)) {
+            SdrVoice fetch = *v;
+            fetch.commands = 0;
+            if (zero_fetch_seen && same_state(&zero_fetch, &fetch)) {
+                proven = true;
+                break;
+            }
+            zero_fetch = fetch;
+            zero_fetch_seen = true;
+        }
         sdr_voice_tick(run, voice);
+        if (run->crashed) {
+            *song_end = tick < *song_end ? tick : *song_end;
+            proven = true;
+            break;
+        }
+        tick++;
         if (v->loops == loops) {
             continue;
         }
@@ -85,13 +107,28 @@ static bool prove_voice(const SdrPlayer* player, int subsong, int voice, uint64_
     return proven;
 }
 
+// The voices of a subsong are proven against the tick the replayer crashes at, which a later voice can bring forward:
+// the pass is repeated until that tick stays.
+
+static bool prove_subsong(const SdrPlayer* player, int subsong, uint64_t* budget) {
+    uint64_t song_end = UINT64_MAX;
+    for (;;) {
+        const uint64_t before = song_end;
+        bool proven = true;
+        for (int voice = 0; voice < SDR_VOICES; voice++) {
+            proven = prove_voice(player, subsong, voice, budget, &song_end) && proven;
+        }
+        if (song_end == before) {
+            return proven;
+        }
+    }
+}
+
 bool sdr_prove_module(const SdrPlayer* player) {
     uint64_t budget = PROOF_WORK;
     for (int subsong = 0; subsong < player->subsong_count; subsong++) {
-        for (int voice = 0; voice < SDR_VOICES; voice++) {
-            if (!prove_voice(player, subsong, voice, &budget)) {
-                return false;
-            }
+        if (!prove_subsong(player, subsong, &budget)) {
+            return false;
         }
     }
     return true;
