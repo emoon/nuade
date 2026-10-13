@@ -56,8 +56,9 @@ typedef struct JcCell {
 typedef struct JcInstrument {
     char name[JC_NAME_LENGTH + 1];
     uint8_t flags;
-    uint32_t size;   // bytes of wave data present
-    int8_t* address; // owned, writable: an AM instrument rewrites its output windows
+    uint32_t size;    // bytes of wave data present
+    int8_t* address;  // owned: the wave data as stored
+    int8_t* playback; // owned, AM instruments only: the copy of the wave area whose output windows playback rewrites
 } JcInstrument;
 
 typedef struct JcPattern {

@@ -506,7 +506,7 @@ static void play_note(DmModule* m, int channel_number) {
             vi->last_effect_param = row->effect_param;
 
             if (vi->last_instrument < m->number_of_instruments) {
-                DmInstrument* instr = &m->instruments[vi->last_instrument];
+                DmInstrument* instr = &m->play_instruments[vi->last_instrument];
                 vi->fine_tune = instr->finetune;
 
                 if (vi->last_effect == DM_EFFECT_NO_WANDER) {
@@ -535,7 +535,7 @@ static void play_note(DmModule* m, int channel_number) {
                             channel_set_loop_no_data(ch, (uint32_t)sample->loop_start,
                                                      sample->end_offset - (uint32_t)sample->loop_start);
                     } else {
-                        int8_t* waveform_data = m->waveforms[waveform];
+                        int8_t* waveform_data = m->play_waveforms[waveform];
 
                         if (vi->last_effect != DM_EFFECT_NO_DMA)
                             channel_play_sample(ch, waveform_data, 0, instr->loop_length);
@@ -550,7 +550,7 @@ static void play_note(DmModule* m, int channel_number) {
                             if ((instr->effect != DM_INST_EFFECT_NONE)
                                 && (vi->last_effect != DM_EFFECT_NO_INSTRUMENT_EFFECT)
                                 && (vi->last_effect != DM_EFFECT_NO_INSTRUMENT_EFFECT_AND_VOLUME)) {
-                                int8_t* source = m->waveforms[instr->source_wave1];
+                                int8_t* source = m->play_waveforms[instr->source_wave1];
                                 memmove(waveform_data, source, 128); // the source may be the waveform itself
 
                                 instr->effect_index = 0;
@@ -631,7 +631,7 @@ static void do_effects(DmModule* m, int channel_number) {
         m->amiga_filter = !m->amiga_filter;
 
     if (vi->last_instrument < m->number_of_instruments) {
-        DmInstrument* instr = &m->instruments[vi->last_instrument];
+        DmInstrument* instr = &m->play_instruments[vi->last_instrument];
 
         if ((instr->effect != DM_INST_EFFECT_NONE) && (instr->waveform_number < 32)) {
             uint8_t instr_num = (uint8_t)(vi->last_instrument + 1);
@@ -643,14 +643,14 @@ static void do_effects(DmModule* m, int channel_number) {
                 if (vi->instrument_effect_speed == 0) {
                     vi->instrument_effect_speed = instr->effect_speed;
 
-                    int8_t* waveform_data = m->waveforms[instr->waveform_number];
+                    int8_t* waveform_data = m->play_waveforms[instr->waveform_number];
 
                     switch (instr->effect) {
                         case DM_INST_EFFECT_FILTER:
                             do_inst_effect_filter(waveform_data);
                             break;
                         case DM_INST_EFFECT_MIXING:
-                            do_inst_effect_mixing(waveform_data, instr, m->waveforms);
+                            do_inst_effect_mixing(waveform_data, instr, m->play_waveforms);
                             break;
                         case DM_INST_EFFECT_SCR_LEFT:
                             do_inst_effect_scr_left(waveform_data);
@@ -668,19 +668,19 @@ static void do_effects(DmModule* m, int channel_number) {
                             do_inst_effect_negate(waveform_data, instr);
                             break;
                         case DM_INST_EFFECT_MAD_MIX1:
-                            do_inst_effect_mad_mix1(waveform_data, instr, m->waveforms);
+                            do_inst_effect_mad_mix1(waveform_data, instr, m->play_waveforms);
                             break;
                         case DM_INST_EFFECT_ADDITION:
-                            do_inst_effect_addition(waveform_data, instr, m->waveforms);
+                            do_inst_effect_addition(waveform_data, instr, m->play_waveforms);
                             break;
                         case DM_INST_EFFECT_FILTER2:
                             do_inst_effect_filter2(waveform_data);
                             break;
                         case DM_INST_EFFECT_MORPHING:
-                            do_inst_effect_morphing(waveform_data, instr, m->waveforms);
+                            do_inst_effect_morphing(waveform_data, instr, m->play_waveforms);
                             break;
                         case DM_INST_EFFECT_MORPH_F:
-                            do_inst_effect_morph_f(waveform_data, instr, m->waveforms);
+                            do_inst_effect_morph_f(waveform_data, instr, m->play_waveforms);
                             break;
                         case DM_INST_EFFECT_FILTER3:
                             do_inst_effect_filter3(waveform_data);
@@ -713,7 +713,7 @@ static void do_effects(DmModule* m, int channel_number) {
                 else {
                     // C# code: int volume = -(sbyte)(waveforms[instr.Volume][voiceInfo.VolumeIndex] + 0x81);
                     // volume = (volume & 0xff) / 4;
-                    int8_t raw = m->waveforms[instr->volume][vi->volume_index];
+                    int8_t raw = m->play_waveforms[instr->volume][vi->volume_index];
                     int volume = -((int8_t)((uint8_t)raw + 0x81));
                     volume = (volume & 0xff) / 4;
 
@@ -758,7 +758,7 @@ static void do_effects(DmModule* m, int channel_number) {
 
         if (instr->pitch != 0) {
             if (vi->instrument_delay == 0) {
-                int8_t pitch_waveform_data = m->waveforms[instr->pitch][vi->pitch_index & 0x7f];
+                int8_t pitch_waveform_data = m->play_waveforms[instr->pitch][vi->pitch_index & 0x7f];
 
                 vi->pitch_index++;
                 vi->pitch_index &= 0x7f;
@@ -1292,6 +1292,13 @@ void dm_destroy(DmModule* module) {
     if (module->instrument_to_sample_info_mapping)
         free(module->instrument_to_sample_info_mapping);
 
+    free(module->play_instruments);
+    if (module->play_waveforms) {
+        for (uint32_t i = 0; i < module->number_of_waveforms; i++)
+            free(module->play_waveforms[i]);
+        free(module->play_waveforms);
+    }
+
     if (module->waveforms) {
         for (uint32_t i = 0; i < module->number_of_waveforms; i++) {
             if (module->waveforms[i])
@@ -1319,8 +1326,36 @@ int dm_subsong_count(const DmModule* module) {
     return module->sub_song_count;
 }
 
+// Playback effects rewrite waveforms and instrument counters; they work on copies of the song's data, made again
+// at every start, so that edits and export only see the song's own data.
+static bool init_playback_copies(DmModule* m) {
+    if (!m->play_instruments && m->number_of_instruments > 0) {
+        m->play_instruments = (DmInstrument*)calloc(m->number_of_instruments, sizeof(DmInstrument));
+        if (!m->play_instruments)
+            return false;
+    }
+    if (!m->play_waveforms && m->number_of_waveforms > 0) {
+        m->play_waveforms = (int8_t**)calloc(m->number_of_waveforms, sizeof(int8_t*));
+        if (!m->play_waveforms)
+            return false;
+        for (uint32_t i = 0; i < m->number_of_waveforms; i++) {
+            m->play_waveforms[i] = (int8_t*)calloc(DM_WAVEFORM_SIZE, sizeof(int8_t));
+            if (!m->play_waveforms[i])
+                return false;
+        }
+    }
+    if (m->number_of_instruments > 0)
+        memcpy(m->play_instruments, m->instruments, m->number_of_instruments * sizeof(DmInstrument));
+    for (uint32_t i = 0; i < m->number_of_waveforms; i++)
+        memcpy(m->play_waveforms[i], m->waveforms[i], DM_WAVEFORM_SIZE);
+    return true;
+}
+
 bool dm_start(DmModule* module, int subsong, NuadeVoices* voices) {
     if (!module || !voices || subsong < 0 || subsong >= module->sub_song_count)
+        return false;
+
+    if (!init_playback_copies(module))
         return false;
 
     module->voices = voices;
@@ -1546,8 +1581,12 @@ void dm_set_instrument_param(DmModule* module, int inst, const char* param, floa
     DmInstrument* in = &module->instruments[inst];
     const DmInstrument previous = *in;
     apply_instrument_param(in, param, value);
-    if (!instrument_refs_valid(module, in))
+    if (!instrument_refs_valid(module, in)) {
         *in = previous;
+        return;
+    }
+    if (module->play_instruments)
+        apply_instrument_param(&module->play_instruments[inst], param, value);
 }
 
 size_t dm_export(const DmModule* module, uint8_t* out, size_t max_size) {

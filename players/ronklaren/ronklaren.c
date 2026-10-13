@@ -899,7 +899,9 @@ static bool load_sample_data(RkModule* m, RkReader* r) {
 
     m->num_sample_data = unique_count;
     m->sample_data = (int8_t**)calloc(unique_count, sizeof(int8_t*));
-    if (!m->sample_data) {
+    m->sample_data_lengths = (int*)calloc(unique_count, sizeof(int));
+    m->play_sample_data = (int8_t**)calloc(unique_count, sizeof(int8_t*));
+    if (!m->sample_data || !m->sample_data_lengths || !m->play_sample_data) {
         free(unique_offsets);
         return false;
     }
@@ -923,10 +925,12 @@ static bool load_sample_data(RkModule* m, RkReader* r) {
             }
             reader_seek(r, off);
             m->sample_data[idx] = reader_read_sample_data(r, length);
-            if (!m->sample_data[idx]) {
+            m->play_sample_data[idx] = (int8_t*)malloc(length > 0 ? length : 1);
+            if (!m->sample_data[idx] || !m->play_sample_data[idx]) {
                 free(unique_offsets);
                 return false;
             }
+            m->sample_data_lengths[idx] = length;
         }
     }
 
@@ -977,7 +981,7 @@ static void channel_set_amiga_volume(RkChannel* ch, uint16_t vol) {
 static void play_sample(RkVoiceInfo* vi, RkModule* m) {
     RkInstrument* instr = vi->instrument;
     RkSample* sample = &m->samples[instr->sample_number];
-    int8_t* data = m->sample_data[sample->sample_number];
+    int8_t* data = m->play_sample_data[sample->sample_number];
 
     vi->set_hardware = true;
     vi->sample_number = vi->instrument_number;
@@ -992,31 +996,32 @@ static void play_sample(RkVoiceInfo* vi, RkModule* m) {
 
 static void do_effect_phasing(RkVoiceInfo* vi, RkInstrument* instr, RkModule* m) {
     if (instr->phase_speed != 0) {
+        RkPhaseState* phase = &m->phase_states[instr - m->instruments];
         if (vi->phase_speed_counter == 0) {
             vi->phase_speed_counter = (uint8_t)(instr->phase_speed - 1);
 
             RkSample* sample = &m->samples[instr->sample_number];
-            int8_t* data = m->sample_data[sample->sample_number];
+            int8_t* data = m->play_sample_data[sample->sample_number];
 
             int phase_start = sample->phase_index - instr->phase_length_in_words;
-            int phase_index = phase_start + instr->phase_position;
+            int phase_index = phase_start + phase->phase_position;
 
             if (phase_index >= 0 && phase_index < (int)(sample->length_in_words * 2))
-                data[phase_index] = instr->phase_value;
+                data[phase_index] = phase->phase_value;
 
-            if (instr->phase_direction) {
-                instr->phase_position--;
+            if (phase->phase_direction) {
+                phase->phase_position--;
 
-                if (instr->phase_position == 0) {
-                    instr->phase_direction = !instr->phase_direction;
-                    instr->phase_value = (int8_t)~instr->phase_value;
+                if (phase->phase_position == 0) {
+                    phase->phase_direction = !phase->phase_direction;
+                    phase->phase_value = (int8_t)~phase->phase_value;
                 }
             } else {
-                instr->phase_position++;
+                phase->phase_position++;
 
-                if ((instr->phase_length_in_words * 2) == instr->phase_position) {
-                    instr->phase_direction = !instr->phase_direction;
-                    instr->phase_value = (int8_t)~instr->phase_value;
+                if ((instr->phase_length_in_words * 2) == phase->phase_position) {
+                    phase->phase_direction = !phase->phase_direction;
+                    phase->phase_value = (int8_t)~phase->phase_value;
                 }
             }
         } else {
@@ -1621,6 +1626,13 @@ void rk_destroy(RkModule* module) {
             free(module->sample_data[i]);
         free(module->sample_data);
     }
+    free(module->sample_data_lengths);
+    if (module->play_sample_data) {
+        for (int i = 0; i < module->num_sample_data; i++)
+            free(module->play_sample_data[i]);
+        free(module->play_sample_data);
+    }
+    free(module->phase_states);
 
     if (module->original_data)
         free(module->original_data);
@@ -1633,6 +1645,23 @@ int rk_subsong_count(const RkModule* module) {
     return module->num_sub_songs;
 }
 
+// Playback starts from the song as loaded and edited: fresh sample data and phasing state
+static bool reset_playback_data(RkModule* m) {
+    if (!m->phase_states) {
+        m->phase_states = (RkPhaseState*)calloc(m->num_instruments > 0 ? m->num_instruments : 1, sizeof(RkPhaseState));
+        if (!m->phase_states)
+            return false;
+    }
+    for (int i = 0; i < m->num_sample_data; i++)
+        memcpy(m->play_sample_data[i], m->sample_data[i], m->sample_data_lengths[i]);
+    for (int i = 0; i < m->num_instruments; i++) {
+        m->phase_states[i].phase_value = m->instruments[i].phase_value;
+        m->phase_states[i].phase_direction = m->instruments[i].phase_direction;
+        m->phase_states[i].phase_position = m->instruments[i].phase_position;
+    }
+    return true;
+}
+
 bool rk_start(RkModule* module, int subsong, NuadeVoices* voices) {
     if (!module || !voices || subsong < 0 || subsong >= module->num_sub_songs)
         return false;
@@ -1640,6 +1669,8 @@ bool rk_start(RkModule* module, int subsong, NuadeVoices* voices) {
     module->nuade_voices = voices;
     memset(module->channels, 0, sizeof(module->channels));
     module->current_song = subsong;
+    if (!reset_playback_data(module))
+        return false;
     initialize_sound(module, subsong);
     return true;
 }

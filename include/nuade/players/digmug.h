@@ -193,6 +193,9 @@ struct DmModule {
 
     DmInstrument* instruments;
     int8_t** waveforms; // each is 128 bytes
+    // What playback uses: copies of the instruments and waveforms, made at start
+    DmInstrument* play_instruments;
+    int8_t** play_waveforms;
     DmSample* samples;
 
     // Playing state

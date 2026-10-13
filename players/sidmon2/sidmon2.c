@@ -279,6 +279,10 @@ static bool load_instruments(const uint8_t* data, size_t size, uint32_t offset, 
     return true;
 }
 
+static size_t sample_alloc_size(const Sd2Sample* smp) {
+    return smp->length != 0 ? smp->length : 4;
+}
+
 static bool load_samples(const uint8_t* data, size_t size, uint32_t sample_offset, uint16_t num_samples,
                          uint32_t info_offset, uint32_t info_length, Sd2Sample** out_samples,
                          Sd2SampleNegateInfo** out_negate) {
@@ -462,6 +466,16 @@ static bool sd2_parse(Sd2Module* mod, const uint8_t* data, size_t size) {
                       &mod->sample_negate_info)) {
         return false;
     }
+    mod->play_negate_info = (Sd2SampleNegateInfo*)calloc(num_samples ? num_samples : 1, sizeof(Sd2SampleNegateInfo));
+    if (mod->play_negate_info == nullptr) {
+        return false;
+    }
+    for (int i = 0; i < mod->sample_count; i++) {
+        mod->samples[i].play_data = (int8_t*)malloc(sample_alloc_size(&mod->samples[i]));
+        if (mod->samples[i].play_data == nullptr) {
+            return false;
+        }
+    }
 
     // numberOfPositions-- (C# does this after loading)
     mod->number_of_positions = (uint8_t)(num_pos - 1);
@@ -565,7 +579,17 @@ static void find_note(Sd2Module* mod, Sd2VoiceInfo* vi) {
     vi->empty_notes_counter = 0;
 }
 
+// The negation effect rewrites sample data and its own state while playing; both run on a copy of the song's.
+static void reset_playback_samples(Sd2Module* mod) {
+    for (int i = 0; i < mod->sample_count; i++) {
+        Sd2Sample* smp = &mod->samples[i];
+        memcpy(smp->play_data, smp->sample_data, sample_alloc_size(smp));
+    }
+    memcpy(mod->play_negate_info, mod->sample_negate_info, (size_t)mod->sample_count * sizeof(Sd2SampleNegateInfo));
+}
+
 static void init_sound(Sd2Module* mod) {
+    reset_playback_samples(mod);
     mod->current_position = 0;
     mod->current_row = 0;
     mod->pattern_length = 64;
@@ -594,9 +618,9 @@ static void init_sound(Sd2Module* mod) {
 
         if (sample_number < mod->sample_count) {
             Sd2Sample* smp = &mod->samples[sample_number];
-            vi->sample_data = smp->sample_data;
+            vi->sample_data = smp->play_data;
             vi->sample_length = smp->length;
-            vi->loop_sample = smp->sample_data;
+            vi->loop_sample = smp->play_data;
             vi->loop_offset = smp->loop_start;
             vi->loop_length = smp->loop_length;
         }
@@ -729,9 +753,9 @@ static void play_voice(Sd2Module* mod, Sd2VoiceInfo* vi, Sd2VoiceRender* vr) {
 
                 if (vi->current_sample < (uint16_t)mod->sample_count) {
                     Sd2Sample* smp = &mod->samples[vi->current_sample];
-                    vi->sample_data = smp->sample_data;
+                    vi->sample_data = smp->play_data;
                     vi->sample_length = smp->length;
-                    vi->loop_sample = smp->sample_data;
+                    vi->loop_sample = smp->play_data;
                     vi->loop_offset = smp->loop_start;
                     vi->loop_length = smp->loop_length;
                 }
@@ -838,7 +862,7 @@ static void do_waveform(Sd2Module* mod, Sd2VoiceInfo* vi, Sd2VoiceRender* vr) {
 
                     if (vi->current_sample < (uint16_t)mod->sample_count) {
                         Sd2Sample* smp = &mod->samples[vi->current_sample];
-                        vi->loop_sample = smp->sample_data;
+                        vi->loop_sample = smp->play_data;
                         vi->loop_offset = smp->loop_start;
                         vi->loop_length = smp->loop_length;
 
@@ -1087,7 +1111,7 @@ static void do_negation(Sd2Module* mod) {
             working[i] = nullptr;
             continue;
         }
-        Sd2SampleNegateInfo* ni = &mod->sample_negate_info[sample_number];
+        Sd2SampleNegateInfo* ni = &mod->play_negate_info[sample_number];
         working[i] = ni;
 
         if (ni->do_negation == 0) {
@@ -1102,7 +1126,7 @@ static void do_negation(Sd2Module* mod) {
 
                     int32_t position = (int32_t)(ni->start_offset + ni->position);
                     if (position >= 0 && position < (int32_t)smp->length) {
-                        smp->sample_data[position] = (int8_t)~smp->sample_data[position];
+                        smp->play_data[position] = (int8_t)~smp->play_data[position];
                     }
 
                     ni->position = add_wrapping(ni->position, ni->speed);
@@ -1297,11 +1321,13 @@ void sd2_destroy(Sd2Module* mod) {
     if (mod->samples != nullptr) {
         for (int i = 0; i < mod->sample_count; i++) {
             free(mod->samples[i].sample_data);
+            free(mod->samples[i].play_data);
         }
         free(mod->samples);
     }
 
     free(mod->sample_negate_info);
+    free(mod->play_negate_info);
     free(mod);
 }
 
@@ -1649,9 +1675,9 @@ void sd2_preview_note_on(Sd2Module* mod, int instrument, int note, int velocity)
 
         if (vi->current_sample < (uint16_t)mod->sample_count) {
             Sd2Sample* smp = &mod->samples[vi->current_sample];
-            vi->sample_data = smp->sample_data;
+            vi->sample_data = smp->play_data;
             vi->sample_length = smp->length;
-            vi->loop_sample = smp->sample_data;
+            vi->loop_sample = smp->play_data;
             vi->loop_offset = smp->loop_start;
             vi->loop_length = smp->loop_length;
         }

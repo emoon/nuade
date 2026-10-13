@@ -678,6 +678,7 @@ static void initialize_sound(SaModule* m, int sub_song) {
         memset(&m->channels[i], 0, sizeof(SaChannel));
     }
 
+    m->random_state = 12345;
     m->loop_count = 0;
     memset(m->visited, 0, sizeof(m->visited));
 }
@@ -1936,8 +1937,6 @@ SaModule* sa_create(const uint8_t* data, size_t size) {
     SaModule* m = (SaModule*)calloc(1, sizeof(SaModule));
     if (!m)
         return nullptr;
-
-    m->random_state = 12345;
 
     // Keep original data for export
     m->original_data = (uint8_t*)malloc(size);

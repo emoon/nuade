@@ -51,6 +51,13 @@ typedef struct RkInstrument {
     uint8_t phase_position;
 } RkInstrument;
 
+// The phasing effect's running state; rk_start takes it from the instrument's phase_* fields.
+typedef struct RkPhaseState {
+    int8_t phase_value;
+    bool phase_direction;
+    uint8_t phase_position;
+} RkPhaseState;
+
 typedef struct RkSample {
     int sample_number;
     uint16_t length_in_words;
@@ -162,7 +169,13 @@ struct RkModule {
     int num_samples;
 
     int8_t** sample_data;
+    int* sample_data_lengths;
     int num_sample_data;
+
+    // Playback copy of sample_data (the phasing effect rewrites it) and the phasing state per instrument,
+    // both set up again by rk_start
+    int8_t** play_sample_data;
+    RkPhaseState* phase_states;
 
     // Playing state
     uint8_t global_volume;

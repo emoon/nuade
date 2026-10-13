@@ -80,6 +80,7 @@ typedef struct Sd2Sample {
     uint32_t loop_start;
     uint32_t loop_length;
     int8_t* sample_data;
+    int8_t* play_data; // playback copy of sample_data, rewritten by the negation effect
 } Sd2Sample;
 
 typedef struct Sd2SampleNegateInfo {
@@ -183,6 +184,7 @@ struct Sd2Module {
     Sd2Sample* samples;
     int32_t sample_count;
     Sd2SampleNegateInfo* sample_negate_info;
+    Sd2SampleNegateInfo* play_negate_info; // playback copy of sample_negate_info
 
     // Playback state
     int16_t current_position; // 0..255, -1 only while wrapping to 0

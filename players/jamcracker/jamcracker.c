@@ -75,6 +75,7 @@ static void module_free(JcModule* m) {
     if (m->instruments != nullptr) {
         for (uint16_t i = 0; i < m->instrument_count; i++) {
             free(m->instruments[i].address);
+            free(m->instruments[i].playback);
         }
     }
     free(m->instruments);
@@ -174,6 +175,12 @@ static bool module_parse(JcModule* m, const uint8_t* data, size_t size) {
             return false;
         }
         memcpy(instrument->address, cursor_take(&c, instrument->size), instrument->size);
+        if ((instrument->flags & InstrumentFlag_Am) != 0) {
+            instrument->playback = malloc(AM_WAVE_AREA);
+            if (instrument->playback == nullptr) {
+                return false;
+            }
+        }
     }
     return true;
 }
@@ -233,6 +240,13 @@ static void voice_init(JcVoice* v, int index) {
 bool jc_start(JcPlayer* player, NuadeVoices* voices) {
     if (player == nullptr || voices == nullptr) {
         return false;
+    }
+    // The AM output windows are rewritten while playing: begin from the stored wave data
+    for (uint16_t i = 0; i < player->module.instrument_count; i++) {
+        JcInstrument* instrument = &player->module.instruments[i];
+        if (instrument->playback != nullptr) {
+            memcpy(instrument->playback, instrument->address, AM_WAVE_AREA);
+        }
     }
     player->songpos = 0;
     enter_pattern(player);
@@ -350,7 +364,7 @@ static void select_instrument(JcPlayer* p, JcVoice* v, uint8_t number) {
     }
     const JcInstrument* instrument = &p->module.instruments[index];
     if ((instrument->flags & InstrumentFlag_Am) != 0) {
-        v->insaddress = instrument->address + v->waveoffset;
+        v->insaddress = instrument->playback + v->waveoffset;
         v->inslen = WAVESIZE >> 1;
     } else {
         v->insaddress = instrument->address;
