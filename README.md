@@ -26,6 +26,9 @@ Most of the work on Nuade, including translating the players and A/B testing the
 UADE is used as the reference player, and each port is A/B tested against it. In some cases Nuade may diverge from
 UADE where that makes sense.
 
+[docs/players.md](docs/players.md) lists every UADE player and whether Nuade has ported it, has yet to port it, or
+skips it.
+
 ## Using Nuade in your project
 
 Add it as a subdirectory and link the `nuade::nuade` target. That builds the library with every player.
