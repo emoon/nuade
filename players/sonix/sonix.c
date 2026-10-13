@@ -1027,6 +1027,27 @@ static void snx_reset_runtime(SonixSong* song) {
         song->snx_sample_base_hz[ch] = 0.0;
         song->snx_vib_phase[ch] = 0.0;
         song->snx_vib_delay[ch] = 0;
+        song->aiff_tech_vol[ch] = 0;
+        song->aiff_note_active[ch] = false;
+        song->ss_port_phase[ch] = 0;
+        song->ss_port_value[ch] = 0;
+        song->ss_base_period[ch] = 0;
+        song->ss_vib_index[ch] = 0;
+        song->ss_vib_delay[ch] = 0;
+        song->snx_active_pcm[ch] = nullptr;
+        song->snx_active_pcm_len[ch] = 0;
+        song->snx_active_loop_start[ch] = 0;
+        song->snx_active_loop_len[ch] = 0;
+        song->snx_pending_start[ch].valid = false;
+        song->synth_slide_counter[ch] = 0;
+        song->synth_slide_delta[ch] = 0;
+        song->synth_env_accum[ch] = 0;
+        song->synth_env_delay_ctr[ch] = 0;
+        song->synth_env_value[ch] = 0;
+        song->synth_cur_period[ch] = 0;
+        song->synth_decimation_shift[ch] = 0;
+        song->synth_blend_accum[ch] = 0;
+        song->synth_ring_dir[ch] = 0;
     }
 
     // Assembly PlayScore: snap all 8 ramp slots to full volume (0xFF00 in 8.8).
