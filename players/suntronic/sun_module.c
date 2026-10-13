@@ -17,8 +17,7 @@
 // The step table a song may have: A and B index it with 16 bit arithmetic (index * 20), C likewise (index * 16).
 #define SUN_MAX_STEPS 1024u
 
-// The replayer builds the port models, one per module of the corpus (shades2.sun is left out below). Offsets are
-// from the variable block.
+// The replayer builds the port models, one per module of the corpus. Offsets are from the variable block.
 static const SunBuild s_builds[] = {
     // msx-cracktro 2.sun, generation C (the oldest)
     { .code_hash = 0xc406f7a46437f04fULL,
@@ -49,8 +48,17 @@ static const SunBuild s_builds[] = {
       .step_table = 0x2c4,
       .master_volume = 0x19,
       .filter_scale = 0xc000 },
-    // shades2.sun (code hash 0x48db2bcdbe2d0d78) is a generation A build too, but its song points a voice at address 1
-    // (UADE's exception vectors) in step 83; the build stays out until a song of it can be modelled.
+    // shades2.sun, generation A (msx-intro's replayer, assembled with a raster wait after the DMA enable)
+    { .code_hash = 0x48db2bcdbe2d0d78ULL,
+      .vars = 0x6de,
+      .gen = SunGen_A,
+      .period_table = 0x64,
+      .adjust_table = 0xc60,
+      .synth_table = 0xf4,
+      .sample_table = 0x214,
+      .step_table = 0x234,
+      .master_volume = 0x19,
+      .filter_scale = 0xc000 },
     // shades.sun, generation A (the master volume is addressed one byte off)
     { .code_hash = 0xb1d9ecaed54111f7ULL,
       .vars = 0x6a4,
@@ -66,7 +74,29 @@ static const SunBuild s_builds[] = {
 
 // Memory
 
+// The exception vector table of UADE's 68k at address 0, in longs: all 0x1348 except these. A pattern pointer that
+// the song leaves at a small value reads its items there.
+#define VECTOR_DEFAULT 0x1348u
+static const struct {
+    uint8_t index;
+    uint32_t value;
+} k_vector_exceptions[] = { { 0, 0 },       { 1, 0xd00 },   { 5, 0x1322 },  { 26, 0x3ec0 }, { 27, 0x4552 },
+                            { 28, 0x4590 }, { 30, 0x4696 }, { 36, 0x16a6 }, { 37, 0x1968 }, { 38, 0x16b8 } };
+
+static uint8_t vector_u8(uint32_t address) {
+    uint32_t vector = VECTOR_DEFAULT;
+    for (size_t i = 0; i < nuade_sizeof_array(k_vector_exceptions); i++) {
+        if (k_vector_exceptions[i].index == address / 4) {
+            vector = k_vector_exceptions[i].value;
+        }
+    }
+    return (uint8_t)(vector >> (8 * (3 - address % 4)));
+}
+
 uint8_t sun_mem_u8(const SunMemory* mem, uint32_t address) {
+    if (address < SUN_VECTOR_BYTES) {
+        return vector_u8(address);
+    }
     const uint32_t offset = address - SUN_MODULE_BASE;
     const uint64_t limit = (uint64_t)mem->size + NUADE_PAULA_MAX_SAMPLE_BYTES;
     return address >= SUN_MODULE_BASE && offset < limit ? mem->bytes[offset] : 0;
@@ -90,9 +120,13 @@ static void mem_set_u32(SunMemory* mem, uint32_t address, uint32_t value) {
     }
 }
 
-// True when the replayer reads [address, address + length) as constant data: inside the module or the zeros above it,
-// behind the code (which InitPlayer patches) and the variable bytes that InitSound and the replayer write.
+// True when the replayer reads [address, address + length) as constant data: the exception vectors, or inside the
+// module or the zeros above it, behind the code (which InitPlayer patches) and the variable bytes that InitSound and
+// the replayer write.
 static bool data_readable(const SunModule* module, uint32_t address, uint32_t length) {
+    if (address < SUN_VECTOR_BYTES) {
+        return length <= SUN_VECTOR_BYTES - address;
+    }
     if (address < module->vars + SUN_VARS_VOLATILE) {
         return false;
     }
@@ -552,6 +586,10 @@ static bool instrument_modelled(const SunModule* module, uint32_t index) {
     return true;
 }
 
+bool sun_instrument_in_table(const SunModule* module, uint8_t value) {
+    return value >= 0x40 && (uint32_t)value - 0x40u < module->synth_count;
+}
+
 // Walks one voice's pattern of a step, 16 rows, and checks what the items ask of the replayer.
 static bool pattern_modelled(const SunModule* module, uint32_t pattern, bool used[]) {
     const SunMemory* mem = &module->memory;
@@ -567,12 +605,13 @@ static bool pattern_modelled(const SunModule* module, uint32_t pattern, bool use
                 break;
             }
             if (item.kind == SunItem_Instrument) {
-                // Bit 6 selects the synth table; the sample table is not modelled
-                const uint32_t index = (uint32_t)item.value - 0x40u;
-                if (item.value < 0x40 || index >= module->synth_count) {
+                // Bit 6 selects the synth table. Another byte reads a record the port does not model; the song
+                // check of the player proves that the voice is silent for as long as it plays one.
+                if (sun_instrument_in_table(module, item.value)) {
+                    used[item.value - 0x40u] = true;
+                } else if (gen != SunGen_A) {
                     return false;
                 }
-                used[index] = true;
             } else if (item.kind == SunItem_Command && item.value == SunCommand_Fade
                        && module->build->fixed_master_volume) {
                 return false;

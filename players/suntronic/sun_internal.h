@@ -28,6 +28,9 @@
 
 #define SUN_WAVE_BYTES_BC 0x20
 
+// The exception vector table of UADE's 68k at address 0, which a pattern pointer of a small value reads.
+#define SUN_VECTOR_BYTES 0x100
+
 uint8_t sun_mem_u8(const SunMemory* mem, uint32_t address);
 uint16_t sun_mem_u16(const SunMemory* mem, uint32_t address);
 uint32_t sun_mem_u32(const SunMemory* mem, uint32_t address);
@@ -36,6 +39,10 @@ uint32_t sun_mem_u32(const SunMemory* mem, uint32_t address);
 // the player models. False for anything else.
 bool sun_module_open(SunModule* module, const uint8_t* data, size_t size);
 void sun_module_close(SunModule* module);
+
+// True when an instrument byte selects a record of the synth table. Any other byte (a sample instrument, or a synth
+// index behind the table) reads a record the port does not model.
+bool sun_instrument_in_table(const SunModule* module, uint8_t value);
 
 // Reads synth instrument `index` (below synth_count).
 SunInstrument sun_module_instrument(const SunModule* module, uint32_t index);

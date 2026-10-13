@@ -326,6 +326,9 @@ static void synth_voice(SunPlayer* player, SunVoice* voice) {
     if (!voice->active) {
         return;
     }
+    if (voice->foreign && voice->volume != 0) {
+        player->foreign_audible = true;
+    }
     switch (player->module.build->gen) {
         case SunGen_A:
             synth_a(player, voice);
@@ -341,12 +344,17 @@ static void synth_voice(SunPlayer* player, SunVoice* voice) {
 
 // Sequencer: one voice, once per row
 
+// The record of an instrument byte that selects none of the synth table's (a sample instrument, or a synth index behind
+// the table): its envelope and vibrato read as zeros, so the voice is silent, and it starts no waveform.
+static const SunInstrument k_foreign_instrument = { .envelope_end = 1, .vibrato_end = 1 };
+
 static void start_instrument(SunPlayer* player, SunVoice* voice, uint8_t value) {
-    // The song walk proved the byte selects a record of the synth table
+    const bool foreign = !sun_instrument_in_table(&player->module, value);
     const uint32_t index = (uint32_t)value - 0x40;
     voice->last_instrument = value;
-    voice->inst = sun_module_instrument(&player->module, index);
-    voice->instrument = (int)index;
+    voice->inst = foreign ? k_foreign_instrument : sun_module_instrument(&player->module, index);
+    voice->instrument = foreign ? -1 : (int)index;
+    voice->foreign = foreign;
     voice->active = true;
     voice->period_row = 0;
     voice->period_column = 0;
@@ -611,35 +619,8 @@ static bool advance_tick(SunPlayer* player, bool* looped) {
 
 // Player
 
-bool sun_probe(const uint8_t* data, size_t size) {
-    SunModule module;
-    if (!sun_module_open(&module, data, size)) {
-        return false;
-    }
-    sun_module_close(&module);
-    return true;
-}
-
-SunCreateResult sun_create(const uint8_t* data, size_t size) {
-    SunPlayer* player = calloc(1, sizeof(*player));
-    if (player == NULL) {
-        return (SunCreateResult) { .status = SunStatus_OutOfMemory };
-    }
-    if (!sun_module_open(&player->module, data, size)) {
-        free(player);
-        return (SunCreateResult) { .status = SunStatus_InvalidData };
-    }
-    return (SunCreateResult) { .player = player, .status = SunStatus_Ok };
-}
-
-void sun_destroy(SunPlayer* player) {
-    if (player != NULL) {
-        sun_module_close(&player->module);
-        free(player);
-    }
-}
-
-bool sun_start(SunPlayer* player, NuadeVoices* voices) {
+// The state InitSound leaves; false when the song has no step.
+static bool reset_song(SunPlayer* player) {
     const SunModule* module = &player->module;
     const SunMemory* mem = &module->memory;
     const SunGen gen = module->build->gen;
@@ -647,7 +628,6 @@ bool sun_start(SunPlayer* player, NuadeVoices* voices) {
     memset(player->voices, 0, sizeof(player->voices));
     for (uint32_t v = 0; v < SUN_VOICES; v++) {
         player->voices[v].instrument = -1;
-        nuade_voice_stop(voices, v);
     }
     switch (gen) {
         case SunGen_A:
@@ -672,6 +652,7 @@ bool sun_start(SunPlayer* player, NuadeVoices* voices) {
     player->fade_step = 0;
     player->fade_reload = 0;
     player->fade_timer = 0;
+    player->foreign_audible = false;
     player->master_volume = sun_mem_u8(mem, module->vars + module->build->master_volume);
     player->seed[0] = sun_mem_u16(mem, module->vars + SUN_A_SEED);
     player->seed[1] = sun_mem_u16(mem, module->vars + SUN_A_SEED + 2);
@@ -683,20 +664,12 @@ bool sun_start(SunPlayer* player, NuadeVoices* voices) {
     return !end;
 }
 
-SunTickResult sun_tick(SunPlayer* player, NuadeVoices* voices) {
-    SunTickResult result = { 0 };
-    const SunGen gen = player->module.build->gen;
-
-    if (gen == SunGen_A) {
-        stage_one_a(player);
+// The sequencer's share of a tick: the fade, the row counter, and the voices' patterns and synths.
+static void tick_sequencer(SunPlayer* player, SunTickResult* result) {
+    if (player->module.build->gen == SunGen_A) {
         fade_a(player);
-    } else if (player->tick_count == 0) {
-        stage_full_bc(player);
-    } else {
-        stage_light_bc(player);
     }
-
-    const bool row = advance_tick(player, &result.looped);
+    const bool row = advance_tick(player, &result->looped);
     for (uint32_t v = 0; v < SUN_VOICES; v++) {
         SunVoice* voice = &player->voices[v];
         if (row) {
@@ -704,11 +677,77 @@ SunTickResult sun_tick(SunPlayer* player, NuadeVoices* voices) {
         }
         synth_voice(player, voice);
     }
+}
+
+// Whether the voices that play an instrument the port does not model are silent throughout the song, which runs twice
+// through: the voices keep their state when it loops. The sequencer decides; no Paula output is needed.
+static bool foreign_instruments_silent(SunPlayer* player) {
+    if (player->module.build->gen != SunGen_A) {
+        return true;
+    }
+    reset_song(player);
+    for (uint32_t loops = 0; loops < 2 && !player->foreign_audible;) {
+        SunTickResult result = { 0 };
+        tick_sequencer(player, &result);
+        loops += result.looped;
+    }
+    return !player->foreign_audible;
+}
+
+SunCreateResult sun_create(const uint8_t* data, size_t size) {
+    SunPlayer* player = calloc(1, sizeof(*player));
+    if (player == NULL) {
+        return (SunCreateResult) { .status = SunStatus_OutOfMemory };
+    }
+    if (!sun_module_open(&player->module, data, size)) {
+        free(player);
+        return (SunCreateResult) { .status = SunStatus_InvalidData };
+    }
+    if (!foreign_instruments_silent(player)) {
+        sun_destroy(player);
+        return (SunCreateResult) { .status = SunStatus_InvalidData };
+    }
+    return (SunCreateResult) { .player = player, .status = SunStatus_Ok };
+}
+
+void sun_destroy(SunPlayer* player) {
+    if (player != NULL) {
+        sun_module_close(&player->module);
+        free(player);
+    }
+}
+
+bool sun_probe(const uint8_t* data, size_t size) {
+    const SunCreateResult created = sun_create(data, size);
+    sun_destroy(created.player);
+    return created.status == SunStatus_Ok;
+}
+
+bool sun_start(SunPlayer* player, NuadeVoices* voices) {
+    for (uint32_t v = 0; v < SUN_VOICES; v++) {
+        nuade_voice_stop(voices, v);
+    }
+    return reset_song(player);
+}
+
+SunTickResult sun_tick(SunPlayer* player, NuadeVoices* voices) {
+    SunTickResult result = { 0 };
+    const SunGen gen = player->module.build->gen;
+
+    if (gen == SunGen_A) {
+        stage_one_a(player);
+    } else if (player->tick_count == 0) {
+        stage_full_bc(player);
+    } else {
+        stage_light_bc(player);
+    }
+
+    tick_sequencer(player, &result);
 
     if (gen == SunGen_A) {
         stage_two_a(player);
         for (uint32_t v = 0; v < SUN_VOICES; v++) {
-            if (player->voices[v].active) {
+            if (player->voices[v].active && !player->voices[v].foreign) {
                 morph_a(player, &player->voices[v]);
             }
         }

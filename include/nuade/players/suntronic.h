@@ -117,6 +117,7 @@ typedef struct SunModule {
 typedef struct SunVoice {
     uint32_t pattern;        // address of the next pattern item
     bool active;             // an instrument has started
+    bool foreign;            // A: the instrument is one the port does not model (see sun_instrument_in_table)
     SunInstrument inst;      // the instrument it plays
     int instrument;          // its index in the synth table, -1 before the first
     uint8_t last_instrument; // A: the last instrument byte; a note restarts it
@@ -159,7 +160,8 @@ struct SunPlayer {
     int8_t fade_step;      // A: added to the master volume every fade_reload + 1 ticks
     uint8_t fade_reload;
     int8_t fade_timer;
-    uint16_t seed[2]; // A: random morph
+    uint16_t seed[2];     // A: random morph
+    bool foreign_audible; // A: a voice with an unmodelled instrument had a volume
 };
 
 // True when the eagleplayer plays the module and this port reproduces it: the eagleplayer's check, a replayer build the
