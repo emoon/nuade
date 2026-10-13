@@ -21,6 +21,7 @@ typedef struct NuadeVoice {
     bool has_event;
     f32 volume;
     f32 pan;
+    bool muted; // left out of the stereo mix; kept across reset
 } NuadeVoice;
 
 struct NuadeVoices {
@@ -42,7 +43,7 @@ static void emit(const NuadeVoices* mixer, u32 voice, NuadeVoiceEventKind kind, 
 }
 
 static void reset_voice(NuadeVoice* voice) {
-    *voice = (NuadeVoice) { .volume = 1.0f };
+    *voice = (NuadeVoice) { .volume = 1.0f, .muted = voice->muted };
 }
 
 NuadeVoices* nuade_mixer_create(u32 voice_count) {
@@ -85,6 +86,20 @@ void nuade_mixer_set_observer(NuadeVoices* mixer, NuadeVoiceObserver observer, v
 
 void nuade_mixer_set_separation(NuadeVoices* mixer, f32 separation) {
     mixer->separation = separation;
+}
+
+bool nuade_mixer_set_muted(NuadeVoices* mixer, u32 voice, bool muted) {
+    if (mixer == nullptr || voice >= mixer->voice_count) {
+        return false;
+    }
+    mixer->voices[voice].muted = muted;
+    return true;
+}
+
+void nuade_mixer_clear_mutes(NuadeVoices* mixer) {
+    for (u32 i = 0; i < mixer->voice_count; i++) {
+        mixer->voices[i].muted = false;
+    }
 }
 
 // Voice calls
@@ -273,8 +288,10 @@ void nuade_mixer_mix(NuadeVoices* mixer, float* stereo, float* const* voice_out,
                 const f32 s = read_sample(&v->current, (u32)v->position) * v->volume;
                 const f32 l = s * (NUADE_HEADROOM * 0.5f * (1.0f - pan));
                 const f32 r = s * (NUADE_HEADROOM * 0.5f * (1.0f + pan));
-                left += l;
-                right += r;
+                if (!v->muted) {
+                    left += l;
+                    right += r;
+                }
                 contribution = l + r;
                 v->position += v->step;
             }

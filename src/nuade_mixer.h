@@ -18,6 +18,11 @@ void nuade_mixer_set_observer(NuadeVoices* mixer, NuadeVoiceObserver observer, v
 // the pan the player set.
 void nuade_mixer_set_separation(NuadeVoices* mixer, f32 separation);
 
+// Leave a voice out of the stereo mix. The voice still plays on (position, loops, events) and its voice buffer and
+// meters still see it. Kept across nuade_mixer_reset. False if `voice` is out of range.
+bool nuade_mixer_set_muted(NuadeVoices* mixer, u32 voice, bool muted);
+void nuade_mixer_clear_mutes(NuadeVoices* mixer);
+
 // Add `frames` frames of output to `stereo` (interleaved) starting at frame `offset`. `voice_out` is 0 or one buffer
 // per voice; voice_out[v][offset + i] is set to voice v's left + right contribution (not added).
 void nuade_mixer_mix(NuadeVoices* mixer, float* stereo, float* const* voice_out, u32 offset, u32 frames);

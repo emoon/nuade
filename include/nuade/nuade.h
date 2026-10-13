@@ -163,6 +163,14 @@ void nuade_set_repeat_count(NuadeSong* song, uint32_t count);
 // The mono sum (L + R) is the same at every value. Returns false (and changes nothing) outside 0..2.
 bool nuade_set_stereo_separation(NuadeSong* song, float separation);
 
+// Leave a voice out of the stereo mix, as the song's own voice numbering (0..voice_count-1). The voice still plays on:
+// the song's timing, seek and duration do not change, and the `voices` buffers of nuade_render, nuade_vu and
+// nuade_scope still carry it. A mute stays through nuade_start and nuade_seek. Returns false (and changes nothing)
+// for a voice outside the song or a self-rendering player (NuadePlayer.render_raw), which has no mixer to gate.
+bool nuade_mute_voice(NuadeSong* song, uint32_t voice, bool mute);
+// Unmute every voice.
+void nuade_mute_clear(NuadeSong* song);
+
 // Metadata
 
 // Value of a NUADE_META_* tag, 0 if the player did not set it.

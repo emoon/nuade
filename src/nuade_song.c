@@ -883,6 +883,16 @@ bool nuade_set_stereo_separation(NuadeSong* song, float separation) {
     return true;
 }
 
+bool nuade_mute_voice(NuadeSong* song, uint32_t voice, bool mute) {
+    return song != nullptr && song->voices != nullptr && nuade_mixer_set_muted(song->voices, voice, mute);
+}
+
+void nuade_mute_clear(NuadeSong* song) {
+    if (song != nullptr && song->voices != nullptr) {
+        nuade_mixer_clear_mutes(song->voices);
+    }
+}
+
 const char* nuade_meta(const NuadeSong* song, const char* key) {
     if (song == nullptr || key == nullptr) {
         return nullptr;
