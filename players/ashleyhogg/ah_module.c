@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 // Instruction words of the checks
 #define BRA_W 0x6000
@@ -312,7 +311,7 @@ static bool load_samples(AhNew* modern, const char* path, const NuadeIo* io) {
     char dir[1024] = { 0 };
     char name[512];
     const char* base = path != nullptr ? nuade_path_basename(path) : nullptr;
-    if (base == nullptr || io == nullptr || strncasecmp(base, MODULE_PREFIX, PREFIX_LENGTH) != 0
+    if (base == nullptr || io == nullptr || nuade_strncasecmp(base, MODULE_PREFIX, PREFIX_LENGTH) != 0
         || strlen(base) + 1 > sizeof(name)) {
         return false;
     }

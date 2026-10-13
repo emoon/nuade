@@ -24,7 +24,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 #define MODULE_PREFIX "thm."
 #define SAMPLE_PREFIX "smp."
@@ -100,7 +99,7 @@ static bool check_module(const uint8_t* data, size_t size) {
 
 static bool has_module_prefix(const char* filename) {
     const char* name = filename != nullptr ? nuade_path_basename(filename) : nullptr;
-    return name != nullptr && strncasecmp(name, MODULE_PREFIX, PREFIX_LENGTH) == 0;
+    return name != nullptr && nuade_strncasecmp(name, MODULE_PREFIX, PREFIX_LENGTH) == 0;
 }
 
 static uint32_t relocated(const ThmModule* module, uint32_t offset) {
@@ -304,7 +303,7 @@ static uint8_t* read_samples(const char* path, const NuadeIo* io, size_t* size) 
     char dir[1024] = { 0 };
     char name[512];
     const char* base = path != nullptr ? nuade_path_basename(path) : nullptr;
-    if (base == nullptr || io == nullptr || strncasecmp(base, MODULE_PREFIX, PREFIX_LENGTH) != 0
+    if (base == nullptr || io == nullptr || nuade_strncasecmp(base, MODULE_PREFIX, PREFIX_LENGTH) != 0
         || strlen(base) + 1 > sizeof(name)) {
         return nullptr;
     }

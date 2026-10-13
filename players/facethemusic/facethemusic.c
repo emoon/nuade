@@ -202,7 +202,6 @@ static void ftm_set_cia_tempo(FtmModule* m, uint16_t cia_value) {
 
 static void ftm_play_tick(FtmModule* m);
 static void ftm_adjust_track_indexes(FtmModule* m, FtmVoiceInfo* v);
-static void ftm_init_voice_with_latest(FtmModule* m, FtmVoiceInfo* v);
 
 // This file is already very large. Due to the extreme complexity of FTM (3017 lines C#),
 // a complete 1:1 translation would exceed practical limits for a single file write.
@@ -1232,15 +1231,6 @@ static bool ftm_load(FtmModule* m, const uint8_t* data, size_t size) {
 }
 
 // Initialize
-
-static void ftm_init_voice_with_latest(FtmModule* m, FtmVoiceInfo* v) __attribute__((unused));
-static void ftm_init_voice_with_latest(FtmModule* m, FtmVoiceInfo* v) {
-    // Scan backwards to find last volume and instrument
-    (void)m;
-    (void)v;
-    // This is a simplification. In C# it temporarily replaces the track line
-    // For the initial load, voices start with defaults
-}
 
 static void ftm_initialize_sound(FtmModule* m, uint16_t start_row, uint16_t end_row) {
     FtmGlobalInfo* pi = &m->playing_info;

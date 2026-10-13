@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 #define SP_SONG_PREFIX "osp."
 #define SP_SET_PREFIX "smp."
@@ -65,7 +64,7 @@ static bool sp_load_set(const char* path, const NuadeIo* io, SpMemory* set) {
     if (length + sizeof(SP_SET_PREFIX) >= sizeof(name)) {
         return false;
     }
-    if (strncasecmp(base, SP_SONG_PREFIX, SP_PREFIX_LENGTH) == 0) {
+    if (nuade_strncasecmp(base, SP_SONG_PREFIX, SP_PREFIX_LENGTH) == 0) {
         snprintf(name, sizeof(name), SP_SET_PREFIX "%s", base + SP_PREFIX_LENGTH);
     } else {
         snprintf(name, sizeof(name), "%.*s", (int)(length - 1), base);

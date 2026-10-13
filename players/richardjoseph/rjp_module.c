@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 #define MODULE_MAGIC_LENGTH 3
 #define MODULE_MIN_SIZE 16
@@ -56,9 +55,10 @@ uint32_t rjp_u32(const RjpImage* image, uint64_t offset) {
 static bool sample_file_name(const char* base, char* out, size_t capacity) {
     const size_t length = strlen(base);
     int written;
-    if (length >= MODULE_PREFIX_LENGTH && strncasecmp(base, MODULE_PREFIX, MODULE_PREFIX_LENGTH) == 0) {
+    if (length >= MODULE_PREFIX_LENGTH && nuade_strncasecmp(base, MODULE_PREFIX, MODULE_PREFIX_LENGTH) == 0) {
         written = snprintf(out, capacity, "smp.%s", base + MODULE_PREFIX_LENGTH);
-    } else if (length >= SAMPLE_SUFFIX_LENGTH && strcasecmp(base + length - SAMPLE_SUFFIX_LENGTH, SAMPLE_SUFFIX) == 0) {
+    } else if (length >= SAMPLE_SUFFIX_LENGTH
+               && nuade_strcasecmp(base + length - SAMPLE_SUFFIX_LENGTH, SAMPLE_SUFFIX) == 0) {
         written = snprintf(out, capacity, "%.*s.ins", (int)(length - SAMPLE_SUFFIX_LENGTH), base);
     } else {
         written = snprintf(out, capacity, "%.*s", (int)(length > 0 ? length - 1 : 0), base);

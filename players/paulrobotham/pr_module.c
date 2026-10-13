@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 #define MIN_SONG_BYTES 16u
 #define ENVELOPE0_WORDS 127u // Check2 compares the first envelope table's start with this many words
@@ -251,7 +250,7 @@ static int32_t samples_needed(const PrSong* song) {
 static bool has_suffix(const char* name, const char* suffix) {
     const size_t length = strlen(name);
     const size_t suffix_length = strlen(suffix);
-    return length > suffix_length && strcasecmp(name + length - suffix_length, suffix) == 0;
+    return length > suffix_length && nuade_strcasecmp(name + length - suffix_length, suffix) == 0;
 }
 
 // ExtLoad: "<name>.ssd" for a song called "<name>.dat", else (or when that file does not exist) "mdtest.ssd", both in

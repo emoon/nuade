@@ -6,7 +6,6 @@
 #include "sdr_internal.h"
 #include <stdio.h>
 #include <string.h>
-#include <strings.h>
 
 #define SUBSONG_TABLE 0x0C
 #define SUBSONG_ENTRY_SIZE 16
@@ -213,7 +212,7 @@ bool sdr_check_module(SdrMemory* memory) {
 }
 
 bool sdr_name_matches(const char* filename) {
-    return filename != nullptr && strncasecmp(nuade_path_basename(filename), MODULE_PREFIX, PREFIX_LENGTH) == 0;
+    return filename != nullptr && nuade_strncasecmp(nuade_path_basename(filename), MODULE_PREFIX, PREFIX_LENGTH) == 0;
 }
 
 // UADE puts the sample file behind the module.
@@ -227,7 +226,7 @@ uint32_t sdr_sample_base(uint32_t module_size) {
 
 static bool samples_file_name(const char* song, char* name, size_t capacity) {
     const size_t length = strlen(song);
-    if (length >= PREFIX_LENGTH && strncasecmp(song, MODULE_PREFIX, PREFIX_LENGTH) == 0) {
+    if (length >= PREFIX_LENGTH && nuade_strncasecmp(song, MODULE_PREFIX, PREFIX_LENGTH) == 0) {
         return (size_t)snprintf(name, capacity, SAMPLES_PREFIX "%s", song + PREFIX_LENGTH) < capacity;
     }
     if (length == 0 || length >= capacity) {

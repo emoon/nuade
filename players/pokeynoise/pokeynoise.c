@@ -16,7 +16,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 // DeliTracker's 50 Hz CIA timer, which the eagleplayer keeps.
 #define PN_TICK_LENGTH 14187u
@@ -34,7 +33,7 @@
 
 bool pn_probe(const uint8_t* data, size_t size, const char* filename) {
     return size >= PN_MIN_SIZE && data[0] == 0xFF && data[1] == 0xFF && filename != nullptr
-           && strncasecmp(nuade_path_basename(filename), PN_PREFIX, sizeof(PN_PREFIX) - 1) == 0;
+           && nuade_strncasecmp(nuade_path_basename(filename), PN_PREFIX, sizeof(PN_PREFIX) - 1) == 0;
 }
 
 // The ".info" file is the song's file name with ".info" appended, in the song's directory.

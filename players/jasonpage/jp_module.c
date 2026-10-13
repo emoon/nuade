@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 #define WORD_SIZE 2
 #define LONG_SIZE 4
@@ -351,7 +350,7 @@ static bool sample_file_name(const char* path, char* name, size_t name_size) {
         return false;
     }
     strcpy(name, base);
-    if (strncasecmp(base, "jpn", SAMPLE_PREFIX_LENGTH) == 0) {
+    if (nuade_strncasecmp(base, "jpn", SAMPLE_PREFIX_LENGTH) == 0) {
         if (base[SAMPLE_PREFIX_LENGTH] == 'd' || base[SAMPLE_PREFIX_LENGTH] == 'D') {
             name[SAMPLE_PREFIX_LENGTH] = 'S';
             return true;
@@ -366,11 +365,11 @@ static bool sample_file_name(const char* path, char* name, size_t name_size) {
         return false;
     }
     char* extension = name + (dot - base) + 1;
-    if (strcasecmp(extension, "jpn") == 0) {
+    if (nuade_strcasecmp(extension, "jpn") == 0) {
         memcpy(extension, "SMP", SAMPLE_PREFIX_LENGTH);
         return true;
     }
-    if (strcasecmp(extension, "jpnd") == 0) {
+    if (nuade_strcasecmp(extension, "jpnd") == 0) {
         extension[SAMPLE_PREFIX_LENGTH] = 'S';
         return true;
     }

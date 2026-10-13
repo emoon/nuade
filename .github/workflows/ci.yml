@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    name: ${{ matrix.os }} ${{ matrix.cc }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            cc: gcc
+          - os: ubuntu-latest
+            cc: clang
+          - os: macos-latest
+            cc: clang
+          - os: windows-latest
+            cc: msvc
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        shell: bash
+        run: |
+          if [ "${{ matrix.cc }}" = msvc ]; then
+            cmake -S . -B build
+          else
+            CC=${{ matrix.cc }} cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          fi
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      # The example in the README must compile and link against the library.
+      - name: README example
+        if: matrix.cc != 'msvc'
+        shell: bash
+        run: |
+          awk '/^```c$/{f=1;next} /^```$/{f=0} f' README.md > example.c
+          ${{ matrix.cc }} -std=c11 -Wall -Wextra -Werror -Iinclude example.c build/libnuade.a -lm -o example

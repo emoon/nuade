@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 #define SAMPLE_EXTENSION ".ins"
 #define SONG_EXTENSION ".dum"
@@ -147,7 +146,7 @@ uint32_t ig_song_tick_length(const uint8_t* data, size_t size) {
 bool ig_sample_file_names(const char* song_name, char names[IG_CANDIDATES][IG_NAME_MAX], int* count) {
     size_t stem = strlen(song_name);
     const size_t extension = sizeof(SONG_EXTENSION) - 1;
-    if (stem >= extension && strncasecmp(song_name + stem - extension, SONG_EXTENSION, extension) == 0) {
+    if (stem >= extension && nuade_strncasecmp(song_name + stem - extension, SONG_EXTENSION, extension) == 0) {
         stem -= extension;
     }
     if (stem == 0 || stem + sizeof(SAMPLE_EXTENSION) > IG_NAME_MAX) {

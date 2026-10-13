@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 #define HEADER_BYTES 2 // tempo and the 0x50 byte
 #define SONG_MARK 0x50
@@ -192,7 +191,7 @@ bool qt_samples_parse(QtSamples* samples, const uint8_t* file, uint32_t size) {
 // both in the song's directory; when that file is missing, "SMP.set".
 
 static bool has_song_prefix(const char* name) {
-    return strncasecmp(name, SONG_PREFIX, SONG_PREFIX_LENGTH) == 0;
+    return nuade_strncasecmp(name, SONG_PREFIX, SONG_PREFIX_LENGTH) == 0;
 }
 
 static uint8_t* read_url(const NuadeIo* io, NuadeFileIndex* index, const char* name, uint64_t* size) {

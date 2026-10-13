@@ -7,7 +7,6 @@
 #include "nuade_utils.h"
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 #define NOT_FOUND 0xFFFFFFFFu
 #define MIN_MODULE_SIZE 0x40
@@ -402,7 +401,7 @@ bool dns_module_locate(DnsModule* module, const uint8_t* data, size_t size) {
 }
 
 bool dns_has_module_prefix(const char* name) {
-    return name != nullptr && strncasecmp(name, DNS_MODULE_PREFIX, sizeof(DNS_MODULE_PREFIX) - 1) == 0;
+    return name != nullptr && nuade_strncasecmp(name, DNS_MODULE_PREFIX, sizeof(DNS_MODULE_PREFIX) - 1) == 0;
 }
 
 bool dns_probe(const uint8_t* data, size_t size, const char* filename) {

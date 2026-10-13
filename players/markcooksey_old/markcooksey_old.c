@@ -33,7 +33,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 // An Atari ST executable: 0x601A, the text size, and zeros to the code at 0x1C.
 #define ST_HEADER_SIZE 0x1C
@@ -208,7 +207,7 @@ static bool check_driver(const uint8_t* data, size_t size) {
 
 // A file name with the prefix `prefix` (PREFIX_LENGTH characters), any case.
 static bool has_prefix(const char* filename, const char* prefix) {
-    return strncasecmp(nuade_path_basename(filename), prefix, PREFIX_LENGTH) == 0;
+    return nuade_strncasecmp(nuade_path_basename(filename), prefix, PREFIX_LENGTH) == 0;
 }
 
 McoKind mco_probe(const uint8_t* data, size_t size, const char* filename) {

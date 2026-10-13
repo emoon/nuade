@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 #define LIST_COUNT 4
 #define HEADER_BYTES 8 // the four list offsets
@@ -204,7 +203,7 @@ void pa_module_sample_layout(const PaModule* module, uint32_t start[PA_MAX_INSTR
 // both in the song's directory; when that file is missing, "SMP.set".
 
 static bool has_sample_prefix(const char* name) {
-    return strncasecmp(name, SAMPLE_PREFIX, SAMPLE_PREFIX_LENGTH) == 0;
+    return nuade_strncasecmp(name, SAMPLE_PREFIX, SAMPLE_PREFIX_LENGTH) == 0;
 }
 
 static uint8_t* read_url(const NuadeIo* io, NuadeFileIndex* index, const char* name, uint64_t* size) {

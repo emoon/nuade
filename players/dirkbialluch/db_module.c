@@ -11,7 +11,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 #define TAG_SONG 0x4D534E47u     // "MSNG"
 #define TAG_SEQUENCE 0x4D534551u // "MSEQ"
@@ -241,7 +240,7 @@ bool db_probe(const uint8_t* data, size_t size) {
 
 static bool sample_file_name(const char* path, char* name, size_t name_cap) {
     const char* base = path != nullptr ? nuade_path_basename(path) : nullptr;
-    if (base == nullptr || strncasecmp(base, SONG_PREFIX, strlen(SONG_PREFIX)) != 0
+    if (base == nullptr || nuade_strncasecmp(base, SONG_PREFIX, strlen(SONG_PREFIX)) != 0
         || snprintf(name, name_cap, SAMPLE_PREFIX "%s", base + strlen(SONG_PREFIX)) >= (int)name_cap) {
         return false;
     }

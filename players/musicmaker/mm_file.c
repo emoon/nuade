@@ -5,9 +5,9 @@
 #include "mm_internal.h"
 #include "nuade_file_index.h"
 #include "nuade_path.h"
+#include "nuade_utils.h"
 #include <stdio.h>
 #include <string.h>
-#include <strings.h>
 
 #define FORM_ID 0x464F524Du // "FORM"
 #define MMV8_ID 0x4D4D5638u // "MMV8"
@@ -55,7 +55,7 @@ static bool has_old_song_name(const char* filename) {
     const char* base = nuade_path_basename(filename);
     const size_t extension = strlen(OLD_SONG_EXTENSION);
     const size_t length = strlen(base);
-    return length > extension && strcasecmp(base + length - extension, OLD_SONG_EXTENSION) == 0;
+    return length > extension && nuade_strcasecmp(base + length - extension, OLD_SONG_EXTENSION) == 0;
 }
 
 // What the file is made of: the song, the instrument chunk of a FORM, and whether that is packed.

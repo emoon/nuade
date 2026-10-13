@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 #define RECORD_BYTES 0x12
 #define RECORD_FIRST 2 // the record table follows the word that counts the records
@@ -407,7 +406,7 @@ MxeLoad mxe_load_sample_file(const char* song_path, const NuadeIo* io, MxeSample
     if (length >= sizeof(name)) {
         return MxeLoad_Missing;
     }
-    if (length >= PREFIX_LENGTH && strncasecmp(base, MODULE_PREFIX, PREFIX_LENGTH) == 0) {
+    if (length >= PREFIX_LENGTH && nuade_strncasecmp(base, MODULE_PREFIX, PREFIX_LENGTH) == 0) {
         snprintf(name, sizeof(name), SAMPLES_PREFIX "%s", base + PREFIX_LENGTH);
     } else {
         memcpy(name, base, length);

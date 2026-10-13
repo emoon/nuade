@@ -5,10 +5,10 @@
 
 #include "nuade_base.h"
 #include "nuade_path.h"
+#include "nuade_utils.h"
 #include <nuade/players/hippel.h>
 #include <stdio.h>
 #include <string.h>
-#include <strings.h>
 
 // Wanted Team's player takes the modules named "soc.name" or "name.soc"
 #define WANTED_TEAM_EXTENSION "soc"
@@ -25,7 +25,7 @@ static bool is_wanted_team_name(const char* path) {
     const char* first_dot = strchr(base, '.');
     const size_t length = strlen(WANTED_TEAM_EXTENSION);
     if (first_dot != nullptr && (size_t)(first_dot - base) == length
-        && strncasecmp(base, WANTED_TEAM_EXTENSION, length) == 0) {
+        && nuade_strncasecmp(base, WANTED_TEAM_EXTENSION, length) == 0) {
         return true;
     }
     return !nuade_path_has_ext(path, "hipc") && nuade_path_has_ext(path, WANTED_TEAM_EXTENSION);
