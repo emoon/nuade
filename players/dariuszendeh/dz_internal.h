@@ -13,27 +13,22 @@
 #include "nuade_base.h"
 #include <nuade/players/dariuszendeh.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline uint8_t dzm_u8(const DzModule* m, uint32_t offset) {
     return offset < m->size ? m->data[offset] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline uint16_t dzm_u16(const DzModule* m, uint32_t offset) {
     return (uint16_t)((dzm_u8(m, offset) << 8) | dzm_u8(m, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline uint32_t dzm_u32(const DzModule* m, uint32_t offset) {
     return ((uint32_t)dzm_u16(m, offset) << 16) | dzm_u16(m, offset + 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A paula pointer to `offset` into the module; null if it lies past the end.
 static inline const int8_t* dzm_sample(const DzModule* m, uint32_t offset) {
     return offset <= m->size ? (const int8_t*)(m->data + offset) : nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Finds the replayer's tables and the songs the init code sets up. False when the code is not a known variant.
 bool dz_locate(const DzModule* m, DzLayout* layout);

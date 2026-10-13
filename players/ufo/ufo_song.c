@@ -41,8 +41,6 @@ static const UfoChunkTag chunk_tags[] = {
     { "BLCK", UfoChunk_Blck }, { "INST", UfoChunk_Inst },
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static UfoChunkKind chunk_kind(const uint8_t* tag) {
     for (size_t i = 0; i < nuade_sizeof_array(chunk_tags); i++) {
         if (memcmp(tag, chunk_tags[i].tag, 4) == 0) {
@@ -52,8 +50,6 @@ static UfoChunkKind chunk_kind(const uint8_t* tag) {
     return UfoChunk_Other;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t ufo_song_u8(const UfoSong* song, uint32_t offset, bool* fault) {
     if (offset >= song->size) {
         *fault = true;
@@ -62,7 +58,6 @@ uint8_t ufo_song_u8(const UfoSong* song, uint32_t offset, bool* fault) {
     return song->data[offset];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // u605e
 uint16_t ufo_song_read_delay(const UfoSong* song, uint32_t* cursor, bool* fault, uint64_t* work) {
     uint16_t delay = 0;
@@ -76,8 +71,6 @@ uint16_t ufo_song_read_delay(const UfoSong* song, uint32_t* cursor, bool* fault,
     return delay;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool has_tags(const uint8_t* data, size_t size) {
     if (size < UFO_FIRST_CHUNK + 4) {
         return false;
@@ -87,7 +80,6 @@ static bool has_tags(const uint8_t* data, size_t size) {
            && memcmp(data + UFO_FIRST_CHUNK, "CHAN", 4) == 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Offsets and sizes are 32 bit values of the file; a chunk end past 32 bits is not a chunk.
 
 static bool next_chunk(uint32_t chunk, uint64_t distance, uint32_t* next) {
@@ -105,8 +97,6 @@ typedef struct ChanChunk {
     uint32_t next;
 } ChanChunk;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool read_chan_chunk(const UfoSong* song, uint32_t chunk, ChanChunk* out) {
     if (song->size - chunk < CHAN_HEADER_SIZE) {
         return false;
@@ -121,8 +111,6 @@ typedef struct BpmChunk {
     uint32_t next;
 } BpmChunk;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool read_bpm_chunk(const UfoSong* song, uint32_t chunk, BpmChunk* out) {
     if (song->size - chunk < BPM_SIZE) {
         return false;
@@ -135,8 +123,6 @@ typedef struct BlckChunk {
     uint32_t stream; // first delay
     uint32_t next;
 } BlckChunk;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool read_blck_chunk(const UfoSong* song, uint32_t chunk, BlckChunk* out) {
     if (song->size - chunk < BLCK_HEADER_SIZE) {
@@ -155,8 +141,6 @@ typedef struct InstChunk {
     uint32_t next;
 } InstChunk;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool read_inst_chunk(const UfoSong* song, uint32_t chunk, InstChunk* out) {
     if (song->size - chunk < INST_HEADER_SIZE) {
         return false;
@@ -169,8 +153,6 @@ static bool read_inst_chunk(const UfoSong* song, uint32_t chunk, InstChunk* out)
     out->sample_offset = chunk + INST_HEADER_SIZE;
     return next_chunk(chunk, 4 + (uint64_t)nuade_read_be32(p + 4), &out->next);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Can a sample record be played exactly as the replayer sets it up? False when it would run past its buffer or start
 // Paula with a length of 0 words (65536 words of whatever follows).
@@ -188,8 +170,6 @@ static bool sample_fits(uint32_t buffer_size, uint32_t sample_offset, uint32_t l
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool ufo_instrument_make(UfoInstrument* out, const uint8_t* buffer, uint32_t buffer_size, uint32_t sample_offset,
                          uint32_t length, uint32_t loop_offset, uint8_t volume) {
     if (!sample_fits(buffer_size, sample_offset, length, loop_offset)) {
@@ -206,7 +186,6 @@ bool ufo_instrument_make(UfoInstrument* out, const uint8_t* buffer, uint32_t buf
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One chunk at `chunk`; false when the song is not one the replayer reads inside the file, `done` when the walk ends.
 
 static bool walk_chunk(UfoSong* song, uint32_t chunk, uint32_t* next, bool* done) {
@@ -264,8 +243,6 @@ static bool walk_chunk(UfoSong* song, uint32_t chunk, uint32_t* next, bool* done
     *done = true;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ufo_song_parse(UfoSong* song, const uint8_t* data, size_t size) {
     memset(song, 0, sizeof(*song));

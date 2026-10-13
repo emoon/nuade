@@ -23,18 +23,13 @@
 #define EFFECT_SLIDE_SUB 0x51
 #define HOLD_LENGTH_WORDS 4
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Eight bytes of zero: what a voice plays at the end of its sample once the replayer has pointed the repeat at it.
 static const int8_t k_silence[HOLD_LENGTH_WORDS * 2] = { 0 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ss_probe(const uint8_t* data, size_t size) {
     SsModule module;
     return ss_module_parse(&module, data, size);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SsPlayer* ss_create(const uint8_t* data, size_t size) {
     SsPlayer* p = calloc(1, sizeof(SsPlayer));
@@ -50,8 +45,6 @@ SsPlayer* ss_create(const uint8_t* data, size_t size) {
     return nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void ss_destroy(SsPlayer* player) {
     if (player != nullptr) {
         free(player->image);
@@ -59,7 +52,6 @@ void ss_destroy(SsPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitSound: the variables are 0 (the first tick starts a row at the first position).
 
 bool ss_start(SsPlayer* player, NuadeVoices* voices) {
@@ -75,20 +67,15 @@ bool ss_start(SsPlayer* player, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t ss_grid_ticks(const SsPlayer* player) {
     return (uint32_t)player->module.speed + 1;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SsVoiceState ss_voice_state(const SsPlayer* player, int voice) {
     const SsVoice* v = &player->voices[voice];
     return (SsVoiceState) { .note = v->note, .instrument = v->instrument };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note: the voice stops, then the delays are set and the sample starts. AUDxLC/AUDxLEN are the DMA start's; the
 // repeat part, if any, follows after the DMA start.
 
@@ -127,8 +114,6 @@ static void start_note(SsPlayer* p, unsigned index, SsCell cell) {
     voice->instrument = (int)start.sample;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void start_effect(SsVoice* voice, SsCell cell) {
     switch (cell.first) {
         case EFFECT_SLIDE_ADD:
@@ -144,7 +129,6 @@ static void start_effect(SsVoice* voice, SsCell cell) {
     voice->effect_amount = (uint16_t)((cell.second << 8) | cell.third);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // True for the end cell of voice 0: the song restarts and the other voices skip the row.
 
 static bool run_cell(SsPlayer* p, unsigned voice, SsCell cell) {
@@ -163,7 +147,6 @@ static bool run_cell(SsPlayer* p, unsigned voice, SsCell cell) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The DMA of every voice that plays is switched on; a channel that already runs is not restarted.
 
 static void start_dma(SsPlayer* p) {
@@ -174,7 +157,6 @@ static void start_dma(SsPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A voice without a release delay holds at full volume: the channel's repeat points at 8 bytes of zero, so the sample
 // plays once.
 
@@ -182,8 +164,6 @@ static void hold_at_sample_end(SsPlayer* p, unsigned voice) {
     p->paula[voice].lc = k_silence;
     p->paula[voice].len_words = HOLD_LENGTH_WORDS;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void run_effect(SsPlayer* p, unsigned index) {
     SsVoice* voice = &p->voices[index];
@@ -200,7 +180,6 @@ static void run_effect(SsPlayer* p, unsigned index) {
     p->paula[index].period = voice->period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume rises by 8 every attack delay + 1 ticks (at once to 64 with no delay).
 
 static void run_attack(SsVoice* voice) {
@@ -220,7 +199,6 @@ static void run_attack(SsVoice* voice) {
     voice->delay_counter = voice->release_delay;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // After the release delay the volume falls by 8 every release delay + 1 ticks; at 0 the voice stops.
 
 static void run_release(SsPlayer* p, unsigned index) {
@@ -242,8 +220,6 @@ static void run_release(SsPlayer* p, unsigned index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void update_voices(SsPlayer* p) {
     for (unsigned i = 0; i < SS_VOICES; i++) {
         SsVoice* voice = &p->voices[i];
@@ -263,7 +239,6 @@ static void update_voices(SsPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The repeat part of an IFF sample, written after the DMA start.
 
 static void write_repeats(SsPlayer* p) {
@@ -278,15 +253,12 @@ static void write_repeats(SsPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void restart_song(SsPlayer* p) {
     p->position = 0;
     p->row = 0;
     p->tick_counter = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The first tick of a row. Returns true when the song restarted.
 
 static bool run_row(SsPlayer* p) {
@@ -309,8 +281,6 @@ static bool run_row(SsPlayer* p) {
     write_repeats(p);
     return restarted;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SsTickResult ss_tick(SsPlayer* player, NuadeVoices* voices) {
     SsTickResult result = { 0 };

@@ -86,20 +86,14 @@ typedef struct FcBsiInstrument {
     uint32_t loop_length;
 } FcBsiInstrument;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool fcbsi_probe(const uint8_t* data, size_t size) {
     return size >= MIN_MODULE_SIZE && memcmp(data, MAGIC, MAGIC_SIZE) == 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A byte of module memory; what the replayer reads outside the module is unknown, it reads 0 here.
 static uint8_t fcbsi_byte(const FcBsiPlayer* p, int64_t offset) {
     return offset >= 0 && offset < (int64_t)p->size ? p->chip[offset] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static FcBsiInstrument fcbsi_instrument(const FcBsiPlayer* p, unsigned index) {
     const uint8_t* record = p->chip + INSTRUMENT_OFFSET + (size_t)index * INSTRUMENT_SIZE;
@@ -108,14 +102,10 @@ static FcBsiInstrument fcbsi_instrument(const FcBsiPlayer* p, unsigned index) {
                                .loop_length = nuade_read_be32(record + 12) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The sample address the voice gets for a module offset (32-bit like the 68000's); null outside the module.
 static const int8_t* fcbsi_sample_at(const FcBsiPlayer* p, uint32_t offset) {
     return offset < p->size ? (const int8_t*)(p->chip + offset) : nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 FcBsiPlayer* fcbsi_create(const uint8_t* data, size_t size) {
     if (!fcbsi_probe(data, size)) {
@@ -140,16 +130,12 @@ FcBsiPlayer* fcbsi_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void fcbsi_destroy(FcBsiPlayer* p) {
     if (p != nullptr) {
         free(p->chip);
         free(p);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool fcbsi_start(FcBsiPlayer* p, NuadeVoices* voices) {
     if (p == nullptr || voices == nullptr) {
@@ -170,8 +156,6 @@ bool fcbsi_start(FcBsiPlayer* p, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The replayer counts its fetches; the 256th ends the song.
 static bool fcbsi_count_step(FcBsiPlayer* p) {
     p->steps++;
@@ -182,21 +166,15 @@ static bool fcbsi_count_step(FcBsiPlayer* p) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t fcbsi_sequence_byte(const FcBsiPlayer* p, int voice, uint8_t pos) {
     return fcbsi_byte(p, SEQUENCE_OFFSET + voice * SEQUENCE_SIZE + pos);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The pattern address is a 16-bit sum, signed when used as an index.
 static uint8_t fcbsi_pattern_byte(const FcBsiPlayer* p, const FcBsiVoice* v) {
     const int16_t index = (int16_t)(uint16_t)(v->pattern_pos + (v->pattern << 8));
     return fcbsi_byte(p, PATTERN_OFFSET + index);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // One sequence byte; returns where the voice goes on. The power LED commands (the audio filter) are not modelled.
 static FcBsiStage fcbsi_sequence_step(FcBsiPlayer* p, int voice) {
@@ -243,8 +221,6 @@ static FcBsiStage fcbsi_sequence_step(FcBsiPlayer* p, int voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A note: restart the instrument's sample on the voice's channel.
 static void fcbsi_start_note(FcBsiPlayer* p, FcBsiVoice* v, uint8_t note) {
     const FcBsiInstrument instrument = fcbsi_instrument(p, v->instrument);
@@ -272,8 +248,6 @@ static void fcbsi_start_note(FcBsiPlayer* p, FcBsiVoice* v, uint8_t note) {
     v->duration_counter = (int16_t)v->default_duration;
     v->pattern_pos++;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // One pattern byte; returns where the voice goes on.
 static FcBsiStage fcbsi_pattern_step(FcBsiPlayer* p, int voice) {
@@ -315,8 +289,6 @@ static FcBsiStage fcbsi_pattern_step(FcBsiPlayer* p, int voice) {
     return FcBsiStage_Pattern;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The slide moves the period every step, clamped.
 static void fcbsi_apply_slide(FcBsiVoice* v) {
     if (v->slide == FcBsiSlide_None) {
@@ -333,8 +305,6 @@ static void fcbsi_apply_slide(FcBsiVoice* v) {
     v->paula.period = period;
     v->period = period;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void fcbsi_voice_step(FcBsiPlayer* p, int voice) {
     FcBsiVoice* v = &p->voices[voice];
@@ -368,8 +338,6 @@ static void fcbsi_voice_step(FcBsiPlayer* p, int voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 FcBsiTickResult fcbsi_tick(FcBsiPlayer* p, NuadeVoices* voices) {
     const bool was_stopped = p->stopped;
     if (was_stopped) {
@@ -391,13 +359,9 @@ FcBsiTickResult fcbsi_tick(FcBsiPlayer* p, NuadeVoices* voices) {
     return (FcBsiTickResult) { .ended = was_stopped };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t fcbsi_grid_ticks(void) {
     return DEFAULT_SPEED + 1;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 FcBsiVoiceState fcbsi_voice_state(const FcBsiPlayer* p, int voice) {
     if (voice < 0 || voice >= FCBSI_VOICES) {

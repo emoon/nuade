@@ -29,7 +29,6 @@
 #define VOLUME_LOUD 64
 #define VOLUME_QUIET 1
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module header and the checks the replayer makes on it
 
 // The init rejects a module whose sample count is below the packed size it computes from it (5 / 9 of it plus 8, in
@@ -39,8 +38,6 @@ static bool init_accepts(uint32_t samples) {
     return (int32_t)(samples - packed) >= 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The packed bytes the replayer reads over a pass of the stream: whole blocks of the full buffers and of the last
 // partial one.
 static uint64_t stream_bytes_read(uint32_t samples) {
@@ -48,8 +45,6 @@ static uint64_t stream_bytes_read(uint32_t samples) {
         = (uint64_t)(samples / NTSP_BUFFER_BYTES) * BUFFER_BLOCKS + (samples % NTSP_BUFFER_BYTES) / BLOCK_SAMPLES;
     return blocks * BLOCK_PACKED;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A sample count below one buffer (L < NTSP_BUFFER_BYTES) makes the stream counter wrap, so the replayer would unpack
 // from memory past the module; so would a stream that is shorter than its sample count. Both are refused.
@@ -68,7 +63,6 @@ static bool module_read(const uint8_t* data, size_t size, NtspModule* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Unpacking
 
 // A signed value of `bits` bits, as the replayer's lsl/asr pair extends it
@@ -77,13 +71,9 @@ static int sign_extend(uint32_t value, unsigned bits) {
     return (int)((value & (2 * sign - 1)) ^ sign) - (int)sign;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int8_t scaled(int value, unsigned shift) {
     return (int8_t)(uint8_t)(value * (1 << shift));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Five bytes to nine samples. The first byte holds a 5-bit sample and the shift (top three bits) of all of them; the
 // other four hold two 4-bit samples each, high nibble first.
@@ -96,8 +86,6 @@ static void unpack_block(const uint8_t packed[BLOCK_PACKED], int8_t out[BLOCK_SA
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Unpack `count` samples of the stream into `dest`: whole blocks only, and the stream counter drops by `count`
 // whatever the blocks cover.
 static void unpack(NtspPlayer* p, int8_t* dest, uint32_t count) {
@@ -108,8 +96,6 @@ static void unpack(NtspPlayer* p, int8_t* dest, uint32_t count) {
         p->stream.pos += BLOCK_PACKED;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Fill the free buffer from the stream. At the end of the stream the rest of the buffer is zeroed, the stream restarts
 // and SongEnd is called.
@@ -130,8 +116,6 @@ static void fill_buffer(NtspPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Point all four channels at the buffer just filled; the other one is free for the next interrupt.
 static void swap_buffers(NtspPlayer* p) {
     for (uint32_t i = 0; i < NTSP_VOICES; i++) {
@@ -140,15 +124,12 @@ static void swap_buffers(NtspPlayer* p) {
     p->free_buffer ^= 1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Public
 
 bool ntsp_probe(const uint8_t* data, size_t size) {
     NtspModule module;
     return module_read(data, size, &module);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 NtspPlayer* ntsp_create(const uint8_t* data, size_t size) {
     NtspPlayer* p = calloc(1, sizeof(*p));
@@ -168,16 +149,12 @@ NtspPlayer* ntsp_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void ntsp_destroy(NtspPlayer* player) {
     if (player != nullptr) {
         free(player->data);
         free(player);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // InitSound: unpack the first buffer (a whole buffer whatever the stream length), then the channel registers.
 // StartInt: DMA on for all four channels; its audio interrupt is the first buffer start.
@@ -211,8 +188,6 @@ bool ntsp_start(NtspPlayer* player, NuadeVoices* voices) {
     player->wraps_seen = state.wraps;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 NtspTickResult ntsp_tick(NtspPlayer* player, NuadeVoices* voices) {
     NuadeVoiceState state;

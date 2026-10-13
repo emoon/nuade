@@ -114,9 +114,7 @@ enum {
     Op_AddaWIndexA3 = 0xD6F3, // adda.w (a3,d0.w),a3
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Types
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // An instrument record of the driver's table as the file holds it: all fields big-endian, addresses absolute.
 #define INSTRUMENT_RECORD_SIZE 16
@@ -133,40 +131,29 @@ typedef struct InstrumentRecord {
 // The 2-byte silence the setup routine points an empty repeat at.
 static const int8_t s_silence[2] = { 0, 0 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // JdModule access. The driver reads memory past its tables; out of range reads give 0.
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t rd8(const JdModule* m, int64_t off) {
     return (off >= 0 && (uint64_t)off < m->size) ? m->data[off] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t rd16(const JdModule* m, int64_t off) {
     return (uint16_t)((rd8(m, off) << 8) | rd8(m, off + 1));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static int16_t rd16s(const JdModule* m, int64_t off) {
     return (int16_t)rd16(m, off);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t rd32(const JdModule* m, int64_t off) {
     return ((uint32_t)rd16(m, off) << 16) | rd16(m, off + 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The address in a longword of the module (an absolute address of the original link) as a file offset.
 
 static uint32_t addr_at(const JdModule* m, int64_t off) {
     return rd32(m, off) - m->base;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static InstrumentRecord read_record(const JdModule* m, int64_t at) {
     return (InstrumentRecord) { .base_note = rd16s(m, at),
@@ -177,21 +164,15 @@ static InstrumentRecord read_record(const JdModule* m, int64_t at) {
                                 .flag = rd16(m, at + 14) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void write16(JdModule* m, int64_t at, uint16_t value) {
     m->data[at] = (uint8_t)(value >> 8);
     m->data[at + 1] = (uint8_t)value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void write32(JdModule* m, int64_t at, uint32_t value) {
     write16(m, at, (uint16_t)(value >> 16));
     write16(m, at + 2, (uint16_t)value);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void write_record(JdModule* m, int64_t at, const InstrumentRecord* record) {
     write16(m, at, (uint16_t)record->base_note);
@@ -202,7 +183,6 @@ static void write_record(JdModule* m, int64_t at, const InstrumentRecord* record
     write16(m, at + 14, record->flag);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // First even offset in [from, to) holding `word`, or -1.
 
 static int64_t find_word(const JdModule* m, int64_t from, int64_t to, uint16_t word) {
@@ -214,7 +194,6 @@ static int64_t find_word(const JdModule* m, int64_t from, int64_t to, uint16_t w
     return -1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A word expected at a byte offset from the start of a code pattern; only the bits in `mask` count.
 
 typedef struct WordAt {
@@ -225,7 +204,6 @@ typedef struct WordAt {
 
 #define WORD_AT(offset, word) { (offset), (word), 0xFFFF }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // First even offset in [from, to) where all `count` words of `pattern` match, or -1.
 
 static int64_t find_pattern(const JdModule* m, int64_t from, int64_t to, const WordAt* pattern, int count) {
@@ -245,14 +223,12 @@ static int64_t find_pattern(const JdModule* m, int64_t from, int64_t to, const W
     return -1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Target of the n-th bra.w of the jump table at the start of the file.
 
 static int64_t bra_target(const JdModule* m, int n) {
     return 4 * n + 2 + rd16s(m, 4 * n + 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A bra.w whose offset is positive and even.
 
 static bool is_bra_forward(const JdModule* m, int64_t off) {
@@ -260,7 +236,6 @@ static bool is_bra_forward(const JdModule* m, int64_t off) {
     return rd16(m, off) == Op_BraW && disp > 0 && (disp & 1) == 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The group of bra.w at the start: 4, then optionally 3 more. Returns the number, 0 if the shape is wrong.
 
 static int count_bra_table(const JdModule* m) {
@@ -280,7 +255,6 @@ static int count_bra_table(const JdModule* m) {
     return rd16(m, 28) == Op_BraW ? 0 : 7;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's Check2: the bra.w table, then the setup routine opens with [bsr.w] lea a0, lea a1.
 
 static bool check_module(const JdModule* m) {
@@ -304,14 +278,11 @@ static bool check_module(const JdModule* m) {
     return rd16(m, setup) == Op_LeaA0 && rd16(m, setup + 6) == Op_LeaA1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool jd_probe(const uint8_t* data, size_t size) {
     JdModule m = { .data = (uint8_t*)data, .size = size };
     return check_module(&m);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The code of the driver (from `code_start` to its last rts before the data) and the base address of the link. The
 // eagleplayer derives the base from the period table: `lea table,a5` names its address, the table's first word is
 // found in the file.
@@ -323,8 +294,6 @@ typedef struct Layout {
     int64_t period_hit;   // file offset of the period table's first word
     int64_t first_record; // the instrument table starts after the period table's last word
 } Layout;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool locate_code(JdModule* m, Layout* layout) {
     layout->two_groups = rd16(m, 16) == Op_BraW;
@@ -374,7 +343,6 @@ static bool locate_code(JdModule* m, Layout* layout) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // True when the few instructions from `from` (the table lookup that follows a lea) index the table with
 // `adda.w (an,d0.w),an` (opcode `indexed`, extension word 0) instead of adding the index first.
 
@@ -387,14 +355,12 @@ static bool indexed_adda_follows(const JdModule* m, int64_t from, uint16_t index
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Moves the absolute address at `at` from the link address to the load address.
 
 static void relocate_long(JdModule* m, int64_t at) {
     write32(m, at, rd32(m, at) - m->base + LOAD_ADDRESS);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's relocation of the instrument records in front of the ones the setup routine fills: the sample
 // address, and the repeat address with it, of every record that has a sample address.
 
@@ -412,7 +378,6 @@ static void relocate_records(JdModule* m, int64_t first_record, int64_t end) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's relocation of the driver code: every instruction with an absolute long operand (not $dffxxx) gets
 // the operand moved from the link address to the load address. The driver only sees this when it reads its own code.
 
@@ -448,7 +413,6 @@ static void relocate_code(JdModule* m, const Layout* layout) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A command handler that reads a table: lea table,a0 / moveq #0,d0 / move.b (a3)+,d0, then the `more` words (offsets
 // from the lea). Returns the offset of the lea, or -1.
 
@@ -461,14 +425,12 @@ static int64_t find_table_lookup(const JdModule* m, int64_t from, int64_t to, co
     return find_pattern(m, from, to, pattern, count);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The first command handler after `from` that reads a table; its lea offset, or -1.
 
 static int64_t find_next_table_lookup(const JdModule* m, int64_t from, int64_t to) {
     return find_table_lookup(m, from, to, nullptr, 0);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tables and flags of the driver, read from the operands of its code.
 
 static bool locate_tables(const JdModule* m, const Layout* layout, JdVersion* ver, JdTables* tab) {
@@ -584,9 +546,7 @@ static bool locate_tables(const JdModule* m, const Layout* layout, JdVersion* ve
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Setup routine: instrument table from the 8SVX forms
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define TAG(a, b, c, d) (((uint32_t)(a) << 24) | ((uint32_t)(b) << 16) | ((uint32_t)(c) << 8) | (uint32_t)(d))
 
@@ -603,7 +563,6 @@ typedef struct FormWalk {
 
 static void walk_form(FormWalk* w, uint32_t* pos, int32_t* remaining, int depth);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Chunk handler of the walker. `pos` is just after the chunk's tag; it moves past the chunk.
 
 static void walk_chunk(FormWalk* w, uint32_t tag, uint32_t* pos, int32_t* remaining, int depth) {
@@ -628,7 +587,6 @@ static void walk_chunk(FormWalk* w, uint32_t tag, uint32_t* pos, int32_t* remain
     *remaining -= (int32_t)advance;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A FORM chunk: its type must be 8SVX, its chunks are walked.
 
 static void walk_form(FormWalk* w, uint32_t* pos, int32_t* remaining, int depth) {
@@ -658,7 +616,6 @@ static void walk_form(FormWalk* w, uint32_t* pos, int32_t* remaining, int depth)
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The form at `form`, `length` bytes of it to walk. The instrument's sample and repeat come from the VHDR (one-shot
 // and repeat sample counts) and the BODY the walk left behind.
 
@@ -692,7 +649,6 @@ static void walk_instrument(FormWalk* w, uint32_t form, int32_t length, JdInstru
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A record of the instrument table as it is in the file (the default record, or one the setup did not fill). The
 // addresses in it are absolute; `address_bias` is what to take off to get a file offset.
 
@@ -709,7 +665,6 @@ static JdInstrument instrument_from_file(const JdModule* m, uint32_t at, uint32_
                         .repeat_words = record.repeat_words };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One entry of the setup list: where its form is, how long to walk, and the record's base note and flag.
 
 typedef struct SetupEntry {
@@ -719,7 +674,6 @@ typedef struct SetupEntry {
     bool untransposed;
 } SetupEntry;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Reads the next entry of the list the setup routine walks. `list` and `extra` move on. False at the list's end.
 
 static bool next_setup_entry(const JdPlayer* p, uint32_t* list, uint32_t* extra, int index, SetupEntry* entry) {
@@ -779,8 +733,6 @@ static bool next_setup_entry(const JdPlayer* p, uint32_t* list, uint32_t* extra,
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool build_instruments(JdPlayer* p) {
     const JdModule* m = &p->module;
     FormWalk walk = { .module = m };
@@ -808,7 +760,6 @@ static bool build_instruments(JdPlayer* p) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // JdInstrument n as the driver finds it: the setup's records, or what the file holds in the table. The instrument
 // command and the setup routine address the table separately; some builds leave records in front of the setup's.
 
@@ -825,7 +776,6 @@ static JdInstrument instrument_get(const JdPlayer* p, uint8_t n) {
     return instrument_from_file(&p->module, record, bias);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period for a note byte (+ the offsets the caller added): table entry (note - base note) * 2 from the period
 // table, with the driver's 16-bit arithmetic.
 
@@ -835,7 +785,6 @@ static uint16_t period_for(const JdPlayer* p, const JdChannel* c, uint8_t note) 
     return rd16(&p->module, (int64_t)p->tables.period + offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // divs.w: 32-bit dividend by 16-bit divisor. The result is the quotient's low word; on overflow the dividend's.
 
 static int16_t divs_w(int32_t dividend, int16_t divisor) {
@@ -849,7 +798,6 @@ static int16_t divs_w(int32_t dividend, int16_t divisor) {
     return (int16_t)quotient;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The data of entry n of a table of words that hold the offset of their data, from the entry itself or (in some builds)
 // from the start of the table.
 
@@ -858,7 +806,6 @@ static uint32_t table_data(const JdModule* m, uint32_t table, uint8_t n, bool re
     return (uint32_t)((int64_t)(relative_to_table ? table : entry) + rd16s(m, entry));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Starts the pattern `number` of the track list: remembers where the track list goes on.
 
 static void start_pattern(const JdPlayer* p, JdChannel* c, uint32_t track_pos, uint8_t number, bool at_song_start) {
@@ -867,7 +814,6 @@ static void start_pattern(const JdPlayer* p, JdChannel* c, uint32_t track_pos, u
     c->pattern_pos = table_data(&p->module, p->tables.patterns, number, relative);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer patches the driver's track-list end (not the one at song start) to count the voices that got there:
 // when every voice of the subsong has, the song has played through (it looped, or all voices stopped) and the count
 // starts again.
@@ -880,7 +826,6 @@ static void track_end_reached(JdPlayer* p, int voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Reads the track list from `pos` up to the next pattern number and starts that pattern. False when the list ends
 // (end command without a loop point). `at_song_start` is the init routine's copy of the loop, which has the
 // pattern-byte command of the HH build and does not count the end.
@@ -924,7 +869,6 @@ static bool track_read(JdPlayer* p, JdChannel* c, int voice, uint32_t pos, bool 
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The end of a pattern (command 0x80): the pattern loops, repeats, or the track list goes on. False when the channel
 // ends.
 
@@ -944,7 +888,6 @@ static bool pattern_end(JdPlayer* p, JdChannel* c, int voice) {
     return track_read(p, c, voice, c->track_pos, false);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Command 0x90: loads instrument `n` into the channel.
 
 static void select_instrument(const JdPlayer* p, JdChannel* c, uint8_t n) {
@@ -956,7 +899,6 @@ static void select_instrument(const JdPlayer* p, JdChannel* c, uint8_t n) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What a pattern command asks the reader to do next.
 
 typedef enum CommandResult {
@@ -965,7 +907,6 @@ typedef enum CommandResult {
     CommandResult_End,      // the channel stopped
 } CommandResult;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Command byte `cmd` (0x80 + n) of the pattern stream; `pos` is the stream position after the command.
 
 static CommandResult run_command(JdPlayer* p, JdChannel* c, int voice, int cmd, uint32_t* pos) {
@@ -1039,7 +980,6 @@ static CommandResult run_command(JdPlayer* p, JdChannel* c, int voice, int cmd, 
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note byte: sets the period and the effects, and restarts the channel's DMA at the end of the tick.
 
 static void start_note(JdPlayer* p, JdChannel* c, uint8_t note_byte) {
@@ -1084,7 +1024,6 @@ static void start_note(JdPlayer* p, JdChannel* c, uint8_t note_byte) {
     p->dma_restart |= c->dma_bit;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The wait that follows a note or rest: the fixed length or the next stream byte.
 
 static void set_wait(const JdPlayer* p, JdChannel* c, uint32_t* pos) {
@@ -1096,7 +1035,6 @@ static void set_wait(const JdPlayer* p, JdChannel* c, uint32_t* pos) {
     c->pattern_pos = *pos;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Reads the pattern stream until a note or the rest command sets the next wait.
 
 static bool read_pattern(JdPlayer* p, JdChannel* c, int voice) {
@@ -1125,7 +1063,6 @@ static bool read_pattern(JdPlayer* p, JdChannel* c, int voice) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What changes the period in the ticks between notes, and the volume envelope.
 
 static void effects_tick(const JdPlayer* p, JdChannel* c) {
@@ -1228,7 +1165,6 @@ static void effects_tick(const JdPlayer* p, JdChannel* c) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One channel's tick. Returns the new flag word (0 when the channel ended).
 
 static uint16_t channel_tick(JdPlayer* p, JdChannel* c, int voice) {
@@ -1248,7 +1184,6 @@ static uint16_t channel_tick(JdPlayer* p, JdChannel* c, int voice) {
     return c->flags;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The end of the tick: restarts the DMA of the channels that started a note, then writes volume, period and the
 // sample or repeat registers of every channel.
 
@@ -1286,7 +1221,6 @@ static void write_hardware(JdPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The play routine: one tick.
 
 static void driver_tick(JdPlayer* p) {
@@ -1309,7 +1243,6 @@ static void driver_tick(JdPlayer* p) {
     write_hardware(p);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The stop routine the setup runs: every channel idle, period 1, volume 0.
 
 static void stop_all(JdPlayer* p) {
@@ -1322,7 +1255,6 @@ static void stop_all(JdPlayer* p) {
     p->activity = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The init routine: starts the music of subsong `number` (1-based).
 
 static void song_start(JdPlayer* p, int number) {
@@ -1361,9 +1293,7 @@ static void song_start(JdPlayer* p, int number) {
     p->activity |= Flag_Music;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Public API
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 JdPlayer* jd_create(const uint8_t* data, size_t size) {
     JdPlayer* p = calloc(1, sizeof(JdPlayer));
@@ -1387,8 +1317,6 @@ JdPlayer* jd_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void jd_destroy(JdPlayer* player) {
     if (player == nullptr) {
         return;
@@ -1398,19 +1326,13 @@ void jd_destroy(JdPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int jd_subsong_count(const JdPlayer* player) {
     return player->tables.subsongs;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int jd_voice_count(const JdPlayer* player) {
     return player->version.voices;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool jd_start(JdPlayer* player, int subsong, NuadeVoices* voices) {
     if (voices == nullptr || subsong < 0 || subsong >= player->tables.subsongs) {
@@ -1436,8 +1358,6 @@ bool jd_start(JdPlayer* player, int subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 JdTickResult jd_tick(JdPlayer* player, NuadeVoices* voices) {
     player->looped = false;
     driver_tick(player);
@@ -1448,8 +1368,6 @@ JdTickResult jd_tick(JdPlayer* player, NuadeVoices* voices) {
     }
     return (JdTickResult) { .looped = player->looped, .ended = !any };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 JdVoiceState jd_voice_state(const JdPlayer* player, int voice) {
     if (voice < 0 || voice >= player->version.voices) {

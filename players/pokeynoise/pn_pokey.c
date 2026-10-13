@@ -82,7 +82,6 @@ typedef enum PnPolySet {
     PnPolySet_Fifth,  // remainders 5 and 10
 } PnPolySet;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The 32 bit multiplication of the original: a product that does not fit is 0.
 
 static uint32_t multiply(uint32_t value, uint32_t factor) {
@@ -90,7 +89,6 @@ static uint32_t multiply(uint32_t value, uint32_t factor) {
     return product > UINT32_MAX ? 0 : (uint32_t)product;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A division by a 16 bit divisor that keeps a 16 bit quotient. A quotient that does not fit leaves the low word of the
 // dividend (the 68000 does not store it and the original masks the register).
 
@@ -99,19 +97,14 @@ static uint32_t divide_word(uint32_t value, uint32_t divisor) {
     return quotient > 0xFFFFu ? (value & 0xFFFFu) : quotient;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static PnSound sound_of(uint32_t wave, uint16_t words, uint32_t period, uint32_t volume) {
     return (PnSound) { .wave = wave, .length_words = words, .period = (uint16_t)period, .volume = (uint8_t)volume };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static PnSound silence(void) {
     return sound_of(PN_SILENT_WAVE, PN_SILENT_WORDS, PN_SILENT_PERIOD, 0);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The scaling steps the sounds share. `period` is in 64 kHz clocks (8.8 fixed point); the factor brings it to Paula's
 // period.
 
@@ -119,32 +112,24 @@ static uint32_t scale_to_paula(uint32_t period, uint32_t factor) {
     return multiply(period, factor) >> 8;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t clamp_high(uint32_t period) {
     return period >= 0x10000u ? PN_PERIOD_MAX : period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The two forms of the lower clamp: one compares the whole register, one only its low word.
 
 static uint32_t clamp_low(uint32_t period) {
     return period < PN_PERIOD_MIN ? PN_PERIOD_MIN : period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t clamp_low_word(uint32_t period) {
     return (uint16_t)period < PN_PERIOD_MIN ? PN_PERIOD_MIN : period;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool bit_set(uint8_t value, uint8_t mask) {
     return (value & mask) != 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's decoding of AUDCTL into the clock and the 16 bit link of one channel. Channels 1 and 3 take the
 // 1.79 MHz clock from their own bit (16 bit when linked), channels 2 and 4 from the bit of the channel before them and
 // run 16 bit then. The 9 bit polynomial bit selects the 1.79 MHz clock for every channel and links it.
@@ -171,7 +156,6 @@ static PnChannelConfig channel_config(uint8_t audctl, unsigned channel) {
     return config;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The divisor of a channel as 8.8 fixed point: AUDF, or the pair of this channel's AUDF (high) and the one before it.
 
 static uint32_t channel_divisor(const PnMachine* machine, unsigned channel, bool linked) {
@@ -182,7 +166,6 @@ static uint32_t channel_divisor(const PnMachine* machine, unsigned channel, bool
     return (uint32_t)machine->ram[audf] << 8;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period of the plain tones and noises (5/17 bit, 5 bit, 17 bit and pure): the divisor in 64 kHz clocks. The 1.79
 // MHz clocks add 7 and 4 to the 8.8 number, not to the whole divisor.
 
@@ -199,7 +182,6 @@ static uint32_t plain_period(uint32_t divisor, PnClock clock) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The timing of the 4 bit and 5/4 bit noises: the same period, and the divisor in whole master clocks, the number that
 // the polynomial counters repeat on.
 
@@ -221,7 +203,6 @@ static PnTiming polynomial_timing(uint32_t divisor, PnClock clock) {
     return (PnTiming) { .period = scaled / 0x1C, .clocks = scaled >> 8 };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The memo of a channel in the 6502 memory. Returns whether the pitch or the family differs from the last sound, and
 // updates the memo.
 
@@ -240,20 +221,16 @@ static bool update_memo(PnMachine* machine, unsigned channel, PnFamily family, u
     return retrigger;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A changed note of the polynomial noises is dropped now and then.
 
 static bool dropped(PnMachine* machine, bool retrigger) {
     return retrigger && pn_machine_random_byte(machine) < PN_DROP_THRESHOLD;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t paula_volume(uint32_t volume) {
     return (volume * PN_VOLUME_SCALE) >> 8;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // 17 bit polynomial: one waveform for every period.
 
 static PnSound noise_17(PnMachine* machine, unsigned channel, PnChannelConfig config, uint32_t divisor, uint32_t volume,
@@ -267,7 +244,6 @@ static PnSound noise_17(PnMachine* machine, unsigned channel, PnChannelConfig co
     return sound_of(0x778C, 0x23BF, period, paula_volume(volume));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // 5 bit polynomial mixed with the 17 bit one.
 
 static PnSound noise_5_17(PnMachine* machine, unsigned channel, PnChannelConfig config, uint32_t divisor,
@@ -278,7 +254,6 @@ static PnSound noise_5_17(PnMachine* machine, unsigned channel, PnChannelConfig 
     return sound_of(0x277E, 0x2807, paula_period, paula_volume(volume));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // 5 bit polynomial: four waveforms by period range.
 
 static PnSound noise_5(PnMachine* machine, unsigned channel, PnChannelConfig config, uint32_t divisor,
@@ -298,7 +273,6 @@ static PnSound noise_5(PnMachine* machine, unsigned channel, PnChannelConfig con
     return sound_of(0xEA, 0x5D, scale_to_paula(clamp_high((period * 2) / 0xD), 0x8C), level);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Pure tone: four waveforms by period range, the first is the shortest.
 
 static PnSound pure_tone(PnMachine* machine, unsigned channel, PnChannelConfig config, uint32_t divisor,
@@ -321,7 +295,6 @@ static PnSound pure_tone(PnMachine* machine, unsigned channel, PnChannelConfig c
     return sound_of(0x16, 0xD, scale_to_paula(clamp_high((period * 2) / 0x41), 0x8C), level);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The waveform set of the 4 bit counter is picked by the remainder of the divisor in clocks modulo 15 (its length).
 
 static PnPolySet poly4_set(uint32_t clocks) {
@@ -338,7 +311,6 @@ static PnPolySet poly4_set(uint32_t clocks) {
     return PnPolySet_Common;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // 4 bit polynomial.
 
 static PnSound noise_4(PnMachine* machine, unsigned channel, PnChannelConfig config, uint32_t divisor,
@@ -386,7 +358,6 @@ static PnSound noise_4(PnMachine* machine, unsigned channel, PnChannelConfig con
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // 5 bit polynomial mixed with the 4 bit one: the divisor first decides whether the 5 bit counter (31) lines up.
 
 static PnSound noise_5_4(PnMachine* machine, unsigned channel, PnChannelConfig config, uint32_t divisor,
@@ -437,8 +408,6 @@ static PnSound noise_5_4(PnMachine* machine, unsigned channel, PnChannelConfig c
             return sound_of(0x1000, 0x9B, clamp_high(scale_to_paula(period / 5, 0x8C)), level);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PnSound pn_pokey_sound(PnMachine* machine, unsigned channel, bool rh_correction) {
     const uint8_t audctl = machine->ram[PN_POKEY_BASE + PN_POKEY_AUDCTL];

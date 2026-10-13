@@ -12,8 +12,6 @@
 #define SP_SPECIAL_ROWS 0x20
 #define SP_SPECIAL_SUBSONGS 7
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sp_song_layout(const uint8_t* data, size_t size, SpLayout* layout) {
     if (size < SP_NOTES_OFFSET + 4 || memcmp(data, SP_MAGIC, SP_MAGIC_SIZE) != 0) {
         return false;
@@ -30,13 +28,9 @@ bool sp_song_layout(const uint8_t* data, size_t size, SpLayout* layout) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sp_set_has_magic(const SpMemory* set) {
     return set->size >= SP_MAGIC_SIZE && memcmp(set->data, SP_MAGIC, SP_MAGIC_SIZE) == 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SpPosition sp_position(const SpMemory* song, unsigned index) {
     const uint32_t at = SP_POSITIONS_OFFSET + 4u * index;
@@ -46,8 +40,6 @@ SpPosition sp_position(const SpMemory* song, unsigned index) {
                           .voices = sp_u8(song, at + 3) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 SpCell sp_cell(const SpMemory* song, unsigned pattern, unsigned column) {
     const uint32_t at = SP_PATTERN_LINES_OFFSET + SP_PATTERN_LINE_SIZE * pattern + 4u * column;
     return (SpCell) { .notes = sp_u8(song, at),
@@ -56,26 +48,18 @@ SpCell sp_cell(const SpMemory* song, unsigned pattern, unsigned column) {
                       .tempo = sp_u8(song, at + 3) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 unsigned sp_event_instrument(uint8_t event_instrument, int8_t instrument_shift) {
     const int instrument = (uint8_t)(event_instrument - 1) + instrument_shift;
     return instrument < 0 ? 0 : (unsigned)instrument;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int sp_event_note(uint8_t note, int8_t instrument_note_offset, int8_t note_shift) {
     return (uint8_t)(note + instrument_note_offset) + note_shift;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sp_check_note_reach(int8_t note_shift, unsigned arpeggio_reach) {
     return note_shift >= 0 ? (unsigned)note_shift + arpeggio_reach < SP_PERIOD_COUNT : arpeggio_reach < SP_PERIOD_COUNT;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sp_check_spend(SpCheck* check, uint32_t amount) {
     if (amount > check->work_left) {
@@ -86,7 +70,6 @@ bool sp_check_spend(SpCheck* check, uint32_t amount) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The states of the walk: a position with the loop point it was reached with (one past the last position for none).
 
 typedef struct SpWalk {
@@ -95,13 +78,9 @@ typedef struct SpWalk {
     bool visited[SP_POSITION_COUNT][SP_POSITION_COUNT + 1];
 } SpWalk;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static unsigned sp_walk_loop_index(unsigned loop_point) {
     return loop_point < SP_POSITION_COUNT ? loop_point : SP_POSITION_COUNT;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void sp_walk_push(SpWalk* walk, unsigned position, unsigned loop_point) {
     const unsigned loop = sp_walk_loop_index(loop_point);
@@ -111,7 +90,6 @@ static void sp_walk_push(SpWalk* walk, unsigned position, unsigned loop_point) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Walks the positions all subsongs reach, once each, calling `check` for each state. The successors of a position:
 // the next one, or the loop point, or none when the control ends the song.
 
@@ -149,8 +127,6 @@ static bool sp_walk_positions(SpCheck* check, const SpRules* rules, const unsign
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sp_validate(const SpRules* rules, const SpMemory* song, const SpMemory* set, int subsong_count) {
     if (subsong_count > rules->max_subsongs) {
         return false;
@@ -170,15 +146,12 @@ bool sp_validate(const SpRules* rules, const SpMemory* song, const SpMemory* set
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer counts the songs two ways and takes the larger: the positions that start a subsong (control 0, voices
 // 0xF0) and the positions that end one (a stop or a loop), over the leading run of non-empty positions.
 
 static bool sp_position_empty(const SpPosition* position) {
     return position->rows == 0 && position->pattern == 0 && position->control == 0 && position->voices == 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int sp_count_subsongs(const SpMemory* song) {
     int starts = 0;

@@ -17,7 +17,6 @@
 #define ROW_BYTES 4
 #define END_MARK 0xff
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module's records
 
 typedef struct StepEntry {
@@ -40,13 +39,9 @@ typedef struct Instrument {
     uint16_t length_words;
 } Instrument;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static StepEntry read_step_entry(const DzModule* m, uint32_t offset) {
     return (StepEntry) { .pattern = dzm_u8(m, offset), .transpose = dzm_u8(m, offset + 1) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static Row read_row(const DzModule* m, const DzLayout* layout, uint32_t offset) {
     const uint8_t note = dzm_u8(m, offset + 1);
@@ -62,7 +57,6 @@ static Row read_row(const DzModule* m, const DzLayout* layout, uint32_t offset) 
     };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An instrument entry is 8 bytes (sample offset long, a word the replayer does not read, length in words) or, in
 // version S, 4 bytes (sample offset word, length in words).
 static Instrument read_instrument(const DzModule* m, const DzLayout* layout, uint8_t index) {
@@ -73,8 +67,6 @@ static Instrument read_instrument(const DzModule* m, const DzLayout* layout, uin
     return (Instrument) { .sample_offset = dzm_u16(m, entry), .length_words = dzm_u16(m, entry + 2) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool dz_probe(const uint8_t* data, size_t size) {
     if (data == nullptr || size > 0x7fffffffu) {
         return false;
@@ -83,8 +75,6 @@ bool dz_probe(const uint8_t* data, size_t size) {
     DzLayout layout;
     return dz_locate(&m, &layout);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DzPlayer* dz_create(const uint8_t* data, size_t size) {
     if (data == nullptr || size < 16 || size > 0x7fffffffu) {
@@ -107,16 +97,12 @@ DzPlayer* dz_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void dz_destroy(DzPlayer* player) {
     if (player != nullptr) {
         free(player->module.data);
         free(player);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 char dz_version(const DzPlayer* player) {
     switch (player->layout.version) {
@@ -129,13 +115,10 @@ char dz_version(const DzPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int dz_subsong_count(const DzPlayer* player) {
     return player->layout.song_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period of a row: the table entry of note + transpose; with a slide, a note with bit 7 set starts from the
 // voice's last period and moves by its other bits, up (a bigger period) when bit 7 of the row's flags is set.
 static uint16_t row_period(const DzPlayer* p, DzVoice* v, const Row* row, uint8_t transpose) {
@@ -152,7 +135,6 @@ static uint16_t row_period(const DzPlayer* p, DzVoice* v, const Row* row, uint8_
     return period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The registers of one voice from its row. AUDxVOL is 7 bits, values above 64 play as 64.
 static void set_voice(DzPlayer* p, int index, const StepEntry* entry) {
     DzVoice* v = &p->voices[index];
@@ -169,7 +151,6 @@ static void set_voice(DzPlayer* p, int index, const StepEntry* entry) {
     v->stops = row.stops;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Sets the registers of every voice from the current list step and row, then switches the DMA of all voices on. A
 // voice that is still playing is not restarted: it takes the new sample at its next repeat.
 static void set_row(DzPlayer* p) {
@@ -183,7 +164,6 @@ static void set_row(DzPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // To the next row. The pattern ends where pattern 0 has the end mark; then the next list step, and at the end mark of
 // the list the end flag is set; a song that does not stop continues with its loop list, a one-shot song sets no
 // registers in that tick.
@@ -192,8 +172,6 @@ typedef enum Advance {
     Advance_Wrapped, // the list ran out and the song continues with its loop list
     Advance_RanOut,  // the list ran out and the song sets nothing
 } Advance;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static Advance advance_row(DzPlayer* p) {
     const uint32_t step_bytes = (uint32_t)p->song.voices * STEP_BYTES;
@@ -214,8 +192,6 @@ static Advance advance_row(DzPlayer* p) {
     p->list_pos = p->song.loop_list;
     return Advance_Wrapped;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool dz_start(DzPlayer* player, int subsong, NuadeVoices* voices) {
     if (player == nullptr || voices == nullptr || subsong < 0 || subsong >= player->layout.song_count) {
@@ -244,8 +220,6 @@ bool dz_start(DzPlayer* player, int subsong, NuadeVoices* voices) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DzTickResult dz_tick(DzPlayer* player, NuadeVoices* voices) {
     DzTickResult result = { 0 };
@@ -280,8 +254,6 @@ DzTickResult dz_tick(DzPlayer* player, NuadeVoices* voices) {
     }
     return result;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DzVoiceState dz_voice_state(const DzPlayer* player, int voice) {
     const DzVoice* v = &player->voices[voice];

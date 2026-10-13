@@ -7,13 +7,9 @@
 #include <nuade/players/musicmaker.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe musicmaker_probe(const uint8_t* data, size_t size, const char* filename) {
     return mm_probe(data, size, filename) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult musicmaker_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -34,34 +30,24 @@ static NuadePlayerOpenResult musicmaker_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void musicmaker_close(void* user_data) {
     mm_destroy((MmPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool musicmaker_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return subsong == 0 && mm_start((MmPlayer*)user_data, voices);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult musicmaker_tick(void* user_data, NuadeVoices* voices) {
     const MmTickResult tick = mm_tick((MmPlayer*)user_data, voices);
     return (NuadeTickResult) { .length = tick.length, .flags = tick.looped ? NuadeTick_Looped : NuadeTick_None };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void musicmaker_metadata(void* user_data, const NuadeMetadataSink* sink) {
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "MusicMaker V8");
     sink->set_tag(sink->ctx, NUADE_META_TITLE, mm_title((const MmPlayer*)user_data));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // One display voice per track (NuadeSongInfo.display_voices).
 static uint32_t musicmaker_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
@@ -74,14 +60,10 @@ static uint32_t musicmaker_voice_info(void* user_data, NuadeVoiceInfo* out, uint
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t musicmaker_grid_ticks(void* user_data, uint32_t subsong) {
     (void)subsong;
     return mm_grid_ticks((const MmPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_musicmaker = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -98,8 +80,6 @@ const NuadePlayer nuade_player_musicmaker = {
     .voice_info = musicmaker_voice_info,
     .grid_ticks = musicmaker_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MmPlayer* mm_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_musicmaker) {

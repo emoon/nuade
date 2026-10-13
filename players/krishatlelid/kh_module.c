@@ -69,7 +69,6 @@ typedef struct KhExecutable {
     uint32_t type[KH_MAX_HUNKS];
 } KhExecutable;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Memory
 
 static bool memory_has(const KhMemory* memory, uint32_t address, uint32_t bytes) {
@@ -77,31 +76,21 @@ static bool memory_has(const KhMemory* memory, uint32_t address, uint32_t bytes)
     return address >= KH_LOAD_BASE && offset + bytes <= memory->size;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t kh_u8(const KhMemory* memory, uint32_t address) {
     return memory_has(memory, address, 1) ? memory->bytes[address - KH_LOAD_BASE] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t kh_u16(const KhMemory* memory, uint32_t address) {
     return (uint16_t)((kh_u8(memory, address) << 8) | kh_u8(memory, address + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int16_t kh_s16(const KhMemory* memory, uint32_t address) {
     return (int16_t)kh_u16(memory, address);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t kh_u32(const KhMemory* memory, uint32_t address) {
     return ((uint32_t)kh_u16(memory, address) << 16) | kh_u16(memory, address + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void kh_put_u16(KhMemory* memory, uint32_t address, uint16_t value) {
     if (memory_has(memory, address, 2)) {
@@ -110,20 +99,15 @@ void kh_put_u16(KhMemory* memory, uint32_t address, uint16_t value) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void kh_put_u32(KhMemory* memory, uint32_t address, uint32_t value) {
     kh_put_u16(memory, address, (uint16_t)(value >> 16));
     kh_put_u16(memory, address + 2, (uint16_t)value);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const int8_t* kh_chip_pointer(const KhMemory* memory, uint32_t address) {
     return memory_has(memory, address, 1) ? (const int8_t*)(memory->bytes + (address - KH_LOAD_BASE)) : nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Byte offsets of the fields of an instrument record and of a VHDR chunk
 
 typedef enum RecordField {
@@ -151,7 +135,6 @@ typedef enum VhdrField {
     VhdrField_Octaves = 0x0E,
 } VhdrField;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Records
 
 KhInstrument kh_instrument_read(const KhMemory* memory, uint32_t address) {
@@ -177,27 +160,19 @@ KhInstrument kh_instrument_read(const KhMemory* memory, uint32_t address) {
     return instrument;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void kh_instrument_write_vibrato_counter(KhMemory* memory, uint32_t address, uint16_t value) {
     kh_put_u16(memory, address + RecordField_VibratoCounter, value);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void kh_instrument_write_arpeggio_pos(KhMemory* memory, uint32_t address, uint16_t value) {
     kh_put_u16(memory, address + RecordField_ArpeggioPos, value);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void kh_instrument_write_iff(KhMemory* memory, uint32_t address, uint32_t vhdr, uint32_t body, uint16_t octave_span) {
     kh_put_u32(memory, address + RecordField_Vhdr, vhdr);
     kh_put_u32(memory, address + RecordField_Body, body);
     kh_put_u16(memory, address + RecordField_OctaveSpan, octave_span);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 KhVhdr kh_vhdr_read(const KhMemory* memory, uint32_t address) {
     return (KhVhdr) {
@@ -208,27 +183,20 @@ KhVhdr kh_vhdr_read(const KhMemory* memory, uint32_t address) {
     };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 KhListEntry kh_list_entry_read(const KhMemory* memory, uint32_t list, uint32_t offset) {
     // The driver adds the low word of the offset, sign extended
     const uint32_t address = list + (uint32_t)(int32_t)(int16_t)offset;
     return (KhListEntry) { .stream = kh_u32(memory, address), .transpose = kh_s16(memory, address + 4) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t kh_song_list(const KhMemory* memory, uint32_t song, uint32_t voice) {
     return kh_u32(memory, song + 4 * voice);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t kh_song_instrument(const KhMemory* memory, uint32_t song, uint32_t index) {
     return kh_u32(memory, song + KH_INSTRUMENT_TABLE + 4 * index);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Driver versions. The signature covers the whole code hunk with the offsets of the variables in it, and the data hunk
 // with the tables and the initial variables.
 
@@ -287,8 +255,6 @@ static const KhVariant kVariants[] = {
     },
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint64_t fnv1a(uint64_t hash, const uint8_t* bytes, size_t count) {
     for (size_t i = 0; i < count; i++) {
         hash = (hash ^ bytes[i]) * FNV_PRIME;
@@ -296,7 +262,6 @@ static uint64_t fnv1a(uint64_t hash, const uint8_t* bytes, size_t count) {
     return hash;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The version whose code and data hunk the executable has, or null.
 
 static const KhVariant* find_variant(const KhExecutable* executable, bool external) {
@@ -316,7 +281,6 @@ static const KhVariant* find_variant(const KhExecutable* executable, bool extern
     return nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Loading an executable
 
 typedef struct Reader {
@@ -325,8 +289,6 @@ typedef struct Reader {
     size_t at;
     bool failed;
 } Reader;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t read_long(Reader* reader) {
     if (reader->failed || reader->size - reader->at < 4) {
@@ -338,7 +300,6 @@ static uint32_t read_long(Reader* reader) {
     return value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Skip `count` longs.
 
 static void skip_longs(Reader* reader, uint64_t count) {
@@ -349,7 +310,6 @@ static void skip_longs(Reader* reader, uint64_t count) {
     reader->at += (size_t)count * 4;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The blocks after a hunk's body up to HUNK_END: relocations are applied, symbols and debug data are skipped.
 
 static bool read_hunk_tail(Reader* reader, KhExecutable* executable, uint32_t hunk) {
@@ -403,7 +363,6 @@ static bool read_hunk_tail(Reader* reader, KhExecutable* executable, uint32_t hu
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The three hunks the eagleplayer's check requires: code, code or data, bss. The memory is allocated from the table of
 // sizes in the header; a hunk's body may not be bigger than its entry.
 
@@ -462,7 +421,6 @@ static bool parse_executable(KhExecutable* executable, const uint8_t* data, size
     return executable->type[0] == HUNK_CODE && executable->type[1] != HUNK_BSS && executable->type[2] == HUNK_BSS;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // On failure nothing stays allocated.
 
 static bool load_executable(KhExecutable* executable, const uint8_t* data, size_t size) {
@@ -475,14 +433,11 @@ static bool load_executable(KhExecutable* executable, const uint8_t* data, size_
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void free_executable(KhExecutable* executable) {
     free(executable->memory.bytes);
     executable->memory.bytes = nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's Check2: the header of the executable, then the first instructions of the code hunk.
 
 KhLayout kh_layout(const uint8_t* data, size_t size) {
@@ -520,7 +475,6 @@ KhLayout kh_layout(const uint8_t* data, size_t size) {
     return KhLayout_None;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The first instruction address of the stub in the code hunk loads the song table: `lea table,a0; rts`.
 
 static uint32_t stub_table(const KhExecutable* executable, KhLayout layout) {
@@ -528,20 +482,14 @@ static uint32_t stub_table(const KhExecutable* executable, KhLayout layout) {
     return kh_u32(&executable->memory, executable->base[0] + operand);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t kh_driver_u8(const KhModule* module, uint32_t offset) {
     return offset < module->driver_data_bytes ? module->driver_data[offset] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t kh_driver_u32(const KhModule* module, uint32_t offset) {
     return ((uint32_t)kh_driver_u8(module, offset) << 24) | ((uint32_t)kh_driver_u8(module, offset + 1) << 16)
            | ((uint32_t)kh_driver_u8(module, offset + 2) << 8) | kh_driver_u8(module, offset + 3);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void keep_driver_data(KhModule* module, const KhExecutable* executable) {
     module->driver_data_bytes
@@ -549,7 +497,6 @@ static void keep_driver_data(KhModule* module, const KhExecutable* executable) {
     memcpy(module->driver_data, executable->body[1], module->driver_data_bytes);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The subsongs of a song with an external driver: the entries of the table of song addresses, up to the first song
 // (which follows the table) or a zero.
 
@@ -571,8 +518,6 @@ static uint32_t count_subsongs(const KhMemory* memory, uint32_t table) {
     return count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t kh_module_song(const KhModule* module, const KhMemory* memory, uint32_t subsong) {
     if (module->external) {
         return kh_u32(memory, module->song_table + 4 * subsong);
@@ -580,7 +525,6 @@ uint32_t kh_module_song(const KhModule* module, const KhMemory* memory, uint32_t
     return module->embedded_song;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The search for a chunk tag, a word at a time from `from`; the driver would run on through memory. Returns the
 // address of the chunk's data, 0 if the tag is not in the memory or the work budget is used up.
 
@@ -597,14 +541,10 @@ static uint32_t find_chunk(const KhMemory* memory, uint32_t from, uint32_t tag, 
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t kh_first_prepared_instrument(const KhVariant* variant) {
     // A song whose driver is not loaded yet is checked for the entries every version prepares
     return variant != nullptr && variant->prepare_first ? 0 : 1;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool kh_prepare_instruments(KhMemory* memory, uint32_t song, uint32_t first, uint64_t* budget) {
     // The instrument command takes a byte: a record further down the table is never used
@@ -634,7 +574,6 @@ bool kh_prepare_instruments(KhMemory* memory, uint32_t song, uint32_t first, uin
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The song start has to work for every subsong.
 
 static bool songs_prepare(const KhModule* module) {
@@ -653,7 +592,6 @@ static bool songs_prepare(const KhModule* module) {
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ExtLoad: the driver is the file "songplay" in the song's directory.
 
 static KhStatus load_driver(KhModule* module, const char* path, const NuadeIo* io) {
@@ -687,8 +625,6 @@ static KhStatus load_driver(KhModule* module, const char* path, const NuadeIo* i
     nuade_file_index_destroy(index);
     return status;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 KhStatus kh_module_load(KhModule* module, const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
     // io is null for the probe, which checks the song side of the file only
@@ -724,8 +660,6 @@ KhStatus kh_module_load(KhModule* module, const uint8_t* data, size_t size, cons
     }
     return status;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void kh_module_free(KhModule* module) {
     free(module->song.bytes);

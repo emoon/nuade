@@ -15,15 +15,11 @@ typedef struct QuadraComposerNuade {
     QcModule* module;
 } QuadraComposerNuade;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The FORM/EMODEMIC header with format version 1 is specific enough to be sure.
 static NuadeProbe quadracomposer_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return qc_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult quadracomposer_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -44,22 +40,16 @@ static NuadePlayerOpenResult quadracomposer_open(const NuadeSongSource* source) 
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void quadracomposer_close(void* user_data) {
     QuadraComposerNuade* nuade = (QuadraComposerNuade*)user_data;
     qc_destroy(nuade->module);
     free(nuade);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool quadracomposer_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return qc_start(((QuadraComposerNuade*)user_data)->module, (int)subsong, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult quadracomposer_tick(void* user_data, NuadeVoices* voices) {
     (void)voices;
@@ -67,8 +57,6 @@ static NuadeTickResult quadracomposer_tick(void* user_data, NuadeVoices* voices)
     const bool looped = qc_tick(module);
     return (NuadeTickResult) { .length = qc_tick_length(module), .flags = looped ? NuadeTick_Looped : NuadeTick_None };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void quadracomposer_metadata(void* user_data, const NuadeMetadataSink* sink) {
     const QcModule* module = ((const QuadraComposerNuade*)user_data)->module;
@@ -83,8 +71,6 @@ static void quadracomposer_metadata(void* user_data, const NuadeMetadataSink* si
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The pattern notes count from C-1 = 0; NuadeColumn_Note counts semitones from C-0.
 #define QUADRACOMPOSER_NOTE_BASE 12
@@ -103,8 +89,6 @@ static NuadePositionResult quadracomposer_position(void* user_data) {
                                                  .speed = (uint32_t)p.speed } };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t quadracomposer_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const QcModule* module = ((const QuadraComposerNuade*)user_data)->module;
     const QcPosition p = qc_position(module);
@@ -119,14 +103,10 @@ static uint32_t quadracomposer_voice_info(void* user_data, NuadeVoiceInfo* out, 
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t quadracomposer_pattern_rows(const QcModule* module, uint32_t order) {
     const int pattern = qc_position_pattern(module, (int)order);
     return pattern < 0 ? 0 : (uint32_t)qc_get_pattern_rows(module, pattern);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTrackerInfoResult quadracomposer_tracker_info(void* user_data, const NuadePosition* at) {
     const QcModule* module = ((const QuadraComposerNuade*)user_data)->module;
@@ -143,8 +123,6 @@ static NuadeTrackerInfoResult quadracomposer_tracker_info(void* user_data, const
                                                              { "fx", NuadeColumn_Hex, 1 },
                                                              { "arg", NuadeColumn_Hex, 2 } } } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePatternCell quadracomposer_cell(const void* ctx, uint32_t order, uint32_t channel, uint32_t row) {
     const QcModule* module = (const QcModule*)ctx;
@@ -165,16 +143,12 @@ static NuadePatternCell quadracomposer_cell(const void* ctx, uint32_t order, uin
     return cell;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t quadracomposer_tracker_cells(void* user_data, const NuadePosition* at, uint32_t channel, int32_t row_lo,
                                              int32_t row_hi, NuadePatternCell* out, uint32_t cap) {
     const QcModule* module = ((const QuadraComposerNuade*)user_data)->module;
     return nuade_tracker_fill(at, QC_CHANNELS, quadracomposer_pattern_rows(module, at->order), channel, row_lo, row_hi,
                               out, cap, quadracomposer_cell, module);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_quadracomposer = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -193,8 +167,6 @@ const NuadePlayer nuade_player_quadracomposer = {
     .tracker_info = quadracomposer_tracker_info,
     .tracker_cells = quadracomposer_tracker_cells,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 QcModule* qc_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_quadracomposer) {

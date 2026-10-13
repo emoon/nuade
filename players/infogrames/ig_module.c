@@ -48,37 +48,25 @@ static const uint16_t periods[] = {
     514,   514,   514,   514,   514,   514,   16448, 16448, 8192,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t ig_period(unsigned index) {
     return index < nuade_sizeof_array(periods) ? periods[index] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint8_t ig_u8(const IgFile* f, int32_t offset) {
     return offset >= 0 && (uint32_t)offset < f->size ? f->data[offset] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t ig_u16(const IgFile* f, int32_t offset) {
     return (uint16_t)(ig_u8(f, offset) << 8 | ig_u8(f, offset + 1));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int16_t ig_s16(const IgFile* f, int32_t offset) {
     return (int16_t)ig_u16(f, offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t ig_u32(const IgFile* f, int32_t offset) {
     return (uint32_t)ig_u16(f, offset) << 16 | ig_u16(f, offset + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 IgSongHeader ig_read_song_header(const IgFile* song) {
     const int32_t song_count = ig_u16(song, 0) / 2;
@@ -93,15 +81,11 @@ IgSongHeader ig_read_song_header(const IgFile* song) {
     return h;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 IgEnvelopeRecord ig_read_envelope_record(const IgFile* song, int32_t table, unsigned index) {
     const int32_t at = table + (int32_t)(index * IG_ENVELOPE_RECORD_SIZE);
     const uint8_t first = ig_u8(song, at);
     return (IgEnvelopeRecord) { .loops = (first & 0x80) != 0, .loop_step = (int8_t)(first & 0x7F), .segments = at + 1 };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 IgEnvelopeSegment ig_read_envelope_segment(const IgFile* song, int32_t segments, unsigned index) {
     const int32_t at = segments + (int32_t)(index * SEGMENT_SIZE);
@@ -109,8 +93,6 @@ IgEnvelopeSegment ig_read_envelope_segment(const IgFile* song, int32_t segments,
                                  .delta = (int8_t)ig_u8(song, at + 1),
                                  .ticks = ig_u8(song, at + 2) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ig_read_sample(const IgFile* samples, unsigned index, IgSample* out) {
     const uint64_t at = IG_SAMPLE_HEADER_SIZE + (uint64_t)index * IG_SAMPLE_ENTRY_SIZE;
@@ -124,8 +106,6 @@ bool ig_read_sample(const IgFile* samples, unsigned index, IgSample* out) {
                         .repeat_length_words = ig_u16(samples, entry + 14) };
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ig_probe(const uint8_t* data, size_t size) {
     if (size < 2 || size > INT32_MAX) {
@@ -142,7 +122,6 @@ bool ig_probe(const uint8_t* data, size_t size) {
            && ig_u8(&song, envelope + 1) == ENVELOPE_CHECK_SECOND_BYTE;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sum of the song's longs; the last, partial one counts only the bytes that are in the file.
 
 uint32_t ig_song_tick_length(const uint8_t* data, size_t size) {
@@ -162,7 +141,6 @@ uint32_t ig_song_tick_length(const uint8_t* data, size_t size) {
     return DEFAULT_TIMER;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ExtLoad: the file name with a trailing ".dum" (any case) cut off, plus ".ins". When that file does not load, the same
 // with one more character cut off.
 
@@ -182,8 +160,6 @@ bool ig_sample_file_names(const char* song_name, char names[IG_CANDIDATES][IG_NA
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool load_samples(IgFile* samples, const char* path, const NuadeIo* io) {
     char dir[1024] = { 0 };
@@ -218,8 +194,6 @@ static bool load_samples(IgFile* samples, const char* path, const NuadeIo* io) {
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 IgCreateResult ig_create(const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
     if (!ig_probe(data, size)) {
         return (IgCreateResult) { .status = IgStatus_InvalidData };
@@ -243,8 +217,6 @@ IgCreateResult ig_create(const uint8_t* data, size_t size, const char* path, con
     return (IgCreateResult) { .player = p, .status = IgStatus_Ok };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void ig_destroy(IgPlayer* player) {
     if (player == nullptr) {
         return;
@@ -253,8 +225,6 @@ void ig_destroy(IgPlayer* player) {
     free(player->samples.data);
     free(player);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t ig_tick_length(const IgPlayer* player) {
     return player->tick_length;

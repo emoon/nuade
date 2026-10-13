@@ -8,15 +8,11 @@
 #include <nuade/players/ronklaren.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The hunk header followed by the module mark is specific enough to be sure.
 static NuadeProbe ronklaren_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return rk_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult ronklaren_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -34,20 +30,14 @@ static NuadePlayerOpenResult ronklaren_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void ronklaren_close(void* user_data) {
     rk_destroy((RkModule*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool ronklaren_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return rk_start((RkModule*)user_data, (int)subsong, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult ronklaren_tick(void* user_data, NuadeVoices* voices) {
     (void)voices;
@@ -56,14 +46,10 @@ static NuadeTickResult ronklaren_tick(void* user_data, NuadeVoices* voices) {
                                .flags = rk_tick(module) ? NuadeTick_Looped : NuadeTick_None };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void ronklaren_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Ron Klaren");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t ronklaren_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const RkModule* module = (const RkModule*)user_data;
@@ -75,15 +61,11 @@ static uint32_t ronklaren_voice_info(void* user_data, NuadeVoiceInfo* out, uint3
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t ronklaren_grid_ticks(void* user_data, uint32_t subsong) {
     (void)user_data;
     (void)subsong;
     return RK_TICKS_PER_ROW;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_ronklaren = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -100,8 +82,6 @@ const NuadePlayer nuade_player_ronklaren = {
     .voice_info = ronklaren_voice_info,
     .grid_ticks = ronklaren_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RkModule* rk_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_ronklaren) {

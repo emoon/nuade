@@ -121,8 +121,6 @@ static const ScrBuild s_builds[] = {
 };
 // clang-format on
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool read_long_at(const uint8_t* data, size_t size, size_t at, uint32_t* value) {
     if (at > size || size - at < 4) {
         return false;
@@ -130,8 +128,6 @@ static bool read_long_at(const uint8_t* data, size_t size, size_t at, uint32_t* 
     *value = nuade_read_be32(data + at);
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The first test of the eagleplayer's Check2: the table's first words, and where the 128 words behind it start.
 static bool find_table_end(const uint8_t* data, size_t size, size_t* table_end) {
@@ -156,8 +152,6 @@ static bool find_table_end(const uint8_t* data, size_t size, size_t* table_end) 
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The rest of Check2: none of the 128 words behind the table is 0xFFFF, and none of them starts a long 0x7F7F7F7F.
 static bool check_table_end(const uint8_t* data, size_t size, size_t table_end) {
     for (size_t i = 0; i < TABLE_SCAN_WORDS; i++) {
@@ -171,8 +165,6 @@ static bool check_table_end(const uint8_t* data, size_t size, size_t table_end) 
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Where the code starts: behind the volume table when the period table is the long one and the volume table follows
 // it, else right behind the short period table. 0 when there is no such place.
@@ -193,8 +185,6 @@ static uint32_t code_start(const uint8_t* data, size_t size, size_t table_end) {
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The offset of the replayer's init, which InitPlayer finds as the first `lea` behind the table (or the first long of
 // zeros: no replayer).
 static bool find_init(const uint8_t* data, size_t size, size_t table_end, uint32_t* init) {
@@ -212,8 +202,6 @@ static bool find_init(const uint8_t* data, size_t size, size_t table_end, uint32
     }
     return false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // InitPlayer hooks the first voice's track list: the first `move.b (a0)+,d0; bmi.b` of the replayer is replaced by a
 // call to a stub, which it writes over the copyright text ("Sean Conran") behind the replayer as a jump to its own
@@ -241,8 +229,6 @@ static uint32_t find_text_patch(const uint8_t* data, size_t size, uint32_t init)
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void write_eagleplayer_stub(uint8_t* at) {
     at[0] = OP_JMP_ABSOLUTE >> 8;
     at[1] = OP_JMP_ABSOLUTE & 0xFF;
@@ -251,8 +237,6 @@ static void write_eagleplayer_stub(uint8_t* at) {
     at[4] = (EAGLEPLAYER_HOOK_ADDRESS >> 8) & 0xFF;
     at[5] = EAGLEPLAYER_HOOK_ADDRESS & 0xFF;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // InitPlayer turns every `rte` into `rts` from 0x1C2 on (the audio interrupt handlers become servers). The part that
 // lies in front of the code is data of the module: the period table's last words.
@@ -264,8 +248,6 @@ static void patch_return_from_interrupt(uint8_t* data, uint32_t code_start_offse
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const ScrBuild* find_build(uint64_t hash) {
     for (size_t i = 0; i < nuade_sizeof_array(s_builds); i++) {
         if (s_builds[i].code_hash == hash) {
@@ -274,8 +256,6 @@ static const ScrBuild* find_build(uint64_t hash) {
     }
     return nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ScrModule* scr_module_open(const uint8_t* data, size_t size) {
     size_t table_end = 0;
@@ -328,8 +308,6 @@ ScrModule* scr_module_open(const uint8_t* data, size_t size) {
     return module;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void scr_module_close(ScrModule* module) {
     if (module != nullptr) {
         free(module->data);
@@ -337,13 +315,9 @@ void scr_module_close(ScrModule* module) {
     free(module);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t scr_module_u8(const ScrModule* module, uint32_t offset) {
     return offset < module->size ? module->data[offset] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t scr_module_u16(const ScrModule* module, uint32_t offset) {
     return (uint16_t)((scr_module_u8(module, offset) << 8) | scr_module_u8(module, offset + 1));

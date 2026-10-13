@@ -16,7 +16,6 @@ static const uint16_t k_periods[PERIOD_TABLE_ENTRIES] = {
     269,  254,  240,  226,  214,  202,  190,  180,  170,  160,  151, 143, 135, 127, 120, 113,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Memory the Paula registers point into
 
 // The silent block the player allocates, just before the wave memory
@@ -24,7 +23,6 @@ static uint32_t silence_address(const ApsModule* m) {
     return m->wave_address - APS_SILENCE_DISTANCE;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxLC: the module or the player's chip allocations. Both have the Paula tail, so any AUDxLEN can play from there
 // (what runs past them plays zeros); an address that nothing holds is none.
 
@@ -39,14 +37,11 @@ static void set_lc(const ApsPlayer* p, ApsVoice* v, uint32_t address) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxLEN as written: 0 plays 65536 words.
 
 static void set_len(ApsVoice* v, uint16_t words) {
     v->paula.len_words = words;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The address of a sample in the sample data section, from its offset in words
 static uint32_t sample_address(const ApsModule* m, uint32_t words) {
@@ -87,14 +82,10 @@ static uint32_t sample_address(const ApsModule* m, uint32_t words) {
 #define OLD_VECTOR_FIRST 0x4806u // what exec's SetIntVector returned: four consecutive addresses
 #define CUSTOM_BASE 0xdff000u
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Byte `position` of the big-endian `value` of `size` bytes
 static uint8_t be_byte(uint32_t value, uint32_t size, uint32_t position) {
     return (uint8_t)(value >> (8 * (size - 1 - position)));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // One byte of interrupt node `node` at offset `at`: no links or data, the handler's name and code
 static uint8_t interrupt_node_byte(uint32_t node, uint32_t at) {
@@ -109,8 +100,6 @@ static uint8_t interrupt_node_byte(uint32_t node, uint32_t at) {
     }
     return 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // One byte of the data block at offset `at`
 static uint8_t data_block_byte(const ApsPlayer* p, uint32_t at) {
@@ -155,14 +144,11 @@ static uint8_t data_block_byte(const ApsPlayer* p, uint32_t at) {
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t aps_period_lookup(const ApsPlayer* p, uint32_t note) {
     const uint32_t at = DATA_TABLE + 2 * (p->period_base + note);
     return (uint16_t)((data_block_byte(p, at) << 8) | data_block_byte(p, at + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Audio interrupts
 
 // A chained sound's audio interrupt, at every block start: load the sound's record into the channel, then what comes
@@ -199,16 +185,12 @@ static void audio_interrupt(ApsPlayer* p, ApsVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void aps_service_interrupts(ApsPlayer* p, ApsVoice* v) {
     for (uint32_t n = 0; n < INTERRUPT_LIMIT && v->irq_pending && v->irq_enabled; n++) {
         v->irq_pending = false;
         audio_interrupt(p, v);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Block starts the mixer played since the last tick are the interrupts that fired in between.
 void aps_answer_wraps(ApsPlayer* p, ApsVoice* v, uint32_t index, const NuadeVoices* voices) {
@@ -221,7 +203,6 @@ void aps_answer_wraps(ApsPlayer* p, ApsVoice* v, uint32_t index, const NuadeVoic
     v->wraps_seen = state.wraps;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Envelopes
 
 // Envelope `number` of voice `voice`; numbers past 3 reach into the following voices' envelopes (the instrument's
@@ -231,15 +212,11 @@ static int16_t env_level_number(const ApsPlayer* p, uint32_t voice, uint32_t num
     return flat < APS_VOICES * APS_ENVELOPES ? p->voices[flat / APS_ENVELOPES].env[flat % APS_ENVELOPES].level : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void envelope_levels(const ApsVoice* v, int16_t levels[APS_ENVELOPES]) {
     for (uint32_t e = 0; e < APS_ENVELOPES; e++) {
         levels[e] = v->env[e].level;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Point an envelope at the start of a stream. The delta of the step before stays until the first step is over.
 static void start_envelope(const ApsModule* m, ApsEnvelope* e, uint16_t offset_words) {
@@ -247,8 +224,6 @@ static void start_envelope(const ApsModule* m, ApsEnvelope* e, uint16_t offset_w
     e->level = (int16_t)(aps_env_point(m, e->stream).target * 256);
     e->remaining = 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A note with the key flag restarts the envelopes. Envelope 3 only at the first row of a step and when the cell says
 // so.
@@ -264,8 +239,6 @@ void aps_restart_envelopes(const ApsPlayer* p, ApsVoice* v, const ApsCell* cell)
     v->fresh = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Envelope 0 switches to the release stream; its level carries on from where it is
 void aps_release_envelope(const ApsPlayer* p, ApsVoice* v) {
     const ApsModule* m = &p->module;
@@ -279,8 +252,6 @@ void aps_release_envelope(const ApsPlayer* p, ApsVoice* v) {
         e->delta = aps_divs16(span, (int16_t)e->remaining);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // One tick of envelope `index`. False when the jump budget ran out: the voice's update is abandoned.
 static bool advance_envelope(ApsPlayer* p, ApsVoice* v, const ApsInstrument* ins, uint32_t index) {
@@ -325,7 +296,6 @@ static bool advance_envelope(ApsPlayer* p, ApsVoice* v, const ApsInstrument* ins
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Voices
 
 // The wave the voice builds this tick, into its spare buffer; that buffer becomes the one Paula repeats
@@ -345,8 +315,6 @@ static void synth_tick(ApsPlayer* p, ApsVoice* v) {
     set_lc(p, v, p->module.wave_address + built);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The pitch and volume the instrument's modulation makes of the voice's period, volume and envelope levels
 static void write_pitch_and_volume(const ApsPlayer* p, ApsVoice* v, uint32_t index, const ApsInstrument* ins) {
     const uint8_t pitch_select = ins->pitch_select;
@@ -362,8 +330,6 @@ static void write_pitch_and_volume(const ApsPlayer* p, ApsVoice* v, uint32_t ind
     // The eagleplayer's volume hook masks to 7 bits (andi.w #$7f) before AUDxVOL
     v->paula.volume = (uint8_t)((((int32_t)(int16_t)gain * v->volume) >> 12) & 0x7f);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The envelopes, pitch and volume of one voice, and what the sample record does every tick
 static void update_voice(ApsPlayer* p, uint32_t index) {
@@ -394,8 +360,6 @@ static void update_voice(ApsPlayer* p, uint32_t index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The period of a voice that plays an arpeggio stream: bytes with bit 7 set jump by their low 7 bits (signed), the
 // others are note offsets. False when the jump budget ran out.
 static bool arpeggio_period(ApsPlayer* p, ApsVoice* v) {
@@ -416,8 +380,6 @@ static bool arpeggio_period(ApsPlayer* p, ApsVoice* v) {
     v->arpeggio++;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Without an arpeggio the period glides to the note's period by `slide` per tick
 static void glide_period(const ApsPlayer* p, ApsVoice* v) {
@@ -441,8 +403,6 @@ static void glide_period(const ApsPlayer* p, ApsVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The per-tick work of all voices. A voice whose channel volume is 0 only writes the volume.
 void aps_update_voices(ApsPlayer* p) {
     for (uint32_t i = 0; i < APS_VOICES; i++) {
@@ -459,8 +419,6 @@ void aps_update_voices(ApsPlayer* p) {
         update_voice(p, i);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Start the sample record's sound: synthesised and window samples go straight to DMA (their loop is the wave or the
 // window, moved every tick); the chained kinds wait for their audio interrupt, which only a key flag raises.

@@ -20,14 +20,10 @@
 #define FINE_TUNE_OCTAVE 5
 #define PAUSED_ARPEGGIO_PHASE 2
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool ea_probe(const uint8_t* data, size_t size) {
     EaModule module;
     return ea_module_parse(&module, data, size);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 EaPlayer* ea_create(const uint8_t* data, size_t size) {
     EaPlayer* player = calloc(1, sizeof(*player));
@@ -45,8 +41,6 @@ EaPlayer* ea_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void ea_destroy(EaPlayer* player) {
     if (player != nullptr) {
         free(player->bytes);
@@ -54,7 +48,6 @@ void ea_destroy(EaPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitSound: the first tick fetches the first position entry.
 
 bool ea_start(EaPlayer* player, NuadeVoices* voices) {
@@ -69,7 +62,6 @@ bool ea_start(EaPlayer* player, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period of a new note: the table entry plus the instrument's fine tune, shifted left by 5 - octave (mod 8).
 
 static uint16_t note_period(const EaInstrument* instrument, uint8_t note) {
@@ -78,7 +70,6 @@ static uint16_t note_period(const EaInstrument* instrument, uint8_t note) {
     return (uint16_t)(ea_period_entry(note) + fine);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Starts the note of one voice: DMA off, the sample, the volume and pitch tables, then period and DMA on.
 
 static void start_note(EaPlayer* player, uint32_t channel, EaCell cell) {
@@ -127,7 +118,6 @@ static void start_note(EaPlayer* player, uint32_t channel, EaCell cell) {
     voice->instrument = cell.instrument;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sequencer reached the end of the pattern: the next position table entry. False when the table does not lead to
 // a pattern.
 
@@ -145,7 +135,6 @@ static bool fetch_position(EaPlayer* player, bool* looped) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The next row; at the end of the pattern the next position entry. False when the position table is not followable.
 
 static bool sequencer_step(EaPlayer* player, bool* looped) {
@@ -159,7 +148,6 @@ static bool sequencer_step(EaPlayer* player, bool* looped) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The gate ran out: DMA off, the channel points at nothing and the voice goes idle.
 
 static void stop_voice(EaVoice* voice) {
@@ -168,7 +156,6 @@ static void stop_voice(EaVoice* voice) {
     voice->period = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One byte of the volume table: a volume, 0xFF to go back to the table start, anything else ends the table. Returns the
 // ticks until the next byte.
 
@@ -192,7 +179,6 @@ static uint8_t volume_table_step(const EaModule* module, EaVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The arpeggio cycles through the note, two offsets and a third; an offset of 0 sends the cycle back to phase 2.
 
 static void arpeggio_step(EaVoice* voice) {
@@ -207,7 +193,6 @@ static void arpeggio_step(EaVoice* voice) {
     voice->paula.period = ea_period_entry((offset + voice->note) & PERIOD_INDEX_MASK);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One pitch table step: a signed period delta (the period never drops below 100), or a value above 0x40 to start the
 // table again. Returns the ticks until the next step.
 
@@ -230,7 +215,6 @@ static uint8_t slide_step(const EaModule* module, EaVoice* voice) {
     return voice->slide_reload;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The per-tick work of one voice: gate, volume table, then arpeggio or pitch slide.
 
 static void voice_tick(const EaModule* module, EaVoice* voice) {
@@ -261,8 +245,6 @@ static void voice_tick(const EaModule* module, EaVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 EaTickResult ea_tick(EaPlayer* player, NuadeVoices* voices) {
     EaTickResult result = { 0 };
     if (player->ended) {
@@ -288,8 +270,6 @@ EaTickResult ea_tick(EaPlayer* player, NuadeVoices* voices) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t ea_grid_ticks(const EaPlayer* player) {
     for (uint32_t i = 0; i < player->module.position_count; i++) {
         const EaPositionEntry entry = ea_position_entry(&player->module, i);
@@ -299,8 +279,6 @@ uint32_t ea_grid_ticks(const EaPlayer* player) {
     }
     return 1;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 EaVoiceState ea_voice_state(const EaPlayer* player, int voice) {
     const EaVoice* v = &player->voices[voice];

@@ -29,7 +29,6 @@ static const uint16_t k_periods[64] = {
     0x00aa, 0x00a0, 0x0097, 0x008f, 0x0087, 0x007f, 0x0078, 0x0000, 0x203c, 0x0000, 0x0400, 0x2f08,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The voice record
 
 enum {
@@ -74,16 +73,12 @@ enum {
     PitchFlag_Hold = 0x80,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void set_pitch_flags(Voice* v, uint8_t flags) {
     v->pitch_no_portamento = (flags & PitchFlag_NoPortamento) != 0;
     v->pitch_add_slide = (flags & PitchFlag_AddSlide) != 0;
     v->pitch_absolute = (flags & PitchFlag_Absolute) != 0;
     v->pitch_hold = (flags & PitchFlag_Hold) != 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void unpack_record(Voice* v, const uint8_t* record) {
     const uint16_t track = nuade_read_be16(record + Record_TrackPosition);
@@ -122,8 +117,6 @@ static void unpack_record(Voice* v, const uint8_t* record) {
     v->detune = nuade_read_be16(record + Record_Detune);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void pack_record(const Voice* v, uint8_t* record) {
     memset(record, 0, JO_B_RECORD_SIZE);
     jor_put16(record, Record_Instrument, v->instrument);
@@ -161,21 +154,15 @@ static void pack_record(const Voice* v, uint8_t* record) {
     jor_put16(record, Record_Detune, v->detune);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The voice's track position as the record holds it: bit 15 is the step-now flag
 static void set_track(Voice* v, uint16_t word) {
     v->track_position = word & ~TRACK_STEP_NOW;
     v->step_now = (word & TRACK_STEP_NOW) != 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool track_active(const Voice* v) {
     return v->track_position != 0 || v->step_now;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A command stores its word (command byte, argument) into the record. Offsets past the record would land in the next
 // record or the module; no song does that.
@@ -189,28 +176,21 @@ static void poke_command(Voice* v, uint32_t offset, uint16_t command) {
     unpack_record(v, record);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Track commands store at the record offset (command byte - 0x2c)
 static void store_track_command(void* voice, uint16_t command) {
     poke_command(voice, (uint32_t)(command >> 8) - 0x2cu, command);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Pattern commands store at the record offset (command byte & 0x70)
 static void store_pattern_command(void* voice, uint16_t command) {
     poke_command(voice, (uint32_t)(command >> 8) & 0x70u, command);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Song start
 
 bool jo_b_detect(const JoModule* m) {
     return jom_u32(m, 4) == 0x00017fff;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A song record: the voices' track starts (1 = the voice is not started, its record stays as the file has it), the
 // tempo and the offsets of the voice records
@@ -220,8 +200,6 @@ typedef struct SongRecord {
     uint32_t records[JO_VOICES];
 } SongRecord;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static SongRecord read_song(const JoModule* m, int subsong) {
     const uint32_t at = 8 + 0x1a * (uint32_t)subsong;
     return (SongRecord) { .tracks = { jom_u16(m, at), jom_u16(m, at + 2), jom_u16(m, at + 4), jom_u16(m, at + 6) },
@@ -229,8 +207,6 @@ static SongRecord read_song(const JoModule* m, int subsong) {
                           .records = { jom_u32(m, at + 0xa), jom_u32(m, at + 0xe), jom_u32(m, at + 0x12),
                                        jom_u32(m, at + 0x16) } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void jo_b_start(JoB* b, const JoModule* m, int subsong) {
     *b = (JoB) { .counter = 1, .high_nibble = true };
@@ -254,7 +230,6 @@ void jo_b_start(JoB* b, const JoModule* m, int subsong) {
     jo_song_end_start(&b->end, has_track);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tick
 
 // The instrument record the voice plays: three program starts, the portamento wait and the volume
@@ -266,8 +241,6 @@ typedef struct Instrument {
     uint8_t volume;
 } Instrument;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static Instrument read_instrument(const JoModule* m, uint32_t offset) {
     return (Instrument) { .pitch_position = jom_u16(m, offset),
                           .volume_position = jom_u16(m, offset + 2),
@@ -275,8 +248,6 @@ static Instrument read_instrument(const JoModule* m, uint32_t offset) {
                           .portamento_wait = jom_u8(m, offset + 6),
                           .volume = jom_u8(m, offset + 7) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A row starts the instrument: the programs begin at the start of the instrument's data
 static void start_instrument(Voice* v, const JoModule* m) {
@@ -292,8 +263,6 @@ static void start_instrument(Voice* v, const JoModule* m) {
     v->portamento_position = instrument.portamento_position;
     v->portamento_wait = (int8_t)instrument.portamento_wait;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The row of the pattern the voice plays: field commands, then a note row, a rest row or a hold row
 static void step_pattern(JoB* b, const JoModule* m, Voice* v, uint32_t pattern) {
@@ -330,8 +299,6 @@ static void step_pattern(JoB* b, const JoModule* m, Voice* v, uint32_t pattern) 
     jo_pattern_advance(m, at, &v->pattern_position, &v->repeat, &v->track_position);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The row ran out: the track gives the next pattern
 static void step_track(JoB* b, const JoModule* m, Voice* v) {
     uint32_t at;
@@ -353,7 +320,6 @@ static void step_track(JoB* b, const JoModule* m, Voice* v) {
     step_pattern(b, m, v, jom_offset16(jom_u16(m, at)));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Between rows
 
 // An entry of the portamento program: how many ticks the value is added, and the value
@@ -362,14 +328,10 @@ typedef struct PortamentoEntry {
     int8_t value;
 } PortamentoEntry;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static PortamentoEntry read_portamento(const JoModule* m, uint32_t at) {
     const JoPair pair = jo_read_pair(m, at);
     return (PortamentoEntry) { .count = (int8_t)pair.first, .value = (int8_t)pair.second };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The pitch slide of the portamento program: the signed value added to the period this tick
 static int portamento(const JoModule* m, Voice* v) {
@@ -403,8 +365,6 @@ static int portamento(const JoModule* m, Voice* v) {
     return v->portamento_value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // An entry of the volume program: a level held for a number of ticks
 typedef struct VolumeEntry {
     int8_t wait;
@@ -412,15 +372,11 @@ typedef struct VolumeEntry {
     uint8_t level;
 } VolumeEntry;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static VolumeEntry read_volume_entry(const JoModule* m, uint32_t at) {
     const JoPair pair = jo_read_pair(m, at);
     return (
         VolumeEntry) { .wait = (int8_t)(pair.first & 0x7f), .hold = (pair.first & 0x80) != 0, .level = pair.second };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The volume program: a level per step. Returns the mixed volume.
 static uint8_t mix_volume(const JoModule* m, Voice* v, const Instrument* instrument) {
@@ -442,8 +398,6 @@ static uint8_t mix_volume(const JoModule* m, Voice* v, const Instrument* instrum
     return (uint8_t)level;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // An entry of the sample program: a block of the instrument's sample
 typedef struct SampleBlock {
     uint32_t start;
@@ -452,8 +406,6 @@ typedef struct SampleBlock {
     bool hold;       // the program stays on this block while a note plays
 } SampleBlock;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static SampleBlock read_block(const JoModule* m, uint32_t at) {
     const uint32_t head = jom_u32(m, at);
     return (SampleBlock) { .start = head & 0xffffff,
@@ -461,8 +413,6 @@ static SampleBlock read_block(const JoModule* m, uint32_t at) {
                            .wait = (int8_t)((head >> 24) & 0x0f),
                            .hold = (head & 0x80000000u) != 0 };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The sample program: blocks of the instrument's sample, one per step
 static void step_samples(const JoModule* m, Voice* v, NuadePaulaChannel* paula) {
@@ -478,8 +428,6 @@ static void step_samples(const JoModule* m, Voice* v, NuadePaulaChannel* paula) 
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // An entry of the pitch program: flags, a note, and the ticks to the next step
 typedef struct PitchEntry {
     int8_t wait;
@@ -487,14 +435,10 @@ typedef struct PitchEntry {
     uint8_t note;
 } PitchEntry;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static PitchEntry read_pitch_entry(const JoModule* m, uint32_t at) {
     const JoPair pair = jo_read_pair(m, at);
     return (PitchEntry) { .wait = (int8_t)(pair.first & 0x0f), .flags = pair.first, .note = pair.second };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The pitch program: a flags byte and a note per step
 static void step_pitch(const JoModule* m, Voice* v) {
@@ -515,8 +459,6 @@ static void step_pitch(const JoModule* m, Voice* v) {
         v->pitch_position += 2;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The voice plays on within its row: the programs advance and the registers are written
 static void play_voice(JoB* b, const JoModule* m, Voice* v) {
@@ -546,8 +488,6 @@ static void play_voice(JoB* b, const JoModule* m, Voice* v) {
     nuade_paula_channel_dma_on(paula);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 JoTickResult jo_b_tick(JoB* b, const JoModule* m, NuadeVoices* voices) {
     if (jo_counter_expired(&b->counter)) {
         b->counter = (int8_t)(b->high_nibble ? b->tempo >> 4 : b->tempo & 0x0f);
@@ -576,8 +516,6 @@ JoTickResult jo_b_tick(JoB* b, const JoModule* m, NuadeVoices* voices) {
     }
     return jo_song_end_result(&b->end, voices_play);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 JoVoiceState jo_b_voice_state(const JoB* b, int voice) {
     const JoBVoice* v = &b->voices[JO_VOICES - 1 - voice];

@@ -10,19 +10,13 @@
 #define PROOF_WORK 0x1000000u // steps of all the voices of all the subsongs together
 #define SNAPSHOTS 16          // track starts compared against
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool same_cursor(const SdrCursor* a, const SdrCursor* b) {
     return a->at == b->at && a->left == b->left && a->repeats == b->repeats && a->length == b->length;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool same_switch(const SdrSwitch* a, const SdrSwitch* b) {
     return a->target == b->target && a->delay == b->delay;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool same_instrument(const SdrInstrument* a, const SdrInstrument* b) {
     return a->muted == b->muted && a->fixed_pitch == b->fixed_pitch && a->detune == b->detune
@@ -32,7 +26,6 @@ static bool same_instrument(const SdrInstrument* a, const SdrInstrument* b) {
            && a->sample.loop_length_words == b->sample.loop_length_words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Everything that decides what the voice reads and does next (not the Paula registers it only writes).
 
 static bool same_state(const SdrVoice* a, const SdrVoice* b) {
@@ -49,7 +42,6 @@ static bool same_state(const SdrVoice* a, const SdrVoice* b) {
            && a->period == b->period && a->volume == b->volume;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Run one voice of one subsong until it ends or its state at the start of the track repeats. False when it cannot be
 // shown to, or the song asks for something the port does not model.
 
@@ -92,8 +84,6 @@ static bool prove_voice(const SdrPlayer* player, int subsong, int voice, uint64_
     free(seen);
     return proven;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sdr_prove_module(const SdrPlayer* player) {
     uint64_t budget = PROOF_WORK;

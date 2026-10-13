@@ -24,18 +24,13 @@
 #define EFFECT_ATTACK_VOLUME 0x52
 #define SILENCE_LENGTH_WORDS 5
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Ten bytes of zero: what a voice plays after its sample.
 static const int8_t k_silence[SILENCE_LENGTH_WORDS * 2] = { 0 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sa1_probe(const uint8_t* data, size_t size) {
     Sa1Module module;
     return sa1_module_parse(&module, data, size);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Sa1Player* sa1_create(const uint8_t* data, size_t size) {
     Sa1Player* p = calloc(1, sizeof(Sa1Player));
@@ -51,8 +46,6 @@ Sa1Player* sa1_create(const uint8_t* data, size_t size) {
     return nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void sa1_destroy(Sa1Player* player) {
     if (player != nullptr) {
         free(player->image);
@@ -60,7 +53,6 @@ void sa1_destroy(Sa1Player* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitSound: the variables are 0, the song starts at the header's start position.
 
 bool sa1_start(Sa1Player* player, NuadeVoices* voices) {
@@ -77,26 +69,19 @@ bool sa1_start(Sa1Player* player, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t sa1_grid_ticks(const Sa1Player* player) {
     return player->module.speed + 1;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Sa1VoiceState sa1_voice_state(const Sa1Player* player, int voice) {
     const Sa1Voice* v = &player->voices[voice];
     return (Sa1VoiceState) { .note = v->note, .instrument = v->instrument };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const int8_t* sample_data(const Sa1Player* p, uint32_t offset) {
     return (const int8_t*)p->module.data + offset;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note with an envelope starts at volume 0 and rises; with a high nibble of 0 it starts at 64 and only falls.
 
 static void start_envelope(Sa1Voice* voice, Sa1Cell cell) {
@@ -114,7 +99,6 @@ static void start_envelope(Sa1Voice* voice, Sa1Cell cell) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note: the channel's DMA is switched off, AUDxLC/AUDxLEN/AUDxPER are set for the DMA start the row ends with.
 
 static void start_note(Sa1Player* p, unsigned index, Sa1Cell cell) {
@@ -147,8 +131,6 @@ static void start_note(Sa1Player* p, unsigned index, Sa1Cell cell) {
     voice->instrument = (int)cell.third;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void start_effect(Sa1Voice* voice, Sa1Cell cell) {
     switch (cell.first) {
         case EFFECT_PERIOD_ADD:
@@ -167,7 +149,6 @@ static void start_effect(Sa1Voice* voice, Sa1Cell cell) {
     voice->effect_amount = (uint16_t)((cell.second << 8) | cell.third);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The channels of the notes of the row start together.
 
 static void start_dma(Sa1Player* p) {
@@ -179,7 +160,6 @@ static void start_dma(Sa1Player* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A voice without a sample to repeat plays silence after its sample; the repeat part of a sample with an envelope
 // follows the DMA start.
 
@@ -196,7 +176,6 @@ static void write_repeat(Sa1Player* p, unsigned index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // After the release the voice is silent: its envelope is off.
 
 static void run_release(Sa1Voice* voice) {
@@ -210,7 +189,6 @@ static void run_release(Sa1Voice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume rises by 8 every attack delay + 1 ticks; at 64 the release starts in the same tick.
 
 static void run_attack(Sa1Voice* voice) {
@@ -226,8 +204,6 @@ static void run_attack(Sa1Voice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_envelope(Sa1Voice* voice) {
     switch (voice->envelope) {
         case Sa1Envelope_Attack:
@@ -241,7 +217,6 @@ static void run_envelope(Sa1Voice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The slide writes the period every tick, of a voice that plays or not.
 
 static void run_effect(Sa1Player* p, unsigned index) {
@@ -266,8 +241,6 @@ static void run_effect(Sa1Player* p, unsigned index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void update_voices(Sa1Player* p) {
     for (unsigned i = 0; i < SA1_VOICES; i++) {
         write_repeat(p, i);
@@ -276,7 +249,6 @@ static void update_voices(Sa1Player* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // SongEnd: back to the start position, the effects are cleared.
 
 static void end_song(Sa1Player* p) {
@@ -287,7 +259,6 @@ static void end_song(Sa1Player* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The first tick of a row. Returns true when the song ended. A cell that ends the song skips the other voices (and the
 // effects of this tick); the song also ends when the position reaches the header's end position.
 
@@ -318,8 +289,6 @@ static bool run_row(Sa1Player* p) {
     }
     return ended;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Sa1TickResult sa1_tick(Sa1Player* player, NuadeVoices* voices) {
     Sa1TickResult result = { 0 };

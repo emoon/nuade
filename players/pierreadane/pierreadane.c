@@ -47,21 +47,16 @@ typedef struct ArpeggioWord {
     bool known;
 } ArpeggioWord;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Whether a - b is negative as a 16-bit value (wrapped): the slides clamp on it.
 
 static bool difference_negative(uint16_t a, uint16_t b) {
     return ((uint16_t)(a - b) & SIGN_BIT) != 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void voice_set_volume(PaVoice* v, uint8_t volume) {
     v->paula.volume = volume & VOLUME_MASK;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The DMA word: bit 15 and the voices that started a note in the last row (so far, while a row runs).
 
 static uint16_t player_dma_word(const PaPlayer* player) {
@@ -71,8 +66,6 @@ static uint16_t player_dma_word(const PaPlayer* player) {
     }
     return word;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static ArpeggioWord arpeggio_word(const PaPlayer* player, uint32_t index) {
     if (index < ARPEGGIO_PERIODS) {
@@ -96,7 +89,6 @@ static ArpeggioWord arpeggio_word(const PaPlayer* player, uint32_t index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An arpeggio tick: the word `steps` after the note's place in the table. The note is looked up from the front; the
 // lookup runs on through the variables when it is not in the table.
 
@@ -114,7 +106,6 @@ static void voice_arpeggio_step(PaPlayer* player, PaVoice* v, uint32_t steps) {
     v->paula.period = word.value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the replayer does on tick `tick` of a row. Ticks 0 to 6 are table entries of its jump; the later ones run into
 // the code behind the table, which decodes to the cases below. Tick 19 and later run an illegal instruction.
 
@@ -168,14 +159,10 @@ static void voice_arpeggio(PaPlayer* player, PaVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void voice_set_period(PaVoice* v, uint16_t period) {
     v->period = period;
     v->paula.period = period;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void voice_effect(PaPlayer* player, PaVoice* v) {
     const uint16_t amount = v->note.param & SLIDE_MASK;
@@ -212,7 +199,6 @@ static void voice_effect(PaPlayer* player, PaVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample of a note's instrument. A looped instrument starts at its loop: the repeat is the only part played.
 
 static void voice_load_instrument(PaPlayer* player, PaVoice* v) {
@@ -236,7 +222,6 @@ static void voice_load_instrument(PaPlayer* player, PaVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A new note stops the channel and writes its registers; the DMA starts at the end of the tick.
 
 static void voice_start_note(PaPlayer* player, PaVoice* v) {
@@ -255,7 +240,6 @@ static void voice_start_note(PaPlayer* player, PaVoice* v) {
     v->start_dma = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Next entry of the voice's track; the entry's row count carries over to the following entries.
 
 static void voice_read_entry(PaPlayer* player, PaVoice* v) {
@@ -272,13 +256,9 @@ static void voice_read_entry(PaPlayer* player, PaVoice* v) {
     v->rows_left = (int16_t)v->row_length;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool note_is_empty(const PaNote* note) {
     return note->instrument == 0 && note->effect == PaEffect_Arpeggio && note->param == 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void voice_row(PaPlayer* player, uint32_t index) {
     PaVoice* v = &player->voices[index];
@@ -297,7 +277,6 @@ static void voice_row(PaPlayer* player, uint32_t index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // After 64 rows every voice takes the next track of its list; the end of the first voice's list ends the song.
 
 static void tracks_advance(PaPlayer* player) {
@@ -324,8 +303,6 @@ static void tracks_advance(PaPlayer* player) {
     player->list_position = (uint16_t)(player->list_position + LIST_ENTRY_BYTES);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void row_tick(PaPlayer* player) {
     player->tick = 0;
     for (uint32_t i = 0; i < PA_VOICES; i++) {
@@ -340,8 +317,6 @@ static void row_tick(PaPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void effect_tick(PaPlayer* player) {
     for (uint32_t i = 0; i < PA_VOICES; i++) {
         PaVoice* v = &player->voices[i];
@@ -351,7 +326,6 @@ static void effect_tick(PaPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // After the raster wait: the DMA of the voices the last row started goes on (the replayer writes the DMA word on every
 // tick, a channel that runs is not affected). A note whose instrument has no loop then gets a repeat of one word,
 // the first word of its sample, which the sample set has cleared.
@@ -371,8 +345,6 @@ static void dma_enable(PaPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void tick_logic(PaPlayer* player) {
     player->tick = (uint16_t)(player->tick + 1);
     if (player->tick == player->speed) {
@@ -382,8 +354,6 @@ static void tick_logic(PaPlayer* player) {
     }
     dma_enable(player);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PaTickResult pa_tick(PaPlayer* player, NuadeVoices* voices) {
     tick_logic(player);
@@ -395,7 +365,6 @@ PaTickResult pa_tick(PaPlayer* player, NuadeVoices* voices) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitSound: the first track of every list, speed 3, and the channels stopped with volume 0.
 
 bool pa_start(PaPlayer* player, NuadeVoices* voices) {
@@ -415,8 +384,6 @@ bool pa_start(PaPlayer* player, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 PaVoiceState pa_voice_state(const PaPlayer* player, uint32_t voice) {
     if (voice >= PA_VOICES) {
         return (PaVoiceState) { .period = 0, .instrument = -1 };
@@ -425,7 +392,6 @@ PaVoiceState pa_voice_state(const PaPlayer* player, uint32_t voice) {
     return (PaVoiceState) { .period = v->base_period, .instrument = v->instrument != 0 ? v->instrument : -1 };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What decides whether the tick logic reaches something the model does not cover is song data only (rows, lists,
 // speeds, instrument numbers), never audio. The dry run of the logic therefore tells before the song plays. It ends
 // when the state at the song end repeats, or after DRY_RUN_TICKS.
@@ -451,8 +417,6 @@ typedef struct CycleState {
     VoiceCycleState voices[PA_VOICES];
 } CycleState;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static CycleState cycle_state(const PaPlayer* player) {
     CycleState state;
     memset(&state, 0, sizeof(state));
@@ -475,8 +439,6 @@ static CycleState cycle_state(const PaPlayer* player) {
     }
     return state;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool pa_song_modeled(const PaModule* module) {
     PaPlayer player;

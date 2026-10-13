@@ -74,21 +74,15 @@ typedef struct Builder {
     uint32_t at;
 } Builder;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void put_u16(Builder* b, uint16_t value) {
     dli_set16(b->image, b->at, value);
     b->at += 2;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void put_u32(Builder* b, uint32_t value) {
     put_u16(b, (uint16_t)(value >> 16));
     put_u16(b, (uint16_t)value);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t put_envelope(Builder* b, const Envelope* envelope) {
     const uint32_t start = b->at;
@@ -100,8 +94,6 @@ static uint32_t put_envelope(Builder* b, const Envelope* envelope) {
     put_u16(b, DL_ENVELOPE_END);
     return start;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The envelopes of the phrase, then its pattern: per part an envelope and a sample command, the notes; the next pattern
 // command ends it. Returns the address of the pattern.
@@ -125,8 +117,6 @@ static uint32_t put_phrase(Builder* b, const Phrase* phrase) {
     put_u16(b, DlCommandWord_NextPattern);
     return start;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void dl_patch_midwinter(DlImage* image, uint32_t size_marker, uint32_t subsong_count) {
     if (size_marker != SIGNATURE || subsong_count != SIGNATURE_SUBSONGS) {

@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The hunk executable
 
 #define HUNK_HEADER 0x3f3
@@ -42,20 +41,17 @@
 #define CODE_AUTHOR 0x1c
 #define CODE_HEADER_END 0x2c
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A big-endian long of the file, 0 when it is not completely inside
 static uint32_t file_u32(const uint8_t* data, size_t size, size_t at) {
     return at < size && size - at >= 4 ? nuade_read_be32(data + at) : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static int compare_u32(const void* a, const void* b) {
     const uint32_t x = *(const uint32_t*)a;
     const uint32_t y = *(const uint32_t*)b;
     return (x > y) - (x < y);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The relocation table after the code: HUNK_RELOC32, then (count, hunk, offsets) groups ended by a zero count, then
 // HUNK_END. Only hunk 0 (the code itself) can be relocated.
 static bool read_relocs(FgModule* m, const uint8_t* data, size_t size, size_t at) {
@@ -98,8 +94,6 @@ static bool read_relocs(FgModule* m, const uint8_t* data, size_t size, size_t at
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool fg_module_load(FgModule* m, const uint8_t* data, size_t size) {
     memset(m, 0, sizeof(*m));
     // One code hunk, with a non-zero memory flag byte (the eagleplayer tests it), and the room for the check
@@ -129,39 +123,28 @@ bool fg_module_load(FgModule* m, const uint8_t* data, size_t size) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void fg_module_free(FgModule* m) {
     free(m->image);
     free(m->relocs);
     memset(m, 0, sizeof(*m));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool fg_module_is_reloc(const FgModule* m, uint32_t at) {
     return bsearch(&at, m->relocs, m->reloc_count, sizeof(uint32_t), compare_u32) != nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t fg_header_tick(const FgModule* m) {
     return fg_u32(m, CODE_TICK);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t fg_header_init(const FgModule* m) {
     return fg_u32(m, CODE_INIT);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t fg_header_subsongs(const FgModule* m) {
     return fg_u32(m, CODE_SUBSONGS);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A header string, or "" if the offset is outside the code or the string is not ended inside it
 static const char* header_string(const FgModule* m, uint32_t field) {
     const uint32_t at = fg_u32(m, field);
@@ -171,19 +154,13 @@ static const char* header_string(const FgModule* m, uint32_t field) {
     return (const char*)(m->image + at);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const char* fg_header_title(const FgModule* m) {
     return header_string(m, CODE_TITLE);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const char* fg_header_author(const FgModule* m) {
     return header_string(m, CODE_AUTHOR);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 FgInstrument fg_read_instrument(const FgModule* m, uint32_t at) {
     return (FgInstrument) { .vibrato_row = fg_u8(m, at),
@@ -191,8 +168,6 @@ FgInstrument fg_read_instrument(const FgModule* m, uint32_t at) {
                             .envelope_offset = fg_u8(m, at + 2),
                             .envelope_speed = fg_u8(m, at + 3) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 FgCommand fg_read_command(const FgModule* m, uint32_t at) {
     return (FgCommand) { .pitch = fg_u16(m, at + FgCommandField_Pitch),

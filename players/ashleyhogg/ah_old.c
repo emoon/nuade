@@ -48,7 +48,6 @@
 #define TRACK_ENTRY_SIZE 2   // transposition and pattern number; with a repeat count a third byte follows
 #define SILENT_WORD_OFFSET 4 // the silent word follows the long that holds its address
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An entry of a track list: a command, or a transposition and a pattern number.
 
 typedef struct TrackEntry {
@@ -56,20 +55,16 @@ typedef struct TrackEntry {
     uint8_t second; // the restart offset, the fade step, or the pattern number
 } TrackEntry;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static TrackEntry read_track_entry(const AhMemory* m, uint32_t offset) {
     return (TrackEntry) { .first = ah_u8(m, offset), .second = ah_u8(m, offset + 1) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period of a note (index into the period table; a negative or large index reads the neighbouring data).
 
 static uint16_t period_of(const AhOld* old, const AhMemory* m, int note_index) {
     return ah_u16(m, old->tables.periods + (uint32_t)(int32_t)(note_index * 2));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The track list's restart command ends the song when every voice that has a track has reached one: SongEnd, then the
 // voices are armed again.
 
@@ -86,7 +81,6 @@ static void song_end_check(AhOldSong* s, AhOldVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $41E: load the next track entry into the voice.
 
 static void load_track(AhOld* old, const AhMemory* m, int index) {
@@ -134,7 +128,6 @@ static void load_track(AhOld* old, const AhMemory* m, int index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note names an instrument: its record replaces the voice's, the sample is stopped and its registers are written
 // (the DMA starts on the next tick).
 
@@ -151,7 +144,6 @@ static void start_instrument(AhOld* old, const AhMemory* m, int index, uint8_t n
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $12A: the events at the voice's pattern position, until one takes the tick.
 
 static void read_events(AhOld* old, const AhMemory* m, int index) {
@@ -201,7 +193,6 @@ static void read_events(AhOld* old, const AhMemory* m, int index) {
     v->display_note = nuade_period_to_note(period_of(old, m, v->note + v->transpose_base));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $3A8: the volume envelope.
 
 static void run_envelope(AhOldVoice* v) {
@@ -242,7 +233,6 @@ static void run_envelope(AhOldVoice* v) {
     v->env_count--;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample registers of a voice that plays: the DMA starts once, then every tick writes the repeat.
 
 static void run_sample(AhOld* old, const AhMemory* m, int index) {
@@ -262,7 +252,6 @@ static void run_sample(AhOld* old, const AhMemory* m, int index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $2A8: the vibrato adds its step to the pitch; the step flips every half period and grows up to its maximum.
 
 static void run_vibrato(AhOldVoice* v) {
@@ -286,7 +275,6 @@ static void run_vibrato(AhOldVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $2E2: the period is the table entry of note + arpeggio step (+ transposition) plus the pitch; the arpeggio moves on
 // or, before an ARP_LOOP marker, jumps to the position after it.
 
@@ -308,7 +296,6 @@ static void write_period(AhOld* old, const AhMemory* m, int index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $33A: the wave-table voice cycles through the waveforms at a bouncing position and restarts its DMA every tick.
 
 static void run_wave(AhOld* old, const AhMemory* m, int index) {
@@ -327,7 +314,6 @@ static void run_wave(AhOld* old, const AhMemory* m, int index) {
     nuade_paula_channel_dma_on(paula);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $236: what a voice does on every tick that does not read an event.
 
 static void run_sound(AhOld* old, const AhMemory* m, int index) {
@@ -355,7 +341,6 @@ static void run_sound(AhOld* old, const AhMemory* m, int index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $96: one voice's tick.
 
 static void run_voice(AhOld* old, const AhMemory* m, int index) {
@@ -377,7 +362,6 @@ static void run_voice(AhOld* old, const AhMemory* m, int index) {
     run_sound(old, m, index);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Stopped: the volumes are 0 and the DMA is off.
 
 static void silence(AhOldSong* s) {
@@ -387,8 +371,6 @@ static void silence(AhOldSong* s) {
     }
     s->ended = true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void ah_old_tick(AhOld* old, const AhMemory* module) {
     AhOldSong* s = &old->song;
@@ -417,7 +399,6 @@ void ah_old_tick(AhOld* old, const AhMemory* module) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The init routine: the voices' tracks and speed from the subsong's entry; the first tick loads the first patterns.
 
 void ah_old_start(AhOld* old, const AhMemory* module, int subsong) {

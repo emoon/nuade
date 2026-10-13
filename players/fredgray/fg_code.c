@@ -7,10 +7,8 @@
 
 #define MAX_WALK_STACK 4096
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Instruction decoding
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Extension words of an effective address whose own extension words start at `at`; -1 for a mode that does not exist
 // on the 68000 (the full extension word of the 68020 included). `immediate` is the words of a #imm operand.
 static int ea_words(const FgModule* m, uint32_t at, unsigned mode, unsigned reg, int immediate) {
@@ -44,13 +42,11 @@ static int ea_words(const FgModule* m, uint32_t at, unsigned mode, unsigned reg,
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Words of an immediate operand of the size field (bits 7-6): byte and word take one, long takes two
 static int immediate_words(unsigned size) {
     return size == 2 ? 2 : 1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The length in bytes of the instruction at `at`, 0 if it is not a 68000 instruction
 static uint32_t instruction_length(const FgModule* m, uint32_t at) {
     const uint16_t w = fg_u16(m, at);
@@ -170,8 +166,6 @@ static uint32_t instruction_length(const FgModule* m, uint32_t at) {
     return ext < 0 ? 0 : 2 + 2 * (uint32_t)ext;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 FgInsn fg_decode(const FgModule* m, uint32_t at) {
     FgInsn insn = { .length = 0, .flow = FgFlow_Next, .target = 0 };
     if ((at & 1) != 0 || !fg_in_module(m, at, 2)) {
@@ -215,16 +209,11 @@ FgInsn fg_decode(const FgModule* m, uint32_t at) {
     return insn;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Instruction cursor
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t fg_cursor_peek(const FgCursor* c) {
     return fg_u16(c->m, c->at);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool fg_cursor_take(FgCursor* c, uint16_t word) {
     if (fg_u16(c->m, c->at) != word) {
@@ -234,23 +223,17 @@ bool fg_cursor_take(FgCursor* c, uint16_t word) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t fg_cursor_u16(FgCursor* c) {
     const uint16_t value = fg_u16(c->m, c->at);
     c->at += 2;
     return value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t fg_cursor_u32(FgCursor* c) {
     const uint32_t value = fg_u32(c->m, c->at);
     c->at += 4;
     return value;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool fg_cursor_call(FgCursor* c, uint32_t* target) {
     const FgInsn insn = fg_decode(c->m, c->at);
@@ -262,8 +245,6 @@ bool fg_cursor_call(FgCursor* c, uint32_t* target) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool fg_voice_of_offset(uint32_t value, uint32_t base, uint32_t stride, uint8_t* voice) {
     if (value < base || (value - base) % stride != 0 || (value - base) / stride >= FG_ACTIVE_VOICES) {
         return false;
@@ -272,13 +253,9 @@ bool fg_voice_of_offset(uint32_t value, uint32_t base, uint32_t stride, uint8_t*
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool fg_is_table_load(uint16_t word) {
     return word == OP_LEA_ABS_A0 || word == OP_MOVEA_IMM_A0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool fg_read_voice_offset_load(const FgModule* m, uint32_t at, uint32_t* value, uint32_t* length) {
     const uint16_t w = fg_u16(m, at);
@@ -297,10 +274,7 @@ bool fg_read_voice_offset_load(const FgModule* m, uint32_t at, uint32_t* value, 
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Walking the code
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool fg_walk_init(FgWalk* w, const FgModule* m, bool follow_calls) {
     w->m = m;
@@ -309,14 +283,10 @@ bool fg_walk_init(FgWalk* w, const FgModule* m, bool follow_calls) {
     return w->seen != nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void fg_walk_free(FgWalk* w) {
     free(w->seen);
     w->seen = nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool fg_walk_from(FgWalk* w, uint32_t root) {
     uint32_t stack[MAX_WALK_STACK];
@@ -353,16 +323,11 @@ bool fg_walk_from(FgWalk* w, uint32_t root) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool fg_walk_has(const FgWalk* w, uint32_t at) {
     return (at & 1) == 0 && at < w->m->size && w->seen[at / 2] != 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Routines
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool fg_routine_open(FgRoutine* r, const FgModule* m, uint32_t start) {
     r->open = fg_walk_init(&r->walk, m, false);
@@ -373,16 +338,12 @@ bool fg_routine_open(FgRoutine* r, const FgModule* m, uint32_t start) {
     return r->open;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void fg_routine_close(FgRoutine* r) {
     if (r->open) {
         fg_walk_free(&r->walk);
         r->open = false;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t fg_routine_find(const FgRoutine* r, uint16_t opcode, uint32_t nth) {
     if (!r->open) {
@@ -396,21 +357,15 @@ uint32_t fg_routine_find(const FgRoutine* r, uint16_t opcode, uint32_t nth) {
     return FG_NOT_FOUND;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t fg_routine_long(const FgRoutine* r, uint16_t opcode, uint32_t nth) {
     const uint32_t at = fg_routine_find(r, opcode, nth);
     return at == FG_NOT_FOUND ? FG_NOT_FOUND : fg_u32(r->walk.m, at + 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t fg_routine_word(const FgRoutine* r, uint16_t opcode, uint32_t nth) {
     const uint32_t at = fg_routine_find(r, opcode, nth);
     return at == FG_NOT_FOUND ? FG_NOT_FOUND : fg_u16(r->walk.m, at + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t fg_routine_first_call(const FgRoutine* r) {
     if (!r->open) {
@@ -427,14 +382,10 @@ uint32_t fg_routine_first_call(const FgRoutine* r) {
     return FG_NOT_FOUND;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t fg_routine_table(const FgRoutine* r, bool second) {
     const uint32_t lea = fg_routine_long(r, second ? OP_LEA_ABS_A1 : OP_LEA_ABS_A0, 0);
     return lea != FG_NOT_FOUND ? lea : fg_routine_long(r, second ? OP_MOVEA_IMM_A1 : OP_MOVEA_IMM_A0, 0);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t fg_find(const FgModule* m, uint32_t start, uint16_t opcode, uint32_t nth) {
     FgRoutine r = { 0 };
@@ -443,16 +394,12 @@ uint32_t fg_find(const FgModule* m, uint32_t start, uint16_t opcode, uint32_t nt
     return at;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t fg_find_long(const FgModule* m, uint32_t start, uint16_t opcode, uint32_t nth) {
     FgRoutine r = { 0 };
     const uint32_t value = fg_routine_open(&r, m, start) ? fg_routine_long(&r, opcode, nth) : FG_NOT_FOUND;
     fg_routine_close(&r);
     return value;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t fg_scan_code(const FgModule* m, uint32_t from, uint16_t opcode, uint32_t gap, uint16_t tail) {
     for (uint32_t at = from; fg_in_module(m, at, 4 + gap); at += 2) {

@@ -12,14 +12,10 @@
 // Ticks one row of the display grid spans: the voices run their own note lengths, so the grid is a display choice only.
 #define IG_GRID_TICKS 6
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe infogrames_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return ig_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult infogrames_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -42,20 +38,14 @@ static NuadePlayerOpenResult infogrames_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void infogrames_close(void* user_data) {
     ig_destroy((IgPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool infogrames_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return subsong == 0 && ig_start((IgPlayer*)user_data, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult infogrames_tick(void* user_data, NuadeVoices* voices) {
     IgPlayer* player = (IgPlayer*)user_data;
@@ -64,14 +54,10 @@ static NuadeTickResult infogrames_tick(void* user_data, NuadeVoices* voices) {
                                .flags = tick.ended ? NuadeTick_Ended : NuadeTick_None };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void infogrames_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Infogrames");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t infogrames_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const IgPlayer* player = (const IgPlayer*)user_data;
@@ -83,15 +69,11 @@ static uint32_t infogrames_voice_info(void* user_data, NuadeVoiceInfo* out, uint
     return count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t infogrames_grid_ticks(void* user_data, uint32_t subsong) {
     (void)user_data;
     (void)subsong;
     return IG_GRID_TICKS;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_infogrames = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -108,8 +90,6 @@ const NuadePlayer nuade_player_infogrames = {
     .voice_info = infogrames_voice_info,
     .grid_ticks = infogrames_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 IgPlayer* ig_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_infogrames) {

@@ -7,8 +7,6 @@
 
 #define MAX_STRING 255
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 BdsCreateResult bds_create(const uint8_t* data, size_t size) {
     BdsPlayer* player = calloc(1, sizeof(*player));
     if (player == nullptr) {
@@ -21,8 +19,6 @@ BdsCreateResult bds_create(const uint8_t* data, size_t size) {
     return (BdsCreateResult) { .player = player, .status = BdsStatus_Ok };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void bds_destroy(BdsPlayer* player) {
     if (player == nullptr) {
         return;
@@ -31,13 +27,9 @@ void bds_destroy(BdsPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int bds_subsong_count(const BdsPlayer* player) {
     return (int)player->module.header.subsongs;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool bds_start(BdsPlayer* player, int subsong, uint32_t sample_rate, NuadeVoices* voices) {
     if (player == nullptr || voices == nullptr || subsong < 0 || subsong >= bds_subsong_count(player)) {
@@ -52,16 +44,12 @@ bool bds_start(BdsPlayer* player, int subsong, uint32_t sample_rate, NuadeVoices
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 BdsTickResult bds_tick(BdsPlayer* player, NuadeVoices* voices) {
     player->mixer = voices;
     bds_driver_tick(player);
     bds_driver_sync(player);
     return (BdsTickResult) { .looped = player->looped };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void read_string(const BdsMemory* m, uint32_t offset, char* out, size_t capacity) {
     size_t length = 0;
@@ -75,8 +63,6 @@ static void read_string(const BdsMemory* m, uint32_t offset, char* out, size_t c
     out[length] = '\0';
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 BdsInfo bds_info(const BdsPlayer* player) {
     BdsInfo info = { 0 };
     const BdsMemory* m = &player->module.memory;
@@ -86,8 +72,6 @@ BdsInfo bds_info(const BdsPlayer* player) {
     read_string(m, h->notice, info.notice, sizeof(info.notice));
     return info;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BdsVoiceState bds_voice_state(const BdsPlayer* player, int voice) {
     if (voice < 0 || voice >= BDS_VOICES) {

@@ -60,7 +60,6 @@ typedef enum RecordField {
     RecordField_MixerMask = 0x64,
 } RecordField;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The builds
 
 // Patches of battleships.rho, goldrunner.rho and jupiterprobe.rho, as found in UADE's memory after InitPlayer
@@ -208,14 +207,11 @@ static const RhstBuild s_builds[] = {
 // The mixer bits of the three voices in the module files
 static const uint8_t s_file_masks[RHST_RECORD_COUNT] = { 0x09, 0x12, 0x24 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Module reads
 
 uint8_t rhst_module_u8(const RhstModule* module, uint32_t offset) {
     return offset < module->size ? module->image[offset] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t rhst_module_u16(const RhstModule* module, uint32_t offset) {
     if (module->size < 2 || offset > module->size - 2) {
@@ -223,8 +219,6 @@ uint16_t rhst_module_u16(const RhstModule* module, uint32_t offset) {
     }
     return (uint16_t)((module->image[offset] << 8) | module->image[offset + 1]);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t rhst_module_u32(const RhstModule* module, uint32_t offset) {
     if (module->size < 4 || offset > module->size - 4) {
@@ -234,13 +228,9 @@ uint32_t rhst_module_u32(const RhstModule* module, uint32_t offset) {
            | ((uint32_t)module->image[offset + 2] << 8) | module->image[offset + 3];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t be32(const uint8_t* p) {
     return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | ((uint32_t)p[2] << 8) | p[3];
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint64_t fnv1a(uint64_t hash, const uint8_t* bytes, size_t count) {
     for (size_t i = 0; i < count; i++) {
@@ -248,8 +238,6 @@ static uint64_t fnv1a(uint64_t hash, const uint8_t* bytes, size_t count) {
     }
     return hash;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static const RhstBuild* find_build(const uint8_t* data, size_t size) {
     for (size_t i = 0; i < sizeof(s_builds) / sizeof(s_builds[0]); i++) {
@@ -267,7 +255,6 @@ static const RhstBuild* find_build(const uint8_t* data, size_t size) {
     return nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Song table
 
 // The first longword of the song table is the size of the table: three lists per song, one longword each.
@@ -284,20 +271,14 @@ static uint32_t song_count_of(const uint8_t* data, size_t size, const RhstBuild*
     return size - b->data >= table_bytes ? songs : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t rhst_module_track_list(const RhstModule* module, uint32_t song, uint32_t voice) {
     const uint32_t entry = rhst_module_u32(module, module->data + 4 * (song * RHST_RECORD_COUNT + voice));
     return module->data + entry;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t rhst_module_played_song(const RhstModule* module, uint32_t subsong) {
     return module->build->plays_subsong ? subsong : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t rhst_module_longest_list(const RhstModule* module, uint32_t subsong) {
     uint32_t best = 0;
@@ -312,14 +293,11 @@ uint32_t rhst_module_longest_list(const RhstModule* module, uint32_t subsong) {
     return best;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t rhst_module_instrument(const RhstModule* module, uint32_t index) {
     const uint32_t base = module->build->instruments;
     return base + rhst_module_u32(module, base + 4 * index);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the replayer can reach
 
 typedef struct Walk {
@@ -340,8 +318,6 @@ typedef struct VoiceWalk {
     uint8_t envelope_max[RHST_INSTRUMENT_COUNT]; // the largest semitone offset of the envelope
 } VoiceWalk;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool take_budget(Walk* w) {
     if (w->budget == 0) {
         return false;
@@ -350,14 +326,10 @@ static bool take_budget(Walk* w) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool in_records(const RhstModule* m, uint32_t offset) {
     const uint32_t first = m->build->records;
     return offset >= first && offset < first + RHST_RECORD_COUNT * RECORD_SIZE;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // An envelope is a list of semitone offsets that ends with 0x87 and then starts over. It must lie in the static part of
 // the module and hold at least one offset (the replayer takes the first byte as an offset without testing it); its
@@ -380,8 +352,6 @@ static bool scan_envelope(Walk* w, uint32_t at, uint8_t* max_value) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool use_instrument(Walk* w, VoiceWalk* vw, uint32_t index) {
     if (index >= RHST_INSTRUMENT_COUNT) {
         return false;
@@ -393,8 +363,6 @@ static bool use_instrument(Walk* w, VoiceWalk* vw, uint32_t index) {
     return vw->envelope_ok[index];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A note or a rest ends a step of the replayer.
 static bool end_step(VoiceWalk* vw) {
     if (!vw->duration_set) {
@@ -404,8 +372,6 @@ static bool end_step(VoiceWalk* vw) {
     vw->any_step = true;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // One stream, from its first byte to the command that leaves it (next track, stop). A step may go on into the next
 // stream, so the bytes of a step are counted across streams.
@@ -480,8 +446,6 @@ static bool walk_stream(Walk* w, VoiceWalk* vw, uint32_t at) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Every note index the voice can reach must read module bytes that never change: the period table, or the tables
 // behind it (a note past the table reads them as periods). The voice records change.
 static bool periods_in_range(const RhstModule* m, const VoiceWalk* vw) {
@@ -498,8 +462,6 @@ static bool periods_in_range(const RhstModule* m, const VoiceWalk* vw) {
     const uint32_t top = vw->max_note + env_max + margin;
     return 2 * margin <= m->periods && m->periods + 2 * top + 2 <= m->build->records;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The entries of a track list: the longwords up to a zero, which must lie inside the module and the budget.
 static bool list_entries(Walk* w, uint32_t list, uint32_t* count) {
@@ -518,8 +480,6 @@ static bool list_entries(Walk* w, uint32_t list, uint32_t* count) {
     }
     return false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A voice plays its list, then starts it over. A step can span the end of the list into its start, so the list is
 // walked twice with the state of the first pass carried into the second.
@@ -550,8 +510,6 @@ static bool walk_voice(Walk* w, uint32_t song, uint32_t voice) {
     return periods_in_range(m, &vw);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The eagleplayer's InitSound reads the lists of every song; all must end inside the module.
 static bool lists_terminate(Walk* w, uint32_t* counts) {
     for (uint32_t song = 0; song < w->module->song_count; song++) {
@@ -564,8 +522,6 @@ static bool lists_terminate(Walk* w, uint32_t* counts) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool streams_are_modelled(RhstModule* m) {
     Walk w = { .module = m, .budget = WALK_BUDGET };
@@ -584,7 +540,6 @@ static bool streams_are_modelled(RhstModule* m) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Voice records
 
 static void put_u16(uint8_t* record, RecordField field, uint16_t value) {
@@ -592,14 +547,10 @@ static void put_u16(uint8_t* record, RecordField field, uint16_t value) {
     record[field + 1] = (uint8_t)value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void put_u32(uint8_t* record, RecordField field, uint32_t value) {
     put_u16(record, field, (uint16_t)(value >> 16));
     put_u16(record, (RecordField)(field + 2), (uint16_t)value);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void rhst_module_store_voice(RhstModule* module, uint32_t index, const RhstVoice* v) {
     if (!module->noise_reads_records) {
@@ -636,7 +587,6 @@ void rhst_module_store_voice(RhstModule* module, uint32_t index, const RhstVoice
     record[RecordField_MixerMask] = v->mixer_mask;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Open
 
 // The voice records of the file are zero but for the mixer bits (the init of the third build clears them anyway).
@@ -654,8 +604,6 @@ static bool records_are_known(const uint8_t* data, const RhstBuild* b) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // InitPlayer finds the semitone list the voices start on: it scans for a longword from the module start (even offsets)
 // and follows two offsets from the first match. It must be the first instrument, where the build keeps it.
@@ -677,8 +625,6 @@ static bool first_instrument_is_known(const uint8_t* data, size_t size, const Rh
     return first == (uint64_t)b->instruments + be32(data + b->instruments);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void rhst_module_close(RhstModule* module) {
     if (module != nullptr) {
         free(module->image);
@@ -686,8 +632,6 @@ void rhst_module_close(RhstModule* module) {
     }
     free(module);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The module as the eagleplayer and the init leave it.
 static void apply_build(RhstModule* module, const RhstBuild* build) {
@@ -713,8 +657,6 @@ static void apply_build(RhstModule* module, const RhstBuild* build) {
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RhstModule* rhst_module_open(const uint8_t* data, size_t size) {
     if (size < INIT_LEA_AT + 4 || size > 0x7FFFFFFFu || be32(data) != HEADER_LONG0 || be32(data + 4) != HEADER_LONG1

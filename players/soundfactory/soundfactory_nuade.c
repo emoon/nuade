@@ -9,15 +9,11 @@
 
 #define SOUNDFACTORY_NUADE_VOICES 4
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The format has no magic number: a matching header is only "unsure".
 static NuadeProbe soundfactory_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return sf_probe(data, size) ? NuadeProbe_Unsure : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult soundfactory_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -35,20 +31,14 @@ static NuadePlayerOpenResult soundfactory_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void soundfactory_close(void* user_data) {
     sf_destroy((SfModule*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool soundfactory_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return sf_start((SfModule*)user_data, (int)subsong, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult soundfactory_tick(void* user_data, NuadeVoices* voices) {
     (void)voices;
@@ -64,14 +54,10 @@ static NuadeTickResult soundfactory_tick(void* user_data, NuadeVoices* voices) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void soundfactory_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Sound Factory");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The format has no speed or tempo: every note carries its own length in ticks, and songs use steps of 6, 16 or 20
 // ticks. A row of 4 ticks keeps two starts of one voice in separate rows for all of those.
@@ -88,15 +74,11 @@ static uint32_t soundfactory_voice_info(void* user_data, NuadeVoiceInfo* out, ui
     return count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t soundfactory_grid_ticks(void* user_data, uint32_t subsong) {
     (void)user_data;
     (void)subsong;
     return SOUNDFACTORY_TICKS_PER_ROW;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_soundfactory = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -113,8 +95,6 @@ const NuadePlayer nuade_player_soundfactory = {
     .voice_info = soundfactory_voice_info,
     .grid_ticks = soundfactory_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SfModule* sf_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_soundfactory) {

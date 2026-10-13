@@ -40,8 +40,6 @@
 
 #define LINE_COUNTER_START 0xFFFF // the first tick wraps it to line 0
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Three octaves, then the top octave three more times.
 static const uint16_t k_periods[PERIOD_TABLE_ENTRIES] = {
     856, 808, 762, 720, 678, 640, 604, 570, 538, 508, 480, 453, 428, 404, 381, 360, 339, 320,
@@ -60,8 +58,6 @@ static const uint16_t k_tempo_timers[TEMPO_TIMERS] = {
     2417, 4833, 7250, 9666, 12083, 14500, 16916, 19332, 21436, 24163,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Parameters of the Misc effect: 1..0xF0 set the tempo.
 typedef enum MmdcMisc {
     MmdcMisc_NextBlock = 0x00,
@@ -76,7 +72,6 @@ typedef enum MmdcMisc {
     MmdcMisc_VoiceOff = 0xFF,
 } MmdcMisc;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The word at `index` of the period table: the replayer doubles the index as a byte, so only its low 7 bits count.
 // The words after the table are zeros up to the first of the replayer's variables.
 
@@ -105,20 +100,15 @@ static uint16_t variable_word(const MmdcPlayer* player, uint32_t word) {
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t period_at(const MmdcPlayer* player, uint8_t index) {
     const uint32_t word = index & (PERIOD_WORDS - 1);
     return word < PERIOD_TABLE_ENTRIES ? k_periods[word] : variable_word(player, word);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool slides_wait(const MmdcPlayer* player) {
     return player->module.song.st_slides && (int8_t)player->slide_limit <= (int8_t)player->tick;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tempo command: 1..10 are the fixed timer values (and set the slide limit), above 10 the timer follows from the
 // tempo. The low byte also replaces the one in the start tempo, which is where a restart reads it from.
 
@@ -134,7 +124,6 @@ static void set_tempo(MmdcPlayer* player, uint16_t tempo) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume of a cell: the instrument or command volume scaled by the track and master volume, as 16-bit products.
 
 static uint8_t scale_volume(const MmdcPlayer* player, uint8_t volume, uint8_t track) {
@@ -145,7 +134,6 @@ static uint8_t scale_volume(const MmdcPlayer* player, uint8_t volume, uint8_t tr
     return (uint8_t)(((by_master >> 4) & 0xFFFF) >> 8);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Starts the sample of the voice's instrument at `note`: DMA off now, the registers set, DMA on at the end of the tick.
 // An instrument without a sample record plays nothing and leaves the voice alone.
 
@@ -187,7 +175,6 @@ static void play_note(MmdcPlayer* player, uint8_t track, uint8_t note) {
     voice->paula.volume = voice->volume & VOLUME_MASK;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Writes the voice's period and volume registers (the period variable stands in for a period of 0).
 
 static void write_registers(MmdcVoice* voice, uint16_t period) {
@@ -195,14 +182,12 @@ static void write_registers(MmdcVoice* voice, uint16_t period) {
     voice->paula.volume = voice->volume & VOLUME_MASK;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The driver calls SongEnd when the play sequence runs out or the song restarts after the Stop command.
 
 static void song_end(MmdcPlayer* player) {
     player->looped = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The block played at a position of the play sequence: its entry, limited to the blocks the song has.
 
 static uint16_t block_at_position(const MmdcSong* song, uint32_t position) {
@@ -210,7 +195,6 @@ static uint16_t block_at_position(const MmdcSong* song, uint32_t position) {
     return (uint16_t)(entry < song->block_count - 1u ? entry : song->block_count - 1u);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The next position of the play sequence (or the one a jump set).
 
 static void select_position(MmdcPlayer* player) {
@@ -225,7 +209,6 @@ static void select_position(MmdcPlayer* player) {
     player->block_index = block_at_position(song, player->position);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tone portamento command on a line with a note: the note is the slide target, it does not start.
 
 static void start_portamento(MmdcPlayer* player, MmdcVoice* voice, const MmdcCell* cell) {
@@ -241,7 +224,6 @@ static void start_portamento(MmdcPlayer* player, MmdcVoice* voice, const MmdcCel
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The Misc effect of a line. Returns the note to start: the commands that change the pitch of a running note or
 // delay it take the note away.
 
@@ -263,15 +245,12 @@ static uint8_t run_misc_cell(MmdcPlayer* player, MmdcVoice* voice, const MmdcCel
     return cell->note;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The BCD volume of the set volume command, limited to the maximum.
 
 static uint8_t command_volume(uint8_t param) {
     const uint8_t volume = (uint8_t)((param >> 4) * 10 + (param & 0x0F));
     return volume > MAX_VOLUME ? MAX_VOLUME : volume;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void run_cell(MmdcPlayer* player, uint8_t track, const MmdcCell* cell) {
     MmdcVoice* voice = &player->voices[track];
@@ -310,7 +289,6 @@ static void run_cell(MmdcPlayer* player, uint8_t track, const MmdcCell* cell) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The first tick of a line: the line counter and the position move on, the line is decoded and its cells run.
 
 static void run_line(MmdcPlayer* player) {
@@ -334,7 +312,6 @@ static void run_line(MmdcPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The arpeggio note of the tick: the line's note, then the two nibbles of the parameter on ticks 0..2 and 3..5.
 
 static uint8_t arpeggio_note(const MmdcPlayer* player, const MmdcVoice* voice) {
@@ -350,8 +327,6 @@ static uint8_t arpeggio_note(const MmdcPlayer* player, const MmdcVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_arpeggio(const MmdcPlayer* player, MmdcVoice* voice) {
     if (voice->param == 0) {
         return;
@@ -361,8 +336,6 @@ static void run_arpeggio(const MmdcPlayer* player, MmdcVoice* voice) {
                                     + song->instruments[voice->instrument].transpose);
     write_registers(voice, period_at(player, index));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void run_slide_up(const MmdcPlayer* player, MmdcVoice* voice) {
     if (slides_wait(player)) {
@@ -375,8 +348,6 @@ static void run_slide_up(const MmdcPlayer* player, MmdcVoice* voice) {
     write_registers(voice, (uint16_t)voice->period);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_slide_down(const MmdcPlayer* player, MmdcVoice* voice) {
     if (slides_wait(player)) {
         return;
@@ -388,7 +359,6 @@ static void run_slide_down(const MmdcPlayer* player, MmdcVoice* voice) {
     write_registers(voice, (uint16_t)voice->period);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period moves towards the target by the slide speed; arriving clears the target.
 
 static void run_tone_portamento(const MmdcPlayer* player, MmdcVoice* voice) {
@@ -417,8 +387,6 @@ static void run_tone_portamento(const MmdcPlayer* player, MmdcVoice* voice) {
     write_registers(voice, (uint16_t)period);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_vibrato(MmdcVoice* voice) {
     if (voice->param != 0) {
         voice->vibrato_param = voice->param;
@@ -431,7 +399,6 @@ static void run_vibrato(MmdcVoice* voice) {
     write_registers(voice, period);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume slide of A and D: a high nibble raises the volume, otherwise the parameter lowers it.
 
 static void run_volume_slide(const MmdcPlayer* player, MmdcVoice* voice) {
@@ -454,7 +421,6 @@ static void run_volume_slide(const MmdcPlayer* player, MmdcVoice* voice) {
     write_registers(voice, 0);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The Misc commands that act on later ticks of a line: the retriggers and the voice off.
 
 static void run_misc_tick(MmdcPlayer* player, uint8_t track, MmdcVoice* voice) {
@@ -477,8 +443,6 @@ static void run_misc_tick(MmdcPlayer* player, uint8_t track, MmdcVoice* voice) {
         play_note(player, track, voice->note);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void run_effect(MmdcPlayer* player, uint8_t track) {
     MmdcVoice* voice = &player->voices[track];
@@ -518,7 +482,6 @@ static void run_effect(MmdcPlayer* player, uint8_t track) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // DMA goes on for the voices that started a note, then their repeat registers are written (the replayer waits for the
 // DMA start in between).
 
@@ -537,7 +500,6 @@ static void start_dma(MmdcPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitSound / the start of the song: the first line is read by the sixth tick counted from here.
 
 static void restart_song(MmdcPlayer* player) {
@@ -550,8 +512,6 @@ static void restart_song(MmdcPlayer* player) {
     set_tempo(player, player->song_tempo);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool mmdc_probe(const uint8_t* data, size_t size) {
     if (size > UINT32_MAX / 2) {
         return false;
@@ -560,8 +520,6 @@ bool mmdc_probe(const uint8_t* data, size_t size) {
     MmdcModule module;
     return mmdc_parse_module(&image, &module);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MmdcPlayer* mmdc_create(const uint8_t* data, size_t size) {
     if (size > UINT32_MAX / 2) {
@@ -584,16 +542,12 @@ MmdcPlayer* mmdc_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void mmdc_destroy(MmdcPlayer* player) {
     if (player != nullptr) {
         free(player->memory);
         free(player);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool mmdc_start(MmdcPlayer* player, NuadeVoices* voices) {
     if (player == nullptr || voices == nullptr) {
@@ -613,8 +567,6 @@ bool mmdc_start(MmdcPlayer* player, NuadeVoices* voices) {
     restart_song(player);
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MmdcTickResult mmdc_tick(MmdcPlayer* player, NuadeVoices* voices) {
     // The CIA has reloaded the timer before the interrupt: a new value shows from the tick after the next one
@@ -642,8 +594,6 @@ MmdcTickResult mmdc_tick(MmdcPlayer* player, NuadeVoices* voices) {
     return (MmdcTickResult) { .looped = player->looped, .length = length };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 MmdcVoiceState mmdc_voice_state(const MmdcPlayer* player, uint32_t voice) {
     if (voice >= MMDC_VOICES) {
         return (MmdcVoiceState) { .note = -1, .instrument = -1 };
@@ -651,8 +601,6 @@ MmdcVoiceState mmdc_voice_state(const MmdcPlayer* player, uint32_t voice) {
     const MmdcVoice* v = &player->voices[voice];
     return (MmdcVoiceState) { .note = v->shown_note, .instrument = v->shown_note >= 0 ? v->instrument : -1 };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MmdcPosition mmdc_position(const MmdcPlayer* player) {
     const bool started = player->line != LINE_COUNTER_START;
@@ -663,8 +611,6 @@ MmdcPosition mmdc_position(const MmdcPlayer* player) {
                             .tick = player->tick };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool mmdc_block_shape(const MmdcPlayer* player, uint32_t order, MmdcBlockShape* shape) {
     const MmdcSong* song = &player->module.song;
     if (order >= song->length) {
@@ -674,8 +620,6 @@ bool mmdc_block_shape(const MmdcPlayer* player, uint32_t order, MmdcBlockShape* 
     *shape = (MmdcBlockShape) { .block = block, .lines = player->module.blocks[block].lines };
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MmdcCell mmdc_pattern_cell(const MmdcPlayer* player, uint32_t order, uint32_t voice, uint32_t line) {
     MmdcBlockShape shape;

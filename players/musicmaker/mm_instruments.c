@@ -27,8 +27,6 @@ typedef struct Layout {
     uint32_t count;  // records
 } Layout;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static Layout read_layout(const MmBlock* b) {
     Layout layout = { .header = 0, .count = DEFAULT_COUNT };
     if (mm_u32(b, 0) == HEADER_ID && mm_u16(b, 4) == HEADER_XX) {
@@ -38,7 +36,6 @@ static Layout read_layout(const MmBlock* b) {
     return layout;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Reads the bit stream of one sample: bits come most significant first, each output byte is a running sum of the step
 // table entry its bits index (the index is the last 8 bits read). A stream that ends exactly on a byte boundary is
 // followed by one byte of padding.
@@ -50,8 +47,6 @@ typedef struct BitReader {
     int bits_left;
 } BitReader;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t read_bit(BitReader* r) {
     if (--r->bits_left < 0) {
         r->current = mm_u8(r->src, r->pos);
@@ -61,8 +56,6 @@ static uint32_t read_bit(BitReader* r) {
     r->current <<= 1;
     return (r->current >> 8) & 1;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void unpack_sample(BitReader* r, uint32_t steps, uint32_t bits, uint8_t* out, uint32_t length) {
     uint8_t sum = 0;
@@ -80,7 +73,6 @@ static void unpack_sample(BitReader* r, uint32_t steps, uint32_t bits, uint8_t* 
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Builds the block of a packed instrument chunk: the records, the unpacked samples, then the tables as they are.
 // Returns the block's bytes, 0 if the chunk is not a valid one.
 
@@ -137,7 +129,6 @@ static uint8_t* unpack_block(const MmBlock* src, uint32_t* block_size) {
     return out;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Locates the records, samples and tables in the block.
 
 static bool locate(MmInstruments* in) {
@@ -168,7 +159,6 @@ static bool locate(MmInstruments* in) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The 8 voice replayer halves every sample (arithmetic shift) so that two voices can be added.
 
 static void halve_samples(MmInstruments* in) {
@@ -179,8 +169,6 @@ static void halve_samples(MmInstruments* in) {
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool mm_instruments_open(MmInstruments* in, const MmBlock* data, bool packed, bool halve) {
     *in = (MmInstruments) { 0 };
@@ -210,8 +198,6 @@ bool mm_instruments_open(MmInstruments* in, const MmBlock* data, bool packed, bo
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void mm_instruments_close(MmInstruments* in) {
     free(in->storage);

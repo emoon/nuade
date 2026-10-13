@@ -114,13 +114,10 @@ static const int8_t wave_presets[SDR_WAVE_PRESETS][SDR_WAVE_BYTES] = {
     { -127, -127, -127, -127, -127, -127, -127, -127, -127, -127, -127, -127, -127, -127, -127, 127 },
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t word_byte(uint16_t word, int32_t offset) {
     return (uint8_t)(offset % 2 == 0 ? word >> 8 : word);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The byte at a distance from the start of the period table; outside the tables it is the player's code or
 // variables, which the port does not model.
 
@@ -142,8 +139,6 @@ static uint8_t rom_byte(int32_t at, bool* stray) {
     return (uint8_t)wave_presets[wave / SDR_WAVE_BYTES][wave % SDR_WAVE_BYTES];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t sdr_rom_word(SdrRomTable table, int32_t offset, bool* stray) {
     static const int32_t starts[] = {
         [SdrRomTable_Period] = ROM_PERIODS,
@@ -153,8 +148,6 @@ uint16_t sdr_rom_word(SdrRomTable table, int32_t offset, bool* stray) {
     const int32_t at = starts[table] + offset;
     return (uint16_t)(rom_byte(at, stray) << 8 | rom_byte(at + 1, stray));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int8_t sdr_wave_preset_byte(uint32_t index, uint32_t position, bool* stray) {
     return (int8_t)rom_byte((int32_t)(ROM_WAVES + index * SDR_WAVE_BYTES + position), stray);

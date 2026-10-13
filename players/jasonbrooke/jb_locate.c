@@ -6,12 +6,10 @@
 #include "jb_internal.h"
 #include <stdlib.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Pattern scan
 
 #define MAX_PATTERN_WORDS 16
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // "43fa xxxx": words of four hex digits; an "x" digit matches any value
 static int parse_pattern(const char* pattern, uint16_t* words, uint16_t* masks) {
     int count = 0;
@@ -36,8 +34,6 @@ static int parse_pattern(const char* pattern, uint16_t* words, uint16_t* masks) 
     return count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t jbm_find(const JbModule* m, uint32_t from, uint32_t to, const char* pattern) {
     uint16_t words[MAX_PATTERN_WORDS];
     uint16_t masks[MAX_PATTERN_WORDS];
@@ -54,33 +50,27 @@ uint32_t jbm_find(const JbModule* m, uint32_t from, uint32_t to, const char* pat
     return JB_NOT_FOUND;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Effective addresses of the operands of an instruction, from the offset of its extension word
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // d16(pc): the effective address of a 16 bit displacement whose extension word is at `extension`
 static uint32_t pc16(const JbModule* m, uint32_t extension) {
     return extension + (uint32_t)(int32_t)jbm_s16(m, extension);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // d8(pc,Xn): the brief extension word at `extension` carries the displacement in its low byte
 static uint32_t pc8(const JbModule* m, uint32_t extension) {
     return extension + (uint32_t)(int32_t)(int8_t)jbm_u8(m, extension + 1);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // d8(An,Xn): the table at `base` plus the displacement of the brief extension word at `extension`
 static uint32_t an8(const JbModule* m, uint32_t base, uint32_t extension) {
     return base + (uint32_t)(int32_t)(int8_t)jbm_u8(m, extension + 1);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // JbVersion A
 
 #define A_SEARCH 0x600
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The command a handler at `handler` is. The handlers are told apart by their first instructions: what they store to
 // and which flag bits they set.
 static JbACommand classify_a_handler(const JbModule* m, const JbATables* t, bool new_syntax, uint32_t handler) {
@@ -152,10 +142,8 @@ static JbACommand classify_a_handler(const JbModule* m, const JbATables* t, bool
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Subsongs: the eagleplayer counts the entries of the song table that look like entries, as far as the next table.
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An entry after the first counts when the byte before it (the last byte of the previous record) is 0 and that byte
 // with the entry's tempo does not form the word 1. The table ends where the envelope start table begins; returns 0 if
 // it does not have room for a record.
@@ -174,8 +162,6 @@ static int count_a_songs(const JbModule* m, const JbATables* t) {
     }
     return (int)count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool jb_a_locate(const JbModule* m, uint32_t entry, JbAConfig* config) {
     JbATables* t = &config->tables;
@@ -307,12 +293,10 @@ bool jb_a_locate(const JbModule* m, uint32_t entry, JbAConfig* config) {
     return config->subsong_count > 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // JbVersion B
 
 #define B_SEARCH 0x600
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool jb_b_locate(const JbModule* m, JbBConfig* config) {
     JbBTables* t = &config->tables;
 

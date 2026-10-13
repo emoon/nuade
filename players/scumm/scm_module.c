@@ -149,7 +149,6 @@ static const ScmVersion scm_versions[] = {
     },
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The two-channel driver writes 0xFF to byte 0x10 + instrument of its work area when a note has faded out: only the
 // first two are its channel bytes, the next ones are the eagleplayer's Check2 code, which is never run again; behind
 // that lies code that is.
@@ -162,39 +161,28 @@ static const ScmEngine scm_engines[] = {
     [ScmDriver_Quad] = { .tracker = true, .channels = 4, .instruments = SCM_MAX_INSTRUMENTS },
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const ScmEngine* scm_engine(ScmDriver driver) {
     static const ScmEngine sweep = { 0 };
     return driver == ScmDriver_Duo || driver == ScmDriver_Quad ? &scm_engines[driver] : &sweep;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool scm_range_in(uint32_t size, int64_t at, int64_t bytes) {
     return at >= 0 && bytes >= 0 && at <= (int64_t)size && bytes <= (int64_t)size - at;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t scm_u16(const ScmModule* module, int64_t at) {
     return scm_range_in(module->size, at, SCM_WORD_BYTES) ? nuade_read_be16(module->image + at) : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t scm_u32(const ScmModule* module, int64_t at) {
     return scm_range_in(module->size, at, sizeof(uint32_t)) ? nuade_read_be32(module->image + at) : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Event addresses: the position is shifted by 4 in a word that the driver then sign-extends.
 
 static int64_t scm_event_offset(const ScmModule* module, uint32_t track, uint16_t position) {
     return (int64_t)module->events[track] + (int16_t)(uint16_t)(position << 4);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ScmEvent scm_module_event(const ScmModule* module, uint32_t track, uint16_t position) {
     const int64_t at = scm_event_offset(module, track, position);
@@ -207,13 +195,9 @@ ScmEvent scm_module_event(const ScmModule* module, uint32_t track, uint16_t posi
     };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int64_t scm_record_offset(const ScmModule* module, uint32_t index) {
     return (int64_t)module->records + (int64_t)index * SCM_RECORD_BYTES;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ScmInstrument scm_module_instrument(const ScmModule* module, uint32_t index) {
     const int64_t at = scm_record_offset(module, index);
@@ -227,31 +211,21 @@ ScmInstrument scm_module_instrument(const ScmModule* module, uint32_t index) {
     };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int64_t scm_envelope_offset(const ScmModule* module, uint16_t envelope, uint16_t position) {
     return (int64_t)module->envelopes + (int16_t)(uint16_t)((uint16_t)(envelope << 9) + 2u * position);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t scm_module_envelope(const ScmModule* module, uint16_t envelope, uint16_t position) {
     return scm_u16(module, scm_envelope_offset(module, envelope, position));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t scm_module_sample_offset(const ScmModule* module, int16_t offset) {
     return (uint32_t)((int64_t)module->samples + offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const int8_t* scm_module_sample(const ScmModule* module, uint32_t sample_offset) {
     return (const int8_t*)(module->image + (sample_offset & ~1u));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool scm_module_zero_write(const ScmModule* module, uint32_t sample_offset, uint32_t* at) {
     if (module->version->operand_at[ScmOperand_ZeroWrite] == 0) {
@@ -261,15 +235,12 @@ bool scm_module_zero_write(const ScmModule* module, uint32_t sample_offset, uint
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void scm_module_clear_long(ScmModule* module, uint32_t at) {
     if (scm_range_in(module->size, at, SCM_ZERO_WRITE_BYTES)) {
         memset(module->image + at, 0, SCM_ZERO_WRITE_BYTES);
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the load-time proof collects: the instruments the events use, a map of the module's bytes and the longs the
 // driver clears.
 
@@ -292,7 +263,6 @@ typedef struct ScmCheck {
     ScmClear clears[2 * SCM_MAX_INSTRUMENTS];
 } ScmCheck;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Marks bytes. A working field may not lie on a fixed byte nor the other way round: the port reads the fixed bytes from
 // the module once, and the working fields from its own state.
 
@@ -312,7 +282,6 @@ static bool scm_mark(ScmCheck* check, uint32_t size, int64_t at, uint32_t bytes,
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A read of sample data: inside the module and clear of every working field.
 
 static bool scm_touch_ok(const ScmCheck* check, uint32_t size, int64_t at, int64_t bytes) {
@@ -327,7 +296,6 @@ static bool scm_touch_ok(const ScmCheck* check, uint32_t size, int64_t at, int64
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A clear of a long: only sample data may change (the port reads everything else once at load). An odd address is an
 // address error on the 68000. Behind the module the chip memory is zero, so the clear changes nothing and is dropped.
 
@@ -349,7 +317,6 @@ static bool scm_clear_ok(const ScmCheck* check, uint32_t size, const ScmClear* c
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Walks the event list of every track as the driver does. A list that does not end, an event outside the module, a
 // channel or instrument the driver would use as an index outside its tables, or a list that restarts and never waits
 // are refused.
@@ -383,7 +350,6 @@ static bool scm_check_tracks(const ScmModule* module, ScmCheck* check) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The words of a sample: at least one, whole, inside the module and clear of the working fields.
 
 static bool scm_check_sample(const ScmModule* module, const ScmCheck* check, int16_t offset, uint16_t bytes) {
@@ -392,7 +358,6 @@ static bool scm_check_sample(const ScmModule* module, const ScmCheck* check, int
     return words != 0 && scm_touch_ok(check, module->size, at, (int64_t)words * 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What a used instrument makes the driver read and clear. The clears are collected: they are checked when every
 // fixed byte is known.
 
@@ -432,7 +397,6 @@ static bool scm_check_instrument(const ScmModule* module, ScmCheck* check, uint3
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The bytes the eagleplayer and the driver read as something else than sample data besides the song's records: the word
 // that places the samples and the code (the port reads both once).
 
@@ -442,7 +406,6 @@ static bool scm_mark_code(const ScmModule* module, ScmCheck* check) {
            && scm_mark(check, module->size, module->entry, module->version->code_len, ScmMark_Fixed);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The working fields of the used instruments' records.
 
 static bool scm_mark_working_fields(const ScmModule* module, ScmCheck* check) {
@@ -463,7 +426,6 @@ static bool scm_mark_working_fields(const ScmModule* module, ScmCheck* check) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Everything a tracker driver can touch.
 
 static bool scm_check_tracker_data(const ScmModule* module, ScmCheck* check) {
@@ -488,8 +450,6 @@ static bool scm_check_tracker_data(const ScmModule* module, ScmCheck* check) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool scm_check_tracker(const ScmModule* module) {
     ScmCheck* check = calloc(1, sizeof(*check));
     if (check == nullptr) {
@@ -502,15 +462,12 @@ static bool scm_check_tracker(const ScmModule* module) {
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sweep effects play 16 words from the sample base (the alarm also from 32 bytes behind it).
 
 static bool scm_check_sweep(const ScmModule* module) {
     const uint32_t samples = module->version->driver == ScmDriver_Alarm ? SCM_ALARM_SAMPLES : 1u;
     return scm_range_in(module->size, (int64_t)(module->samples & ~1u), (int64_t)samples * SCM_SWEEP_SAMPLE_BYTES);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint64_t scm_code_hash(const ScmModule* module, const ScmVersion* version, uint32_t entry) {
     uint8_t* code = malloc(version->code_len);
@@ -532,7 +489,6 @@ static uint64_t scm_code_hash(const ScmModule* module, const ScmVersion* version
     return hash;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The driver version whose code starts at the module's entry.
 
 static const ScmVersion* scm_find_version(const ScmModule* module, uint32_t* entry_out) {
@@ -552,7 +508,6 @@ static const ScmVersion* scm_find_version(const ScmModule* module, uint32_t* ent
     return nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The addresses the code forms: the song data from the entry address, each track's events from the track before.
 
 static bool scm_place_data(ScmModule* module, uint32_t entry) {
@@ -594,8 +549,6 @@ static bool scm_place_data(ScmModule* module, uint32_t entry) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool scm_module_load(ScmModule* module, const uint8_t* data, size_t size) {
     memset(module, 0, sizeof(*module));
     if (data == nullptr || size < SCM_ENTRY + 2 * SCM_WORD_BYTES || size > SCM_MAX_MODULE_BYTES) {
@@ -624,8 +577,6 @@ bool scm_module_load(ScmModule* module, const uint8_t* data, size_t size) {
     }
     return ok;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void scm_module_free(ScmModule* module) {
     free(module->image);

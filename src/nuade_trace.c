@@ -37,13 +37,9 @@ struct NuadeTrace {
     TraceVoice* voices;
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void reset_voice(TraceVoice* v) {
     *v = (TraceVoice) { .dma = -1, .last_hz = -1.0, .last_vol = -1.0, .vol = 1.0 };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 NuadeTrace* nuade_trace_create(FILE* file, u32 voice_count, bool with_bytes) {
     NuadeTrace* trace = (NuadeTrace*)calloc(1, sizeof(NuadeTrace));
@@ -62,19 +58,13 @@ NuadeTrace* nuade_trace_create(FILE* file, u32 voice_count, bool with_bytes) {
     return trace;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static u64 cycles(const NuadeTrace* trace, u64 frame) {
     return trace->sample_rate ? (u64)((f64)frame * NUADE_PAULA_CLOCK_PAL / (f64)trace->sample_rate) : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void write_value(NuadeTrace* trace, u64 frame, const char* kind, u32 voice, f64 value) {
     fprintf(trace->file, "%llu %s %u %.9g\n", (unsigned long long)cycles(trace, frame), kind, voice, value);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Write the pitch and volume a tick left on a voice that is on.
 static void flush_voice(NuadeTrace* trace, u32 index) {
@@ -101,8 +91,6 @@ static void flush_voice(NuadeTrace* trace, u32 index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void flush_before(NuadeTrace* trace, u64 frame) {
     for (u32 i = 0; i < trace->voice_count; i++) {
         if (trace->voices[i].dirty && trace->voices[i].dirty_frame < frame) {
@@ -110,8 +98,6 @@ static void flush_before(NuadeTrace* trace, u64 frame) {
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static u32 fnv1a(const u8* p, size_t n, bool* allzero) {
     u32 h = 2166136261u;
@@ -123,8 +109,6 @@ static u32 fnv1a(const u8* p, size_t n, bool* allzero) {
     *allzero = any == 0;
     return h;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The block a voice starts fetching: frames [from, from + count) of the sample, or the silent dummy block when there is
 // none. A DMA start is always written, like UADE does; a repeat of the block already fetched at a loop restart is not.
@@ -164,13 +148,9 @@ static void write_buffer(NuadeTrace* trace, u64 frame, u32 index, const NuadeSam
     fputc('\n', trace->file);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static u32 sample_end(const NuadeSample* s) {
     return s->loop_length != 0 ? s->loop_start + s->loop_length : s->length;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // DMA off with the period parked at 16 (what the asm's StopNOTE and DMA retrigger leave behind).
 static void dma_off(NuadeTrace* trace, u64 frame, u32 index) {
@@ -183,8 +163,6 @@ static void dma_off(NuadeTrace* trace, u64 frame, u32 index) {
     v->last_hz = NUADE_PAULA_CLOCK_PAL / 16.0;
     write_value(trace, frame, "HZ", index, v->last_hz);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void start_sample(NuadeTrace* trace, u64 frame, u32 index, const NuadeSample* sample, u32 start_frame) {
     TraceVoice* v = &trace->voices[index];
@@ -200,8 +178,6 @@ static void start_sample(NuadeTrace* trace, u64 frame, u32 index, const NuadeSam
     write_buffer(trace, frame, index, sample, start_frame < end ? start_frame : 0,
                  end > start_frame ? end - start_frame : 0, true);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void nuade_trace_event(NuadeTrace* trace, const NuadeVoiceEvent* event) {
     if (trace == nullptr || event->voice >= trace->voice_count) {
@@ -256,16 +232,12 @@ void nuade_trace_event(NuadeTrace* trace, const NuadeVoiceEvent* event) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void nuade_trace_reset(NuadeTrace* trace, u32 sample_rate) {
     trace->sample_rate = sample_rate;
     for (u32 i = 0; i < trace->voice_count; i++) {
         reset_voice(&trace->voices[i]);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void nuade_trace_destroy(NuadeTrace* trace) {
     if (trace == nullptr) {

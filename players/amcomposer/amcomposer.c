@@ -40,8 +40,6 @@ typedef enum EffectCommand {
     EffectCommand_Filter = 7,
 } EffectCommand;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // One instrument record as the notes address it. The loop is the sample the channel repeats after its first pass.
 typedef struct Instrument {
     const int8_t* sample;
@@ -56,8 +54,6 @@ typedef struct Cursor {
     uint32_t pos;
 } Cursor;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t read_u16_at(const AmcModule* m, size_t pos) {
     if (pos > m->size || m->size - pos < 2) {
         return 0xFFFF;
@@ -65,20 +61,14 @@ static uint16_t read_u16_at(const AmcModule* m, size_t pos) {
     return (uint16_t)((m->data[pos] << 8) | m->data[pos + 1]);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t read_u32_at(const AmcModule* m, size_t pos) {
     return ((uint32_t)read_u16_at(m, pos) << 16) | read_u16_at(m, pos + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t cursor_u8(Cursor* c) {
     const uint32_t pos = c->pos++;
     return pos < c->module->size ? c->module->data[pos] : 0xFF;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t cursor_u16(Cursor* c) {
     const uint16_t value = read_u16_at(c->module, c->pos);
@@ -86,23 +76,17 @@ static uint16_t cursor_u16(Cursor* c) {
     return value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t cursor_u32(Cursor* c) {
     const uint32_t value = read_u32_at(c->module, c->pos);
     c->pos += 4;
     return value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // AUDxLC for a sample at a file offset, null when it starts past the file (the original would play whatever memory is
 // there). Any AUDxLEN can follow it: what runs past the file plays the zeros behind the padded copy.
 static const int8_t* sample_at(const AmcModule* m, uint32_t offset) {
     return offset <= m->size ? (const int8_t*)(m->data + offset) : nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static Instrument instrument_at(const AmcModule* m, uint32_t offset) {
     Cursor c = { m, offset };
@@ -116,7 +100,6 @@ static Instrument instrument_at(const AmcModule* m, uint32_t offset) {
                           .loop_words = loop_length };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The offset of instrument `number` (1-based) as the replayer forms it: 16-bit arithmetic, so 0 reads far past the
 // table.
 
@@ -125,7 +108,6 @@ static uint32_t instrument_offset(uint8_t number) {
     return INSTRUMENTS_OFFSET + (uint16_t)(index << 4);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer's volume scaling (balance and master volume at their default 64, so the value passes through) keeps
 // the product's low word: only ten bits of a 16-bit effect volume survive. The result is the AUDxVOL write; the
 // channel applies Paula's 7-bit rule.
@@ -133,8 +115,6 @@ static uint32_t instrument_offset(uint8_t number) {
 static uint8_t scaled_volume(uint16_t value) {
     return (uint8_t)(((uint32_t)value * 64u & 0xFFFFu) >> 6);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Number of 16-byte instruments from the table start to the first stream, or -1 if the table does not fit.
 static int instrument_table_count(const uint8_t* data, size_t size) {
@@ -149,8 +129,6 @@ static int instrument_table_count(const uint8_t* data, size_t size) {
     return (int)((table_end - INSTRUMENTS_OFFSET) / INSTRUMENT_SIZE);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool amc_probe(const uint8_t* data, size_t size) {
     if (size < STREAMS_OFFSET + 4 || memcmp(data, MAGIC, MAGIC_SIZE) != 0) {
         return false;
@@ -159,8 +137,6 @@ bool amc_probe(const uint8_t* data, size_t size) {
     const AmcModule probe = { .data = data, .size = size };
     return (read_u32_at(&probe, STREAMS_OFFSET) >> 16) == 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 AmcPlayer* amc_create(const uint8_t* data, size_t size) {
     if (!amc_probe(data, size)) {
@@ -205,8 +181,6 @@ AmcPlayer* amc_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void amc_destroy(AmcPlayer* player) {
     if (player == nullptr) {
         return;
@@ -215,20 +189,14 @@ void amc_destroy(AmcPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int amc_instrument_count(const AmcPlayer* player) {
     return player->module.instrument_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 AmcVoiceState amc_voice_state(const AmcPlayer* player, int voice) {
     const AmcVoice* v = &player->voice[voice];
     return (AmcVoiceState) { .period = v->last_period, .instrument = v->last_instrument };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The streams start over: at the song start and when the step counter reaches the end.
 static void rewind_streams(AmcPlayer* p) {
@@ -240,7 +208,6 @@ static void rewind_streams(AmcPlayer* p) {
     p->step_ticks = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitSound
 
 bool amc_start(AmcPlayer* player, NuadeVoices* voices) {
@@ -254,8 +221,6 @@ bool amc_start(AmcPlayer* player, NuadeVoices* voices) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Effect 2 per tick: the period steps every `rate` ticks.
 static void run_slide(AmcVoice* v) {
@@ -275,7 +240,6 @@ static void run_slide(AmcVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Effect 4 per tick: the next of the eight periods.
 
 static void run_arpeggio(AmcVoice* v) {
@@ -287,8 +251,6 @@ static void run_arpeggio(AmcVoice* v) {
     v->paula.period = a->periods[a->index];
     a->index = (uint8_t)((a->index + 1) % AMC_ARPEGGIO_NOTES);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A note: the channel is switched off with the new sample, volume and period written; its DMA starts on the next tick.
 static void start_note(AmcVoice* v, const AmcModule* m, Cursor* c) {
@@ -309,8 +271,6 @@ static void start_note(AmcVoice* v, const AmcModule* m, Cursor* c) {
     v->last_period = v->paula.period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_note_stream(AmcVoice* v, const AmcModule* m, uint16_t step) {
     Cursor c = { m, v->note_pos };
     if (cursor_u16(&c) != step) {
@@ -319,8 +279,6 @@ static void run_note_stream(AmcVoice* v, const AmcModule* m, uint16_t step) {
     start_note(v, m, &c);
     v->note_pos = c.pos;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void run_effect(AmcVoice* v, Cursor* c) {
     switch (cursor_u8(c)) {
@@ -358,8 +316,6 @@ static void run_effect(AmcVoice* v, Cursor* c) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_effect_stream(AmcVoice* v, const AmcModule* m, uint16_t step) {
     Cursor c = { m, v->effect_pos };
     if (cursor_u16(&c) != step) {
@@ -368,8 +324,6 @@ static void run_effect_stream(AmcVoice* v, const AmcModule* m, uint16_t step) {
     run_effect(v, &c);
     v->effect_pos = c.pos;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The step part of the tick: the streams of every voice for the new step. True when the song wrapped.
 static bool run_step(AmcPlayer* p) {
@@ -387,8 +341,6 @@ static bool run_step(AmcPlayer* p) {
     }
     return looped;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Interrupt. Order of work: DMA on for the notes started on the last step, slides and arpeggios, then (after the
 // replayer's raster wait) the repeat of those notes, then the sequencer.
@@ -417,8 +369,6 @@ static bool play_tick(AmcPlayer* p) {
     p->step_ticks = 0;
     return run_step(p);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 AmcTickResult amc_tick(AmcPlayer* player, NuadeVoices* voices) {
     const bool looped = play_tick(player);

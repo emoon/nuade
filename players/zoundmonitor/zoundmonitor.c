@@ -33,14 +33,10 @@
 #define STATE_VOICE_SIZE 0x28
 #define STATE_END 0xFC
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const uint16_t k_periods[PERIOD_COUNT] = {
     0,   856, 808, 762, 720, 678, 640, 604, 570, 538, 508, 480, 453, 428, 404, 381, 360, 339, 320,
     302, 285, 269, 254, 240, 226, 214, 202, 190, 180, 170, 160, 151, 143, 135, 127, 120, 113,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // One position-list entry of a voice.
 typedef struct Track {
@@ -50,13 +46,9 @@ typedef struct Track {
     uint8_t note_transpose;
 } Track;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t read_be32(const uint8_t* p) {
     return (uint32_t)p[0] << 24 | (uint32_t)p[1] << 16 | (uint32_t)p[2] << 8 | p[3];
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The module as the replayer sees it: InitPlayer moves the instruments, positions and patterns over the header, in
 // place, and reads everything from there. Bytes past the moved block keep their file contents.
@@ -65,20 +57,14 @@ static uint8_t image_byte(const ZmModule* m, uint32_t offset) {
     return file_offset < m->size ? m->data[file_offset] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t image_long(const ZmModule* m, uint32_t offset) {
     return (uint32_t)image_byte(m, offset) << 24 | (uint32_t)image_byte(m, offset + 1) << 16
            | (uint32_t)image_byte(m, offset + 2) << 8 | image_byte(m, offset + 3);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t image_word(const ZmModule* m, uint32_t offset) {
     return (uint16_t)(image_byte(m, offset) << 8 | image_byte(m, offset + 1));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static ZmInstrument parse_instrument(const ZmModule* m, uint32_t index) {
     const uint32_t base = index * INSTRUMENT_SIZE;
@@ -93,14 +79,10 @@ static ZmInstrument parse_instrument(const ZmModule* m, uint32_t index) {
     return ins;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // 1-based, as the pattern names it. Past the 16th, the replayer reads the position list as instrument records.
 static ZmInstrument instrument_at(const ZmModule* m, uint32_t number) {
     return number <= ZM_INSTRUMENTS ? m->instruments[number - 1] : parse_instrument(m, number - 1);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static Track track_at(const ZmModule* m, int position, int voice) {
     const uint32_t base = INSTRUMENT_BLOCK + (uint32_t)position * POSITION_SIZE + (uint32_t)voice * 4;
@@ -110,14 +92,10 @@ static Track track_at(const ZmModule* m, int position, int voice) {
                      .note_transpose = image_byte(m, base + 3) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The cell `row` of `pattern`; row 32 is the first row of the next pattern (the portamento target of row 31).
 static uint32_t cell_at(const ZmModule* m, uint8_t pattern, int row) {
     return image_long(m, m->patterns_offset + (uint32_t)pattern * PATTERN_SIZE + (uint32_t)row * 4);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A voice's variables as the words the replayer keeps them in.
 static uint16_t voice_word(const ZmVoice* v, uint32_t offset) {
@@ -157,8 +135,6 @@ static uint16_t voice_word(const ZmVoice* v, uint32_t offset) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The period table is followed by the player's variables, and a note past the table (note plus transpose or
 // arpeggio, up to 255) reads them as a period. Songs do this: a rest on a transposed track is no longer a rest and
 // plays at the period it finds here. Offset is the byte offset from the start of the table.
@@ -194,13 +170,9 @@ static uint16_t state_word(const ZmPlayer* p, uint32_t offset) {
     return 0; // memory past the player
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t period_at(const ZmPlayer* p, uint8_t index) {
     return index < PERIOD_COUNT ? k_periods[index] : state_word(p, (uint32_t)index * 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Per tick: arpeggio, portamento or slide, then the loop registers.
 static void run_effects(const ZmPlayer* p, ZmVoice* v) {
@@ -224,14 +196,10 @@ static void run_effects(const ZmPlayer* p, ZmVoice* v) {
     v->paula.len_words = v->loop_length;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void set_volume(ZmVoice* v, uint32_t cell, const Track* track) {
     const int16_t volume = (int16_t)(v->instrument_volume + (int8_t)(cell >> 8) + track->volume);
     v->volume = (uint16_t)volume < 0x40 ? volume : (volume < 0 ? 0 : 0x40);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void play_row_voice(ZmPlayer* p, ZmVoice* v, const Track* track) {
     const ZmModule* m = &p->module;
@@ -311,8 +279,6 @@ static void play_row_voice(ZmPlayer* p, ZmVoice* v, const Track* track) {
     v->paula.volume = (uint8_t)(v->volume & 0x7F);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void play_row(ZmPlayer* p) {
     const ZmModule* m = &p->module;
     ZmSong* s = &p->song;
@@ -336,8 +302,6 @@ static void play_row(ZmPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void play_tick(ZmPlayer* p) {
     ZmSong* s = &p->song;
     s->tick++;
@@ -359,8 +323,6 @@ static void play_tick(ZmPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool zm_probe(const uint8_t* data, size_t size) {
     if (data == nullptr || size < HEADER_SIZE) {
         return false;
@@ -376,8 +338,6 @@ bool zm_probe(const uint8_t* data, size_t size) {
     }
     return s[1] == 'a' && s[2] == 'm' && s[3] == 'p';
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Load an instrument's sample as InitPlayer does: an IFF file gives its BODY length (replacing the instrument's),
 // a raw one is used whole. The first word is cleared: it is the silent loop of one-shot samples. The buffer reaches the
@@ -406,8 +366,6 @@ static int8_t* load_sample(const NuadeIo* io, const char* url, ZmInstrument* ins
     return sample;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static ZmStatus load_samples(ZmModule* m, const char* path, const NuadeIo* io, char* missing, size_t missing_cap) {
     char dir[1024] = { 0 };
     char samples_dir[1024] = { 0 };
@@ -435,8 +393,6 @@ static ZmStatus load_samples(ZmModule* m, const char* path, const NuadeIo* io, c
     nuade_file_index_destroy(index);
     return status;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ZmCreateResult zm_create(const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
     ZmCreateResult result = { .status = ZmStatus_InvalidData };
@@ -476,8 +432,6 @@ ZmCreateResult zm_create(const uint8_t* data, size_t size, const char* path, con
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void zm_destroy(ZmPlayer* player) {
     if (player == nullptr) {
         return;
@@ -488,8 +442,6 @@ void zm_destroy(ZmPlayer* player) {
     free(player->module.data);
     free(player);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // InitSound
 bool zm_start(ZmPlayer* player, NuadeVoices* voices) {
@@ -510,8 +462,6 @@ bool zm_start(ZmPlayer* player, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 ZmTickResult zm_tick(ZmPlayer* player, NuadeVoices* voices) {
     ZmSong* s = &player->song;
     s->looped = false;
@@ -522,8 +472,6 @@ ZmTickResult zm_tick(ZmPlayer* player, NuadeVoices* voices) {
     return (ZmTickResult) { .looped = s->looped };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const char* zm_instrument_name(const ZmPlayer* player, int instrument) {
     if (instrument < 0 || instrument >= ZM_INSTRUMENTS) {
         return "";
@@ -531,27 +479,19 @@ const char* zm_instrument_name(const ZmPlayer* player, int instrument) {
     return player->module.instruments[instrument].name;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 ZmPosition zm_position(const ZmPlayer* player) {
     const ZmSong* s = &player->song;
     return (ZmPosition) { .order = s->shown_position, .row = s->shown_row, .speed = player->module.speed };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int zm_order_count(const ZmPlayer* player) {
     return player->module.position_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ZmVoiceState zm_voice_state(const ZmPlayer* player, int voice) {
     const ZmVoice* v = &player->song.voices[voice];
     return (ZmVoiceState) { .note = v->note, .instrument = v->instrument };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ZmCell zm_pattern_cell(const ZmPlayer* player, int order, int voice, int row) {
     const ZmModule* m = &player->module;

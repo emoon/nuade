@@ -24,7 +24,6 @@
 #define IDLE_BYTES 0xD0
 #define IDLE_POSITION 0xFFF0
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The output byte for the sum of the four voices' table values (each 0..255, silence 128): the sum divided by 4, or
 // clipped to the range of one voice.
 
@@ -40,7 +39,6 @@ static void build_clip_table(H7vMixer* mixer) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A sample byte at a volume 0..63, offset binary.
 
 static void build_volume_table(H7vMixer* mixer) {
@@ -51,8 +49,6 @@ static void build_volume_table(H7vMixer* mixer) {
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void h7v_mixer_init(H7vMixer* mixer, bool hard_clip, int8_t tempo_offset) {
     *mixer = (H7vMixer) { 0 };
@@ -73,7 +69,6 @@ void h7v_mixer_init(H7vMixer* mixer, bool hard_clip, int8_t tempo_offset) {
     h7v_mixer_set_tempo(mixer, tempo_offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The interrupt's length in output words: the rate gives 20 samples per kHz, the tempo offset scales it in 256ths.
 // The replayer's buffers hold 300 words; a longer interrupt would write past them, so it is cut there.
 
@@ -83,7 +78,6 @@ void h7v_mixer_set_tempo(H7vMixer* mixer, int8_t tempo_offset) {
     mixer->words = (uint16_t)(words < BUFFER_WORDS ? words : BUFFER_WORDS);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Switch a voice on or off for the coming buffer, and set where it continues at the end of its sample. A voice that
 // was off starts from the beginning of the sample in the registers.
 
@@ -108,15 +102,12 @@ static void update_voice(H7vMixer* mixer, H7vMixVoice* m, H7vVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void h7v_mixer_voices_update(H7vMixer* mixer, H7vSong* song) {
     for (int i = 0; i < H7V_MIXED_TRACKS; i++) {
         update_voice(mixer, &mixer->voice[i], &song->voices[H7V_PAULA_TRACKS + i]);
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The step and the volume row of a voice from its period and volume registers. A voice with period 0 keeps what it has.
 
 static void set_step(H7vMixVoice* m, const H7vVoice* v) {
@@ -133,7 +124,6 @@ static void set_step(H7vMixVoice* m, const H7vVoice* v) {
     m->step = fixed << 16 | fixed >> 16;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One output sample later: the position moves by the step (the carry of the fraction goes to the integer part); when it
 // reaches the end of the sample the voice continues with its loop.
 
@@ -148,8 +138,6 @@ static void advance(H7vMixVoice* m) {
         m->pos = (pos & 0xFFFF0000u) | (uint16_t)(offset - m->reload_bytes);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void h7v_mixer_mix(H7vMixer* mixer, const H7vSong* song) {
     for (int i = 0; i < H7V_MIXED_TRACKS; i++) {

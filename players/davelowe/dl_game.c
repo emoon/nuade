@@ -79,8 +79,6 @@ typedef struct DlGameHeader {
     uint32_t effect_request; // the effect the eagleplayer asks for in the first subsong, 0 = none
 } DlGameHeader;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static DlGameHeader read_header(const DlImage* image) {
     DlCursor cursor = { .image = image, .address = HEADER_START };
     DlGameHeader h = { 0 };
@@ -101,28 +99,20 @@ static DlGameHeader read_header(const DlImage* image) {
     return h;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool dl_game_extract(const DlImage* file, uint32_t* code_size) {
     DlCursor cursor = { .image = file, .address = DL_HUNK_CODE_OFFSET + DL_MODULE_TAG_AT };
     return dli_u8(file, HUNK_MEMORY_FLAGS_AT) != 0 && dl_hunk_code(file, code_size) && dlc_u32(&cursor) == TAG_UNCL
            && dlc_u32(&cursor) == TAG_EART;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The Check2 of the eagleplayer: the header has an init, an interrupt and the subsong number's address
 static bool header_is_valid(const DlGameHeader* h) {
     return h->init != 0 && h->interrupt != 0 && h->subsong_variable != 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool code_contains(const DlImage* image, uint32_t from, uint32_t to, const uint32_t* pattern, uint32_t count) {
     return dl_code_find(image, from, to, pattern, count) != DL_NOT_FOUND;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The voice routine tests the note counter against 0 and 1 and the sample state against 3 (the test against 0 is
 // tst.w or cmpi.w). Returns the address of the first test, or DL_NOT_FOUND.
@@ -147,8 +137,6 @@ static uint32_t find_voice_routine(const DlImage* image) {
                                  : dl_code_find(image, 0, image->module_size, with_cmpi, nuade_sizeof_array(with_cmpi));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The command table: the voice routine loads its address into a3, takes the handler of the command and jumps to it
 static uint32_t find_command_table(const DlImage* image, uint32_t routine) {
     const uint32_t with_movea[]
@@ -167,8 +155,6 @@ static uint32_t find_command_table(const DlImage* image, uint32_t routine) {
     return table < image->module_size ? table : DL_NOT_FOUND;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A handler that does nothing: the voice stands still on its command
 static bool handler_does_nothing(const DlImage* image, uint32_t handler) {
     const uint32_t just_return[] = { Op_Rts };
@@ -176,8 +162,6 @@ static bool handler_does_nothing(const DlImage* image, uint32_t handler) {
     return dl_code_matches(image, handler, just_return, nuade_sizeof_array(just_return))
            || dl_code_matches(image, handler, nop_return, nuade_sizeof_array(nop_return));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // How many header words the envelope command's handler skips: the pointer in the pattern leads to a header of two words
 // (move.l (a4)+,d16(a0)), of one (move.w (a4)+,d16(a0)), or to the values (early engine, see classify_handler).
@@ -195,8 +179,6 @@ static bool envelope_header_words(const DlImage* image, uint32_t handler, uint32
     }
     return false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // What a command handler does, from its first instructions (with the exact fields of the voice record); for the
 // envelope command also how many header words it skips (0 in the early engine). Returns false for a handler that is not
@@ -245,8 +227,6 @@ static bool classify_handler(const DlImage* image, uint32_t handler, uint32_t in
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool has_command(const DlVariant* variant, DlCommand command) {
     for (uint32_t i = 0; i < variant->command_count; i++) {
         if (variant->commands[i] == command) {
@@ -255,8 +235,6 @@ static bool has_command(const DlVariant* variant, DlCommand command) {
     }
     return false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The table is a run of handler addresses that ends where the first handler after it begins. Returns false if a handler
 // is unknown or the table lacks a command that every driver has.
@@ -287,8 +265,6 @@ static bool read_commands(const DlImage* image, uint32_t table, uint32_t init, D
            && has_command(variant, DlCommand_Envelope) && has_command(variant, DlCommand_Rest);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The eagleplayer's count: the first entry, then the entries whose first list address is at least 0x100
 static uint32_t count_subsongs(const DlImage* image, uint32_t table) {
     if (table == 0) {
@@ -303,8 +279,6 @@ static uint32_t count_subsongs(const DlImage* image, uint32_t table) {
     }
     return count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A driver without a subsong table plays one song. Its interrupt calls the voice routine for each channel with the
 // address of the voice record in a0 (lea record,a0 / lea AUDxLC,a2); the list of a voice is the record's list start,
@@ -338,8 +312,6 @@ static bool find_single_song(const DlImage* image, const DlGameHeader* header, D
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The table of sound effects. A driver that plays effects on channels 2 and 3 starts one by looking its pattern up in
 // the table (lea table,a1 / adda.l d0,a1 / move.l (a1),pattern pointer of the effect voice) once for each of the two
 // channels; a driver with effects on all four channels has the sequence four times and is not supported.
@@ -365,8 +337,6 @@ static uint32_t find_effect_table(const DlImage* image, uint32_t interrupt) {
     return address == dlc_u32(&other) ? address : DL_NOT_FOUND;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The init routine of one driver (Frontier) ends with: cmpi.l #n,subsong / bne / move.w #speed,d0 / jsr ramp, where the
 // routine ramp sets the mode word to 1, the speed word to d0 and the level word to DL_RAMP_START_LEVEL. That subsong
 // starts silent and rises to the music's volume: the voice routine subtracts the level from the envelope value, down to
@@ -377,8 +347,6 @@ typedef struct RampCall {
     uint16_t ticks;
     uint32_t routine;
 } RampCall;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static RampCall read_ramp_call(const DlImage* image, uint32_t at) {
     DlCursor cursor = { .image = image, .address = at };
@@ -394,8 +362,6 @@ static RampCall read_ramp_call(const DlImage* image, uint32_t at) {
     call.routine = dlc_u32(&cursor);
     return call;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The address of the level word if `routine` sets the ramp up (mode 1, speed d0, level), else DL_NOT_FOUND
 static uint32_t ramp_level_address(const DlImage* image, uint32_t routine) {
@@ -425,8 +391,6 @@ static uint32_t ramp_level_address(const DlImage* image, uint32_t routine) {
     return dlc_u32(&cursor);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Returns false for a driver that has the call but not the subtraction in its voice routine
 static bool find_volume_ramp(const DlImage* image, const DlGameHeader* header, uint32_t routine, DlGameModule* module) {
     const uint32_t call_code[]
@@ -452,8 +416,6 @@ static bool find_volume_ramp(const DlImage* image, const DlGameHeader* header, u
     module->ramp_ticks = call.ticks;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool dl_game_locate(DlImage* image, DlGameModule* module) {
     const DlGameHeader header = read_header(image);
@@ -499,8 +461,6 @@ bool dl_game_locate(DlImage* image, DlGameModule* module) {
     dl_patch_midwinter(image, header.module_size, module->subsong_count);
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DlSubsong dl_game_subsong(const DlImage* image, const DlGameModule* module, uint32_t index) {
     DlSubsong subsong = module->single_song;

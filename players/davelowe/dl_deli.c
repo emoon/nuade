@@ -35,8 +35,6 @@ typedef struct DlDeliEntry {
 #define ENTRY_SIZE 0x16
 #define ENTRY_UNUSED_BYTES 4
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static DlDeliHeader read_header(const DlImage* image, uint32_t start) {
     DlCursor cursor = { .image = image, .address = start + DL_MODULE_TAG_AT + DL_MODULE_TAG_SIZE };
     DlDeliHeader h;
@@ -47,8 +45,6 @@ static DlDeliHeader read_header(const DlImage* image, uint32_t start) {
     h.table = cursor.address;
     return h;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static DlDeliEntry read_entry(const DlImage* image, uint32_t table, uint32_t index) {
     DlCursor cursor = { .image = image, .address = table + index * ENTRY_SIZE };
@@ -61,8 +57,6 @@ static DlDeliEntry read_entry(const DlImage* image, uint32_t table, uint32_t ind
     return e;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool dl_deli_extract(const DlImage* file, uint32_t* code_size) {
     DlCursor cursor = { .image = file, .address = DL_HUNK_CODE_OFFSET + DL_MODULE_TAG_AT };
     if (!dl_hunk_code(file, code_size) || dlc_u32(&cursor) != TAG_DAVE || dlc_u32(&cursor) != TAG_LOWE) {
@@ -72,16 +66,12 @@ bool dl_deli_extract(const DlImage* file, uint32_t* code_size) {
     return h.version_first <= MAX_VERSION_FIRST && h.version_second <= MAX_VERSION_SECOND;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool dl_deli_locate(const DlImage* image, DlDeliModule* module) {
     const DlDeliHeader h = read_header(image, 0);
     module->subsong_count = h.subsong_count;
     module->table = h.table;
     return h.subsong_count != 0 && h.table + (uint64_t)h.subsong_count * ENTRY_SIZE <= image->module_size;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DlSubsong dl_deli_subsong(const DlImage* image, const DlDeliModule* module, uint32_t index) {
     const DlDeliEntry e = read_entry(image, module->table, index);
@@ -91,8 +81,6 @@ DlSubsong dl_deli_subsong(const DlImage* image, const DlDeliModule* module, uint
     }
     return subsong;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DlVariant dl_deli_variant(void) {
     static const DlCommand s_commands[]

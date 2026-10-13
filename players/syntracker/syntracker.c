@@ -37,8 +37,6 @@
 // The remainder the portamento division starts a row with. See effect_portamento.
 #define ROW_START_REMAINDER 0
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The replayer's period table (72 words), followed in its code by the default vibrato table. A note index past the
 // period table reads that table as words, so both live in one reader.
 #define PERIOD_COUNT 72
@@ -56,8 +54,6 @@ static const int8_t k_vibrato[VIBRATO_BYTES] = {
 };
 
 static const int8_t k_silence[STK_WAVE_SIZE];
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A cursor over the module; past the file it reads zeros.
 typedef struct Reader {
@@ -79,8 +75,6 @@ typedef struct Instrument {
 // wave into the next ones (see update_voices), and a long wave length reads on into the next copies.
 #define SLOT_SILENCE 0
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t read_u8(Reader* r) {
     const StkModule* m = r->module;
     const uint8_t value = r->pos < m->size ? m->data[r->pos] : 0;
@@ -88,27 +82,20 @@ static uint8_t read_u8(Reader* r) {
     return value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t read_u16(Reader* r) {
     const uint16_t high = read_u8(r);
     return (uint16_t)(high << 8 | read_u8(r));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t read_u32(Reader* r) {
     const uint32_t high = read_u16(r);
     return high << 16 | read_u16(r);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static Reader reader_at(const StkModule* m, uint32_t pos) {
     return (Reader) { .module = m, .pos = pos };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // `bytes` of the module at `offset` as a wave; null when they do not lie in the module and its padding.
 
 static const int8_t* wave_at(const StkModule* m, uint32_t offset, uint32_t bytes) {
@@ -117,15 +104,12 @@ static const int8_t* wave_at(const StkModule* m, uint32_t offset, uint32_t bytes
                : nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A 64 byte block of the sample data as a 32 byte table; silence when it is out of range.
 
 static const int8_t* table_block(const StkModule* m, uint8_t block) {
     const int8_t* table = wave_at(m, m->sample_base + (uint32_t)block * WAVE_BLOCK_SIZE, VIBRATO_SIZE);
     return table != nullptr ? table : k_silence;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The instrument record `slot` of the table. The replayer does not bound the slot: a number past the table reads
 // whatever the module holds there.
@@ -140,8 +124,6 @@ static Instrument instrument_at(const StkModule* m, uint8_t slot) {
     ins.repeat_length = read_u16(&r);
     return ins;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static StkSynthParams read_synth_params(Reader r) {
     StkSynthParams p;
@@ -165,7 +147,6 @@ static StkSynthParams read_synth_params(Reader r) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Point the voice at the synth instrument `slot`: its wave and parameters.
 
 static void select_synth(const StkModule* m, StkVoice* v, uint8_t slot) {
@@ -182,16 +163,12 @@ typedef struct Track {
     uint8_t transpose;
 } Track;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static Track track_at(const StkModule* m, int voice, uint32_t position) {
     const uint32_t entry = (uint32_t)voice * ORDER_ENTRIES + position;
     Reader pattern = reader_at(m, m->orders_base + entry);
     Reader transpose = reader_at(m, m->orders_base + STK_VOICES * ORDER_ENTRIES + entry);
     return (Track) { .pattern = read_u8(&pattern), .transpose = read_u8(&transpose) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static StkCell cell_at(const StkModule* m, uint8_t pattern, uint32_t row) {
     Reader r = reader_at(m, m->patterns_base + (uint32_t)pattern * PATTERN_SIZE + row * 4);
@@ -202,8 +179,6 @@ static StkCell cell_at(const StkModule* m, uint8_t pattern, uint32_t row) {
     c.param = read_u8(&r);
     return c;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The word `index` places into the replayer's period table.
 static uint16_t period_at(int index) {
@@ -217,21 +192,18 @@ static uint16_t period_at(int index) {
     return byte + 1 < VIBRATO_BYTES ? (uint16_t)((uint8_t)k_vibrato[byte] << 8 | (uint8_t)k_vibrato[byte + 1]) : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // mulu.w a, b followed by lsr.w #shift: the shift acts on the low word of the product.
 
 static uint16_t scale(uint16_t a, uint16_t b, int shift) {
     return (uint16_t)((uint16_t)((uint32_t)a * b) >> shift);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // `level` (0 .. MAX_LEVEL) of the voice's instrument volume.
 
 static uint16_t instrument_level(const StkVoice* v, uint16_t level) {
     return scale(level, v->instrument_volume, 6);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Hand a queued wave to the channel's registers.
 
 static void load_wave(StkWaveLoad* load, NuadePaulaChannel* paula) {
@@ -242,15 +214,11 @@ static void load_wave(StkWaveLoad* load, NuadePaulaChannel* paula) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool stk_probe(const uint8_t* data, size_t size) {
     return size >= HEADER_SIZE + STK_INSTRUMENTS * STK_NAME_SIZE + STK_INSTRUMENTS * INSTRUMENT_SIZE
                        + 2 * STK_VOICES * ORDER_ENTRIES
            && memcmp(data, MAGIC, MAGIC_SIZE) == 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 StkPlayer* stk_create(const uint8_t* data, size_t size) {
     if (!stk_probe(data, size) || size > UINT32_MAX - NUADE_PAULA_MAX_SAMPLE_BYTES) {
@@ -281,8 +249,6 @@ StkPlayer* stk_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void stk_destroy(StkPlayer* player) {
     if (player == nullptr) {
         return;
@@ -290,8 +256,6 @@ void stk_destroy(StkPlayer* player) {
     free(player->module.data);
     free(player);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Arpeggio, vibrato and slide: the period register, every tick.
 static void update_period(StkVoice* v) {
@@ -326,8 +290,6 @@ static void update_period(StkVoice* v) {
     v->paula.period = (uint16_t)(period + v->slide_offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The volume the synth voice's envelope gives, advancing it one tick. A sample voice has no envelope.
 static uint16_t envelope_volume(StkVoice* v) {
     if (!v->synth_active) {
@@ -359,8 +321,6 @@ static uint16_t envelope_volume(StkVoice* v) {
     return scale(v->volume, v->envelope_level & MAX_LEVEL, 6);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A low-pass over the working wave, once per tick while a filter phase runs. The running value starts as the unsigned
 // last byte and keeps its 16 bits between samples.
 static void filter_wave(StkVoice* v, int8_t* wave) {
@@ -383,8 +343,6 @@ static void filter_wave(StkVoice* v, int8_t* wave) {
         return;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The working wave: the instrument's wave, with a second wave mixed over it where that one is not negative; the second
 // one's window sweeps back and forth. Returns whether it wrote the wave: the replayer's output pointer advances with
@@ -426,16 +384,12 @@ static bool morph_wave(const StkModule* m, StkVoice* v, int8_t* wave) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The volume register of a voice: the decay, then the envelope.
 static void update_volume(StkVoice* v) {
     int16_t decayed = (int16_t)(v->volume - v->decay);
     v->volume = decayed < 0 ? 0 : (uint16_t)decayed;
     v->paula.volume = (uint8_t)envelope_volume(v);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Start the instrument on a voice: DMA off, the new wave pointers queued for the end of the tick.
 static void start_instrument(StkPlayer* p, StkVoice* v, int voice, uint8_t number) {
@@ -496,8 +450,6 @@ static void start_instrument(StkPlayer* p, StkVoice* v, int voice, uint8_t numbe
     v->envelope_level = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The portamento effect: a slide that reaches the next note of the voice in this pattern when its row starts. The
 // original divides a 32 bit dividend by 16 bits (divu.w) in a register whose upper word it never clears. When the note
 // slides down that upper word is part of the dividend: it is the remainder of the division an earlier voice of the same
@@ -548,8 +500,6 @@ static void effect_portamento(StkPlayer* p, StkVoice* v, uint8_t pattern, StkCel
     }
     v->slide = down ? (int16_t)-(int16_t)step : (int16_t)step;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The effect of a cell, for the voice, after its note and instrument.
 static void apply_effect(StkPlayer* p, StkVoice* v, uint8_t pattern, StkCell cell, uint8_t transpose) {
@@ -624,8 +574,6 @@ static void apply_effect(StkPlayer* p, StkVoice* v, uint8_t pattern, StkCell cel
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Decode the row's cell of one voice.
 static void play_voice_row(StkPlayer* p, int voice) {
     const StkModule* m = &p->module;
@@ -676,8 +624,6 @@ static void play_voice_row(StkPlayer* p, int voice) {
     apply_effect(p, v, track.pattern, cell, track.transpose);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // One row: every voice decodes its cell, the row counter advances.
 static void play_row(StkPlayer* p) {
     StkSong* s = &p->song;
@@ -703,8 +649,6 @@ static void play_row(StkPlayer* p) {
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The part of the interrupt that runs every tick: the registers, the working waves, the DMA start.
 static void update_voices(StkPlayer* p) {
@@ -739,8 +683,6 @@ static void update_voices(StkPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // InitSound: the voices play the silent wave at volume 0 until the first row.
 void stk_start(StkPlayer* player) {
     StkSong* s = &player->song;
@@ -759,8 +701,6 @@ void stk_start(StkPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Interrupt
 StkTickResult stk_tick(StkPlayer* player, NuadeVoices* voices) {
     StkSong* s = &player->song;
@@ -777,33 +717,23 @@ StkTickResult stk_tick(StkPlayer* player, NuadeVoices* voices) {
     return (StkTickResult) { .looped = s->looped };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const char* stk_instrument_name(const StkPlayer* player, int instrument) {
     return instrument >= 0 && instrument < STK_INSTRUMENTS ? player->names[instrument] : "";
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 StkPosition stk_position(const StkPlayer* player) {
     const StkSong* s = &player->song;
     return (StkPosition) { .order = s->shown_position, .row = s->shown_row, .speed = s->speed };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int stk_order_count(const StkPlayer* player) {
     return player->module.song_length;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 StkVoiceState stk_voice_state(const StkPlayer* player, int voice) {
     const StkVoice* v = &player->song.voices[voice];
     return (StkVoiceState) { .note = v->shown_note, .instrument = v->shown_instrument };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 StkCell stk_pattern_cell(const StkPlayer* player, int order, int voice, int row) {
     const StkModule* m = &player->module;

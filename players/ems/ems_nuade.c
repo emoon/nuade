@@ -8,14 +8,10 @@
 #include <nuade/players/ems.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe ems_nuade_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return ems_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult ems_nuade_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -32,34 +28,24 @@ static NuadePlayerOpenResult ems_nuade_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void ems_nuade_close(void* user_data) {
     ems_destroy((EmsPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool ems_nuade_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return subsong == 0 && ems_start((EmsPlayer*)user_data, voices);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult ems_nuade_tick(void* user_data, NuadeVoices* voices) {
     const EmsTickResult tick = ems_tick((EmsPlayer*)user_data, voices);
     return (NuadeTickResult) { .length = EMS_TICK_LENGTH, .flags = tick.looped ? NuadeTick_Looped : NuadeTick_None };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void ems_nuade_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "EMS (Editeur Musical Sequentiel)");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePositionResult ems_nuade_position(void* user_data) {
     const EmsPosition p = ems_position((const EmsPlayer*)user_data);
@@ -70,8 +56,6 @@ static NuadePositionResult ems_nuade_position(void* user_data) {
                                                  .rows = EMS_ROWS,
                                                  .speed = (uint32_t)p.speed } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t ems_nuade_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const EmsPlayer* player = (const EmsPlayer*)user_data;
@@ -87,8 +71,6 @@ static uint32_t ems_nuade_voice_info(void* user_data, NuadeVoiceInfo* out, uint3
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTrackerInfoResult ems_nuade_tracker_info(void* user_data, const NuadePosition* at) {
     if ((int)at->order >= ems_order_count((const EmsPlayer*)user_data)) {
         return (NuadeTrackerInfoResult) { 0 };
@@ -102,8 +84,6 @@ static NuadeTrackerInfoResult ems_nuade_tracker_info(void* user_data, const Nuad
                                                              { "fx", NuadeColumn_Hex, 1, 0 },
                                                              { "arg", NuadeColumn_Hex, 2, 0 } } } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePatternCell ems_nuade_cell(const void* ctx, uint32_t order, uint32_t channel, uint32_t row) {
     NuadePatternCell cell = nuade_cell_empty();
@@ -123,8 +103,6 @@ static NuadePatternCell ems_nuade_cell(const void* ctx, uint32_t order, uint32_t
     return cell;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t ems_nuade_tracker_cells(void* user_data, const NuadePosition* at, uint32_t channel, int32_t row_lo,
                                         int32_t row_hi, NuadePatternCell* out, uint32_t cap) {
     if ((int)at->order >= ems_order_count((const EmsPlayer*)user_data)) {
@@ -132,8 +110,6 @@ static uint32_t ems_nuade_tracker_cells(void* user_data, const NuadePosition* at
     }
     return nuade_tracker_fill(at, EMS_VOICES, EMS_ROWS, channel, row_lo, row_hi, out, cap, ems_nuade_cell, user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_ems = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -152,8 +128,6 @@ const NuadePlayer nuade_player_ems = {
     .tracker_info = ems_nuade_tracker_info,
     .tracker_cells = ems_nuade_tracker_cells,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 EmsPlayer* ems_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_ems) {

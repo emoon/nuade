@@ -19,13 +19,10 @@
 #define RR_INITIAL_PERIOD 0x7C
 #define RR_MAX_FADE_LEVEL 0x40
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const int8_t* rr_chip(const RrPlayer* player, uint32_t offset) {
     return (const int8_t*)(player->module.image + offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A byte of the song. The walk at open proved every read in range; a failed read ends the pattern.
 
 static uint8_t rr_song_byte(const RrPlayer* player, uint32_t at) {
@@ -34,7 +31,6 @@ static uint8_t rr_song_byte(const RrPlayer* player, uint32_t at) {
     return byte;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxVOL: the clamped version holds the volume under the master level.
 
 static void rr_write_volume(RrPlayer* player, uint32_t v) {
@@ -46,7 +42,6 @@ static void rr_write_volume(RrPlayer* player, uint32_t v) {
     voice->paula.volume = (uint8_t)volume;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $2bc: the volume envelope steps every (reload + 1) ticks towards the target volume.
 
 static void rr_volume_envelope(RrPlayer* player, uint32_t v) {
@@ -68,7 +63,6 @@ static void rr_volume_envelope(RrPlayer* player, uint32_t v) {
     rr_write_volume(player, v);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $55a: the master fade moves its level one step towards its target every (reload + 1) ticks and pulls the voices'
 // volumes along: they follow it down when above it, and up when at or below it.
 
@@ -94,7 +88,6 @@ static void rr_master_fade(RrPlayer* player) {
     rr_write_volume(player, 0);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $31a: the pitch slide adds its step to the period until it reaches the target. Bomb Fusion writes AUDxPER only when
 // a slide upwards ends; the other versions write it every tick.
 
@@ -122,7 +115,6 @@ static void rr_pitch_slide(RrPlayer* player, uint32_t v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's patch at the point where a voice restarts its track list: SongEnd once every voice has done so.
 
 static void rr_voice_wrapped(RrPlayer* player, uint32_t v) {
@@ -136,7 +128,6 @@ static void rr_voice_wrapped(RrPlayer* player, uint32_t v) {
     memcpy(player->wrap_pending, player->wrap_initial, sizeof(player->wrap_pending));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One iteration of the event loop (a pattern byte or a track list byte) of the call that is running; false when the
 // call has used its budget. The open-time walk refuses modules that need more, so this only stops a module the walk
 // does not know.
@@ -145,7 +136,6 @@ static bool rr_event_step(uint32_t* steps) {
     return (*steps)++ < RR_EVENT_BUDGET;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $506: the pattern ended; the next track list entry names the next pattern and how often it repeats.
 
 static void rr_next_track_entry(RrPlayer* player, uint32_t v, uint32_t* steps) {
@@ -174,8 +164,6 @@ static void rr_next_track_entry(RrPlayer* player, uint32_t v, uint32_t* steps) {
     voice->track_pos = pos;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void rr_set_sample(RrPlayer* player, uint32_t v, uint8_t instrument) {
     RrVoice* voice = &player->voices[v];
     RrSample sample = { 0 };
@@ -186,7 +174,6 @@ static void rr_set_sample(RrPlayer* player, uint32_t v, uint8_t instrument) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A volume slide request: step by one towards `target` every (rate + 1) ticks.
 
 static void rr_set_volume_slide(RrVoice* voice, uint8_t target, uint8_t rate) {
@@ -199,7 +186,6 @@ static void rr_set_volume_slide(RrVoice* voice, uint8_t target, uint8_t rate) {
     voice->envelope_counter = rate;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Runs one pattern command. False when the command ends the voice's event processing (a rest).
 
 static bool rr_run_command(RrPlayer* player, uint32_t v, RrCommandInfo info) {
@@ -255,7 +241,6 @@ static bool rr_run_command(RrPlayer* player, uint32_t v, RrCommandInfo info) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $372: reads events until one returns: a note (period, duration, DMA restart) or a rest.
 
 static void rr_next_event(RrPlayer* player, uint32_t v) {
@@ -291,7 +276,6 @@ static void rr_next_event(RrPlayer* player, uint32_t v) {
     voice->wait = 0xFFFF;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $3b8: the notes that were read start: sample registers, then DMA off (the interrupt switches it on again).
 
 static void rr_start_notes(RrPlayer* player) {
@@ -308,7 +292,6 @@ static void rr_start_notes(RrPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $2c0: the repeat registers, written after the DMA start.
 
 static void rr_write_repeats(RrPlayer* player) {
@@ -327,7 +310,6 @@ static void rr_write_repeats(RrPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tick routine ($212) and the interrupt around it.
 
 static void rr_run_voices(RrPlayer* player) {
@@ -348,8 +330,6 @@ static void rr_run_voices(RrPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 RrTickResult rr_tick(RrPlayer* player, NuadeVoices* voices) {
     player->looped = false;
     rr_run_voices(player);
@@ -366,7 +346,6 @@ RrTickResult rr_tick(RrPlayer* player, NuadeVoices* voices) {
     return (RrTickResult) { .looped = player->looped };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The init routine: every voice gets its initial registers and its track list; the master fade starts at full level.
 
 bool rr_start(RrPlayer* player, uint32_t subsong, NuadeVoices* voices) {
@@ -413,8 +392,6 @@ bool rr_start(RrPlayer* player, uint32_t subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool rr_probe(const uint8_t* data, size_t size) {
     RrModule module;
     if (!rr_module_load(&module, data, size)) {
@@ -424,8 +401,6 @@ bool rr_probe(const uint8_t* data, size_t size) {
     rr_module_free(&module);
     return ok;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RrPlayer* rr_create(const uint8_t* data, size_t size) {
     RrPlayer* player = calloc(1, sizeof(*player));
@@ -448,8 +423,6 @@ RrPlayer* rr_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void rr_destroy(RrPlayer* player) {
     if (player != nullptr) {
         rr_module_free(&player->module);
@@ -457,19 +430,13 @@ void rr_destroy(RrPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t rr_subsong_count(const RrPlayer* player) {
     return player->module.header.subsong_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const char* rr_title(const RrPlayer* player) {
     return player->title;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RrVoiceState rr_voice_state(const RrPlayer* player, uint32_t voice) {
     const RrVoice* state = &player->voices[voice];

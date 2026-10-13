@@ -28,7 +28,6 @@
 #define RR_ALL_VOICES 0xFu
 #define RR_HUNK_HEADER_BYTES 0x20u
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The known versions. The slots are the places in the code (from the init entry) that hold each table's address; the
 // hashes were taken from the corpus files.
 
@@ -141,7 +140,6 @@ static const RrVersion rr_versions[] = {
     },
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pattern commands of the jump tables (a version's table has 11 or 13 entries).
 
 static const RrCommand rr_looping_commands[] = {
@@ -155,8 +153,6 @@ static const RrCommand rr_oneshot_commands[] = {
     RrCommand_SetVolume,  RrCommand_Modulation,    RrCommand_Modulation, RrCommand_Rest,        RrCommand_RestSilence,
     RrCommand_PitchSlide, RrCommand_PitchSlideOff, RrCommand_Portamento,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t rr_command_arg_bytes(RrCommand command) {
     switch (command) {
@@ -175,8 +171,6 @@ static uint8_t rr_command_arg_bytes(RrCommand command) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 RrCommandInfo rr_command_info(RrDriver driver, uint8_t byte) {
     const RrCommand* table = driver == RrDriver_OneShot ? rr_oneshot_commands : rr_looping_commands;
     const uint32_t count = driver == RrDriver_OneShot ? (uint32_t)nuade_sizeof_array(rr_oneshot_commands)
@@ -192,13 +186,9 @@ RrCommandInfo rr_command_info(RrDriver driver, uint8_t byte) {
 #define RR_FNV_OFFSET 0xCBF29CE484222325ULL
 #define RR_FNV_PRIME 0x100000001B3ULL
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint64_t rr_mix_byte(uint64_t hash, uint8_t byte) {
     return (hash ^ byte) * RR_FNV_PRIME;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint64_t rr_mix_u32(uint64_t hash, uint32_t value) {
     for (uint32_t i = 0; i < 4; i++) {
@@ -207,7 +197,6 @@ static uint64_t rr_mix_u32(uint64_t hash, uint32_t value) {
     return hash;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The span of addresses a role covers (the mask word and its copy, the two bytes of an extra variable).
 
 static uint32_t rr_role_span(RrRole role) {
@@ -220,14 +209,11 @@ static uint32_t rr_role_span(RrRole role) {
     return 1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 typedef struct RrBinding {
     uint32_t value[RrRole_Count];
     bool bound[RrRole_Count];
 } RrBinding;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The role of a relocated long's value: the voice records (with the fade words in front), or the table whose address
 // it is. False when it addresses none of them.
 
@@ -253,19 +239,14 @@ static bool rr_classify(const RrBinding* binding, uint32_t record_bytes, uint32_
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t rr_u32(const RrModule* module, uint32_t at) {
     return nuade_read_be32(module->image + at);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t rr_u16_raw(const RrModule* module, uint32_t at) {
     return nuade_read_be16(module->image + at);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The executable's hunk header: one code hunk, flagged chip memory.
 
 typedef struct RrHunkHeader {
@@ -278,8 +259,6 @@ typedef struct RrHunkHeader {
     uint32_t code_id;
     uint32_t code_longs;
 } RrHunkHeader;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static RrHunkHeader rr_read_hunk_header(const uint8_t* data) {
     return (RrHunkHeader) {
@@ -294,7 +273,6 @@ static RrHunkHeader rr_read_hunk_header(const uint8_t* data) {
     };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The hunks. The module must be one code hunk with its relocation table, as the eagleplayer's Check2 expects.
 
 static bool rr_parse_hunks(RrModule* module, const uint8_t* data, size_t size) {
@@ -350,7 +328,6 @@ static bool rr_parse_hunks(RrModule* module, const uint8_t* data, size_t size) {
     return size - pos >= 4 && nuade_read_be32(data + pos) == RR_HUNK_END;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module header with the tests of Check2: the words, three nonzero entries, and the pointers relocated.
 
 static bool rr_read_header(RrModule* module) {
@@ -381,13 +358,10 @@ static bool rr_read_header(RrModule* module) {
            && (h->tick == 0 || module->reloc[at_tick] == 1);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool rr_range_in(const RrModule* module, uint32_t at, uint32_t bytes) {
     return at <= module->size && bytes <= module->size - at;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The version whose code the module carries; null when it is none of them.
 
 static const RrVersion* rr_find_version(const RrModule* module) {
@@ -412,7 +386,6 @@ static const RrVersion* rr_find_version(const RrModule* module) {
     return nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The addresses at the version's slots, then the role of every relocated long of the code.
 
 static bool rr_bind_roles(RrModule* module, const RrVersion* version, RrBinding* binding) {
@@ -446,20 +419,15 @@ static bool rr_bind_roles(RrModule* module, const RrVersion* version, RrBinding*
     return hash == version->role_hash;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool rr_offset_within(uint32_t at, uint32_t start, uint32_t bytes) {
     return at >= start && at - start < bytes;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A range with `bytes` bytes from `at` shares a byte with the range.
 
 static bool rr_range_hit(const RrRange* range, uint32_t at, uint32_t bytes) {
     return at < range->end && range->start < at + bytes;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool rr_add_range(RrModule* module, uint32_t* count, RrRange blocked[], uint32_t start, uint32_t bytes) {
     if (!rr_range_in(module, start, bytes) || *count >= RR_MAX_RANGES) {
@@ -475,7 +443,6 @@ static bool rr_add_range(RrModule* module, uint32_t* count, RrRange blocked[], u
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The addresses must make the memory map the code assumes: the replayer's variables and the code itself are not song
 // data, and the tables lie where the eagleplayer's patching looks for them.
 
@@ -525,7 +492,6 @@ static bool rr_check_layout(RrModule* module, const RrVersion* version) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the eagleplayer's InitPlayer does to the sample tables: when the first sample pointer is zero it becomes the
 // address of the eagleplayer's four zero bytes of chip memory (its second hunk), and so does every zero in the table
 // that follows the length table (n entries, n = sample count). The port keeps those bytes behind the module.
@@ -547,7 +513,6 @@ static bool rr_check_samples(RrModule* module) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Bytes the original would read other values from: code, variables, relocated longs, and the longs the eagleplayer
 // overwrites (the zero sample pointers it replaces, the word Side Winder II's init sets in front of its code).
 
@@ -575,16 +540,12 @@ static bool rr_build_unreadable(RrModule* module) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void rr_module_free(RrModule* module) {
     free(module->image);
     free(module->reloc);
     free(module->unreadable_prefix);
     *module = (RrModule) { 0 };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool rr_module_load(RrModule* module, const uint8_t* data, size_t size) {
     *module = (RrModule) { 0 };
@@ -626,14 +587,11 @@ bool rr_module_load(RrModule* module, const uint8_t* data, size_t size) {
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Readers.
 
 static bool rr_readable(const RrModule* module, uint32_t at, uint32_t bytes) {
     return rr_range_in(module, at, bytes) && module->unreadable_prefix[at + bytes] == module->unreadable_prefix[at];
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool rr_module_u8(const RrModule* module, uint32_t at, uint8_t* out) {
     if (!rr_readable(module, at, 1)) {
@@ -643,8 +601,6 @@ bool rr_module_u8(const RrModule* module, uint32_t at, uint8_t* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool rr_module_u16(const RrModule* module, uint32_t at, uint16_t* out) {
     if ((at & 1u) != 0 || !rr_readable(module, at, 2)) {
         return false;
@@ -652,8 +608,6 @@ bool rr_module_u16(const RrModule* module, uint32_t at, uint16_t* out) {
     *out = rr_u16_raw(module, at);
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool rr_module_pointer(const RrModule* module, uint32_t at, uint32_t* out) {
     if ((at & 1u) != 0 || !rr_range_in(module, at, 4)) {
@@ -682,16 +636,12 @@ bool rr_module_pointer(const RrModule* module, uint32_t at, uint32_t* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool rr_module_sample_ok(const RrModule* module, uint32_t at, uint16_t words) {
     if (at == module->size) {
         return words >= 1 && words <= RR_ZERO_BUFFER_WORDS;
     }
     return rr_readable(module, at, words != 0 ? 2u * words : NUADE_PAULA_MAX_SAMPLE_BYTES);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool rr_module_table_sample(const RrModule* module, RrRole ptrs, RrRole lens, uint32_t instrument,
                                    RrSample* out) {
@@ -710,45 +660,31 @@ static bool rr_module_table_sample(const RrModule* module, RrRole ptrs, RrRole l
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool rr_module_sample(const RrModule* module, uint32_t instrument, RrSample* out) {
     return rr_module_table_sample(module, RrRole_SamplePtrs, RrRole_SampleLens, instrument, out);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool rr_module_loop(const RrModule* module, uint32_t instrument, RrSample* out) {
     return rr_module_table_sample(module, RrRole_LoopPtrs, RrRole_LoopLens, instrument, out);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool rr_module_period(const RrModule* module, uint32_t index, uint16_t* out) {
     return rr_module_u16(module, module->base[RrRole_Periods] + RR_PERIOD_ENTRY_BYTES * index, out);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool rr_module_rate(const RrModule* module, uint32_t index, uint16_t* out) {
     return rr_module_u16(module, module->base[RrRole_Rates] + RR_RATE_ENTRY_BYTES * index, out);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool rr_module_pattern(const RrModule* module, uint32_t number, uint32_t* out) {
     return rr_module_pointer(module, module->base[RrRole_Patterns] + 4 * number, out);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void rr_set_enabled(RrSongStart* song, uint16_t mask) {
     for (uint32_t v = 0; v < RR_VOICES; v++) {
         song->enabled[v] = (mask >> v & 1u) != 0;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool rr_module_song_start(const RrModule* module, uint32_t subsong, RrSongStart* out) {
     const RrVersion* version = module->version;
@@ -791,8 +727,6 @@ bool rr_module_song_start(const RrModule* module, uint32_t subsong, RrSongStart*
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool rr_module_voice_start(const RrModule* module, uint32_t voice, RrVoiceStart* out) {
     *out = (RrVoiceStart) { 0 };
     if (module->version->driver == RrDriver_OneShot) {
@@ -805,20 +739,15 @@ bool rr_module_voice_start(const RrModule* module, uint32_t voice, RrVoiceStart*
     return out->instrument < RR_MAX_SAMPLE_INSTRUMENTS && out->transpose < 256;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t rr_module_silence(const RrModule* module) {
     // AUDxLC ignores bit 0
     return module->version->driver == RrDriver_OneShot ? module->base[RrRole_Silence] & ~1u : module->size;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool rr_module_track_list_ends(const RrModule* module, uint8_t byte) {
     return module->version->driver == RrDriver_OneShot ? byte >= RR_COMMAND_BASE : byte == RR_TRACK_END;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The walk. A pattern is summarised once: the note and rate ranges it reads (the tables are read at note +
 // transposition, so the note range is checked per use), whether the replayer returns from it (a note or a rest) and
 // how many event loop iterations it needs between two returns (the port runs at most RR_EVENT_BUDGET of them in one
@@ -847,15 +776,11 @@ typedef struct RrWalk {
 
 #define RR_START_PATTERN_SLOT RR_PATTERN_SLOTS
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void rr_summary_note(RrPatternSummary* s, uint8_t note) {
     s->min_note = s->has_note && s->min_note < note ? s->min_note : note;
     s->max_note = s->has_note && s->max_note > note ? s->max_note : note;
     s->has_note = true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void rr_summary_rate(RrPatternSummary* s, uint8_t rate) {
     s->min_rate = s->has_rate && s->min_rate < rate ? s->min_rate : rate;
@@ -863,7 +788,6 @@ static void rr_summary_rate(RrPatternSummary* s, uint8_t rate) {
     s->has_rate = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note or a rest ends a call of the event loop.
 
 static void rr_summary_return(RrPatternSummary* s, uint32_t* since) {
@@ -876,7 +800,6 @@ static void rr_summary_return(RrPatternSummary* s, uint32_t* since) {
     *since = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Reads the pattern at `start` up to its end byte. False when the pattern leaves the module, uses a command the port
 // does not model or reads the module where the original would read something else.
 
@@ -924,8 +847,6 @@ static bool rr_walk_pattern(RrWalk* walk, uint32_t start, RrPatternSummary* summ
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool rr_walk_summary(RrWalk* walk, uint32_t slot, uint32_t start, RrPatternSummary** out) {
     RrPatternSummary* summary = &walk->patterns[slot];
     if (!summary->done) {
@@ -938,7 +859,6 @@ static bool rr_walk_summary(RrWalk* walk, uint32_t slot, uint32_t start, RrPatte
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tables a pattern reads with a transposition: every period and rate between the extremes must be readable.
 
 static bool rr_walk_tables(const RrWalk* walk, const RrPatternSummary* s, uint32_t transpose) {
@@ -960,7 +880,6 @@ static bool rr_walk_tables(const RrWalk* walk, const RrPatternSummary* s, uint32
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Adds iterations to the run of event loop iterations since the last return; false when it exceeds the budget.
 
 static bool rr_walk_count(uint64_t* run, uint32_t iterations) {
@@ -968,7 +887,6 @@ static bool rr_walk_count(uint64_t* run, uint32_t iterations) {
     return *run <= RR_EVENT_BUDGET;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The run is carried through the entries of a voice: a pattern that returns resets it to its tail, one that does not
 // adds all its plays (a pattern plays repeat + 1 times).
 
@@ -984,7 +902,6 @@ static bool rr_walk_plays(uint64_t* run, const RrPatternSummary* s, uint32_t pla
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A track list is a loop: its entries run in order and the end byte restarts it (the transposition set in the first
 // round carries into the second, then the state repeats).
 
@@ -1026,7 +943,6 @@ static bool rr_walk_track_list(RrWalk* walk, uint32_t start, uint32_t transpose,
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A voice: its start pattern, once, then its track list.
 
 static bool rr_walk_voice(RrWalk* walk, uint32_t voice, uint32_t track_list) {
@@ -1043,8 +959,6 @@ static bool rr_walk_voice(RrWalk* walk, uint32_t voice, uint32_t track_list) {
            && rr_walk_track_list(walk, track_list, start.transpose, &run);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool rr_walk_instruments(const RrWalk* walk) {
     const RrModule* module = walk->module;
     for (uint32_t i = 0; i < RR_MAX_SAMPLE_INSTRUMENTS; i++) {
@@ -1057,8 +971,6 @@ static bool rr_walk_instruments(const RrWalk* walk) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool rr_module_validate(const RrModule* module) {
     RrWalk* walk = calloc(1, sizeof(*walk));

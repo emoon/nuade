@@ -31,14 +31,12 @@ extern const uint16_t mm_period_table[MM_NOTES];
 extern const uint16_t mm_volume_levels[MM_VOLUME_LEVELS];
 extern const uint16_t mm_note_volume_divisor[MM_NOTES];
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Bytes the replayer reads: the song, the instrument block and the chunks of the files. Reads past the end give 0.
 
 uint8_t mm_u8(const MmBlock* b, uint32_t offset);
 uint16_t mm_u16(const MmBlock* b, uint32_t offset);
 uint32_t mm_u32(const MmBlock* b, uint32_t offset);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The song ("SE" header, position lists, patterns)
 
 // The variant the song header names, if it is a song of either (the eagleplayers' Check2 on the song).
@@ -51,7 +49,6 @@ uint32_t mm_song_pattern(const MmSong* song, uint16_t number);
 // limit).
 uint16_t mm_song_slow_period(const MmSong* song, uint16_t period);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The instruments as the replayer holds them after loading: a table of sample records, the samples, and the tables
 // the "set table" command selects from.
 
@@ -59,7 +56,6 @@ uint16_t mm_song_slow_period(const MmSong* song, uint16_t period);
 bool mm_instruments_open(MmInstruments* inst, const MmBlock* data, bool packed, bool halve);
 void mm_instruments_close(MmInstruments* inst);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The file (a FORM "MMV8", or an old song with a separate instrument file): the eagleplayers' Check2 and the loading of
 // the song and the instruments. `external` is false when no instrument file can be read (the probe): an old song is
 // then checked without its instruments.

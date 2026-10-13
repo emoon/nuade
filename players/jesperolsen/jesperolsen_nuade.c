@@ -11,14 +11,10 @@
 // (4: no two starts of one voice share a row in the test songs).
 #define GRID_TICKS 4
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe jesperolsen_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return jo_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult jesperolsen_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -36,21 +32,15 @@ static NuadePlayerOpenResult jesperolsen_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void jesperolsen_close(void* user_data) {
     jo_destroy((JoPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool jesperolsen_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     (void)voices;
     return jo_start((JoPlayer*)user_data, (int)subsong);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult jesperolsen_tick(void* user_data, NuadeVoices* voices) {
     const JoTickResult tick = jo_tick((JoPlayer*)user_data, voices);
@@ -59,14 +49,10 @@ static NuadeTickResult jesperolsen_tick(void* user_data, NuadeVoices* voices) {
                                         | (tick.ended ? NuadeTick_Ended : NuadeTick_None) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void jesperolsen_metadata(void* user_data, const NuadeMetadataSink* sink) {
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Jesper Olsen");
     sink->set_tag(sink->ctx, NUADE_META_TOOL, jo_replayer_name((const JoPlayer*)user_data));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t jesperolsen_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const JoPlayer* player = (const JoPlayer*)user_data;
@@ -78,15 +64,11 @@ static uint32_t jesperolsen_voice_info(void* user_data, NuadeVoiceInfo* out, uin
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t jesperolsen_grid_ticks(void* user_data, uint32_t subsong) {
     (void)user_data;
     (void)subsong;
     return GRID_TICKS;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_jesperolsen = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -103,8 +85,6 @@ const NuadePlayer nuade_player_jesperolsen = {
     .voice_info = jesperolsen_voice_info,
     .grid_ticks = jesperolsen_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 JoPlayer* jo_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_jesperolsen) {

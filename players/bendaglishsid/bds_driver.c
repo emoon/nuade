@@ -29,13 +29,10 @@ typedef enum BdsStep {
     BdsStep_SongEnd,
 } BdsStep;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool is_late(const BdsPlayer* p) {
     return p->module.revision == BdsRevision_Late;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxLC is a word address: the driver's wave pointers are byte addresses, Paula ignores bit 0.
 
 static void write_audio_block(const BdsPlayer* p, BdsChannel* c, uint32_t lc, uint16_t len_words) {
@@ -45,7 +42,6 @@ static void write_audio_block(const BdsPlayer* p, BdsChannel* c, uint32_t lc, ui
     c->paula.len_words = len_words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Volume of a voice as the driver writes it: the envelope, doubled (the interrupt) or quadrupled (the tick's sample
 // volumes) unless the "unscaled" variable is set, and 0 while the volume is disabled.
 
@@ -60,7 +56,6 @@ static uint16_t scaled_volume(const BdsPlayer* p, int voice, unsigned shift) {
     return enabled ? volume : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The late driver caps the volume: the low byte is the smaller of volume and cap. The cap is scaled in the part of
 // the code that handles voice 0, so what a run with only voice 1 or 2 caps against is the unscaled cap.
 
@@ -76,7 +71,6 @@ static uint16_t capped_volume(const BdsPlayer* p, int voice, unsigned shift, uin
     return volume;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The audio interrupt. One handler serves the four vectors: whichever interrupt is taken, it services every channel
 // whose request is set, enabled or not, so the channels that are due together are served in one run. A serviced
 // channel disables its interrupt and clears its request; the tick enables the three interrupts when it is done.
@@ -88,7 +82,6 @@ static void irq_service_early(BdsPlayer* p, int voice) {
     c->irq_request = false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The late handler caps the volume. A sample instrument keeps its interrupt enabled through the start of the sample;
 // when the sample's first pass is through, it stops the channel.
 
@@ -109,8 +102,6 @@ static void irq_service_late(BdsPlayer* p, int voice, uint16_t* cap) {
     c->irq_request = false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool irq_due(const BdsPlayer* p) {
     for (int v = 0; v < BDS_VOICES; v++) {
         if (p->channels[v].irq_enabled && p->channels[v].irq_request) {
@@ -120,7 +111,6 @@ static bool irq_due(const BdsPlayer* p) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Runs the handler once if an enabled interrupt has a request.
 
 static void irq_run(BdsPlayer* p) {
@@ -140,7 +130,6 @@ static void irq_run(BdsPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A block start of a channel and the output frame it happened at.
 
 typedef struct BdsBlockStart {
@@ -153,7 +142,6 @@ typedef struct BdsBlockStart {
 #define BLOCK_STARTS_PER_VOICE 64
 #define MAX_BLOCK_STARTS (BDS_VOICES * (BLOCK_STARTS_PER_VOICE + 1))
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The block starts of one voice in the tick that has just run. The mixer counts a voice's wraps and keeps where it is
 // in the sample, so the frames of the wraps follow from the position, the pitch and the length of the sample: the last
 // wrap was `position` source frames ago, the one before it a sample length earlier, and so on.
@@ -189,8 +177,6 @@ static uint32_t collect_voice_starts(BdsPlayer* p, int voice, BdsBlockStart* out
     return count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void sort_by_frame(BdsBlockStart* starts, uint32_t count) {
     for (uint32_t i = 1; i < count; i++) {
         const BdsBlockStart key = starts[i];
@@ -202,7 +188,6 @@ static void sort_by_frame(BdsBlockStart* starts, uint32_t count) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // At the start of a tick: each block start of the last one raised the request of its channel, and ran the handler if a
 // channel was enabled. The requests that came after the last run stay pending for the enable at the end of the tick.
 
@@ -219,7 +204,6 @@ static void irq_replay_block_starts(BdsPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // When the tick has enabled the interrupts: the requests that are pending run the handler at once, and so does the
 // start of the DMA a little later.
 
@@ -237,20 +221,16 @@ static void irq_poll_enabled(BdsPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Sequencer
 
 static uint8_t track_byte(const BdsPlayer* p, const BdsVoice* s, uint8_t pos) {
     return bds_u8(&p->module.memory, s->track + pos);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t order_byte(const BdsPlayer* p, const BdsVoice* s) {
     return bds_u8(&p->module.memory, s->order_list + s->order_pos);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The wave form, its length and the period of a note: the octave picks the wave form, the semitone the period.
 
 static void set_pitch(const BdsPlayer* p, BdsVoice* s, uint8_t note) {
@@ -262,7 +242,6 @@ static void set_pitch(const BdsPlayer* p, BdsVoice* s, uint8_t note) {
     s->period = (uint16_t)(bds_u16(m, t->periods + 2 * (note % NOTES_PER_OCTAVE)) + s->detune);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A rate nibble gives the envelope step and the ticks between steps: a table byte below 0x80 is a step every tick, from
 // 0x80 on its low bits are the ticks between steps of 1.
 
@@ -277,7 +256,6 @@ static void read_rate(const BdsPlayer* p, uint32_t table, uint8_t nibble, uint8_
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An instrument selects the wave forms, the envelope and the vibrato of the notes that follow.
 
 static void select_instrument(BdsPlayer* p, int voice, uint8_t number) {
@@ -329,7 +307,6 @@ static void select_instrument(BdsPlayer* p, int voice, uint8_t number) {
     s->vibrato_table = instrument.vibrato;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note: the pitch (not for a sample, which keeps its own), the envelope and effects restart, and the next byte of the
 // track is the note's length in ticks.
 
@@ -371,7 +348,6 @@ static void start_note(BdsPlayer* p, int voice, uint8_t byte) {
     s->note_ticks = length;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Envelope: attack to the instrument's maximum, decay to the sustain level, and release once the gate closes.
 
 static void run_envelope(BdsVoice* s) {
@@ -415,7 +391,6 @@ static void run_envelope(BdsVoice* s) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Vibrato: after a delay, the table gives the period offset for each tick of a half wave; the second half wave goes the
 // other way.
 
@@ -451,7 +426,6 @@ static void run_vibrato(const BdsPlayer* p, BdsVoice* s) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Arpeggio: each table byte holds a note offset (bits 3 to 7) and its length in ticks (bits 0 to 2). Byte 0 of the
 // entry gives the number of steps and whether it loops.
 
@@ -489,7 +463,6 @@ static void run_arpeggio(BdsPlayer* p, BdsVoice* s) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Portamento: after a delay, the period moves by a step every tick for the given number of ticks.
 
 static void run_portamento(BdsVoice* s) {
@@ -513,7 +486,6 @@ static void run_portamento(BdsVoice* s) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What a voice does on a tick inside a note or a rest: the length counts down, and unless a voice starts a new event on
 // this tick the envelope and the effects run.
 
@@ -535,7 +507,6 @@ static void run_note(BdsPlayer* p, BdsVoice* s) {
     run_portamento(s);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The order list: a track number, or a command for the voice.
 
 typedef enum BdsOrderCommand {
@@ -544,8 +515,6 @@ typedef enum BdsOrderCommand {
     BdsOrderCommand_Detune = 2,
     BdsOrderCommand_InstrumentMap = 3,
 } BdsOrderCommand;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static BdsStep next_track(BdsPlayer* p, int voice) {
     BdsVoice* s = &p->voices[voice];
@@ -599,8 +568,6 @@ typedef enum BdsTrackCommand {
     BdsTrackCommand_End,
 } BdsTrackCommand;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static BdsTrackCommand track_command(uint8_t byte) {
     if (byte == TRACK_END) {
         return BdsTrackCommand_End;
@@ -620,7 +587,6 @@ static BdsTrackCommand track_command(uint8_t byte) {
     return BdsTrackCommand_Portamento;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A portamento command: its byte holds the direction and the delay, three bytes follow.
 
 typedef struct BdsPortamento {
@@ -629,8 +595,6 @@ typedef struct BdsPortamento {
     uint16_t step;
     uint8_t ticks;
 } BdsPortamento;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static BdsPortamento read_portamento(const BdsPlayer* p, const BdsVoice* s, uint8_t pos) {
     const uint8_t command = track_byte(p, s, pos);
@@ -642,8 +606,6 @@ static BdsPortamento read_portamento(const BdsPlayer* p, const BdsVoice* s, uint
                              .ticks = track_byte(p, s, (uint8_t)(pos + 3)) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void start_portamento(const BdsPlayer* p, BdsVoice* s) {
     const BdsPortamento portamento = read_portamento(p, s, s->track_pos);
     s->portamento_up = portamento.up;
@@ -654,7 +616,6 @@ static void start_portamento(const BdsPlayer* p, BdsVoice* s) {
     s->track_pos = (uint8_t)(s->track_pos + 3);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A voice on a tick: inside a note it runs the envelope and effects, at the end of one it reads the track until it
 // finds the next note or rest.
 
@@ -711,15 +672,12 @@ static BdsStep step_voice(BdsPlayer* p, int voice) {
     return BdsStep_SongEnd;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Paula: the registers of the three voices, in the order of the driver
 
 static void irq_cancel_request(BdsPlayer* p, int voice) {
     p->channels[voice].irq_request = false;
     p->channels[voice].sample_pass_active = false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void write_hardware(BdsPlayer* p) {
     const BdsTables* t = &p->module.tables;
@@ -777,7 +735,6 @@ static void write_hardware(BdsPlayer* p) {
     irq_poll_enabled(p);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The late driver sets the volume of a sample instrument's voice here as well, from the same envelope as the interrupt
 // but scaled by 4. The cap is scaled in voice 0's part, which only runs if voice 0 is a sample voice.
 
@@ -796,7 +753,6 @@ static void write_sample_volumes(BdsPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Song start: all voices stop on an order list of their own and the instrument map takes its song start values.
 
 static void reset_hardware(BdsPlayer* p) {
@@ -807,8 +763,6 @@ static void reset_hardware(BdsPlayer* p) {
         c->paula.len_words = IDLE_WORDS;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void init_song(BdsPlayer* p, int subsong) {
     const BdsTables* t = &p->module.tables;
@@ -834,7 +788,6 @@ static void init_song(BdsPlayer* p, int subsong) {
     p->song_active = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tick
 
 static void play_tick(BdsPlayer* p) {
@@ -866,7 +819,6 @@ static void play_tick(BdsPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer ends the sound when the late driver's order list ends, tells the player that the song has ended and
 // starts the same subsong again.
 
@@ -880,8 +832,6 @@ static void restart_song(BdsPlayer* p) {
     init_song(p, p->subsong);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void bds_driver_tick(BdsPlayer* p) {
     p->looped = false;
     irq_replay_block_starts(p);
@@ -890,8 +840,6 @@ void bds_driver_tick(BdsPlayer* p) {
         restart_song(p);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void bds_driver_start(BdsPlayer* p, int subsong) {
     BdsModule* module = &p->module;
@@ -913,7 +861,6 @@ void bds_driver_start(BdsPlayer* p, int subsong) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The first pass of a sample instrument plays as a one-shot: the driver's interrupt stops the channel when the pass is
 // through, and a one-shot ends there instead of repeating until the next tick.
 

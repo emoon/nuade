@@ -6,8 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 PshPlayer* psh_create(const uint8_t* data, size_t size) {
     PshPlayer* p = calloc(1, sizeof(*p));
     if (p == nullptr) {
@@ -20,8 +18,6 @@ PshPlayer* psh_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void psh_destroy(PshPlayer* p) {
     if (p == nullptr) {
         return;
@@ -30,7 +26,6 @@ void psh_destroy(PshPlayer* p) {
     free(p);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The voices at song start: they read the idle stream, whose only command is the next pattern, in their first tick.
 
 bool psh_start(PshPlayer* p, NuadeVoices* voices) {
@@ -66,8 +61,6 @@ bool psh_start(PshPlayer* p, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 PshTickResult psh_tick(PshPlayer* p, NuadeVoices* voices) {
     bool repeat_now[PSH_VOICES];
     p->song_end = false;
@@ -99,8 +92,6 @@ PshTickResult psh_tick(PshPlayer* p, NuadeVoices* voices) {
     }
     return (PshTickResult) { .looped = p->song_end, .ended = ended };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PshVoiceState psh_voice_state(const PshPlayer* p, int voice) {
     if (voice < 0 || voice >= PSH_VOICES) {

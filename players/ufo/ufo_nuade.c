@@ -7,14 +7,10 @@
 #include <nuade/players/ufo.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe ufo_probe_song(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return ufo_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult ufo_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -44,20 +40,14 @@ static NuadePlayerOpenResult ufo_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void ufo_close(void* user_data) {
     ufo_destroy((UfoPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool ufo_start_song(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return subsong == 0 && ufo_start((UfoPlayer*)user_data, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult ufo_tick_song(void* user_data, NuadeVoices* voices) {
     const UfoTickResult tick = ufo_tick((UfoPlayer*)user_data, voices);
@@ -71,14 +61,10 @@ static NuadeTickResult ufo_tick_song(void* user_data, NuadeVoices* voices) {
     return (NuadeTickResult) { .length = UFO_TICK_LENGTH, .flags = flags };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void ufo_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "UFO");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t ufo_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const UfoPlayer* player = (const UfoPlayer*)user_data;
@@ -89,8 +75,6 @@ static uint32_t ufo_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t ca
     }
     return n;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_ufo = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -106,8 +90,6 @@ const NuadePlayer nuade_player_ufo = {
     .metadata = ufo_metadata,
     .voice_info = ufo_voice_info,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 UfoPlayer* ufo_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_ufo) {

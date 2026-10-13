@@ -52,13 +52,10 @@ typedef enum DsrNibbleCommand {
 #define COMMAND_NIBBLE_MASK 0x70
 #define COMMAND_NOTE_LIMIT 0x80
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadePaulaChannel* channel_of(DsrPlayer* player, int channel) {
     return channel == DUMMY_CHANNEL ? &player->dummy : &player->channels[channel];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxLC / AUDxLEN. A sample plays zeros past the module's end; one that starts past the module's memory (only voice
 // 3's saved registers as the header leaves them can) plays nothing.
 
@@ -68,13 +65,10 @@ static void set_sample(const DsrPlayer* player, NuadePaulaChannel* channel, uint
     channel->len_words = length_words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void set_low_byte(uint16_t* word, uint8_t value) {
     *word = (uint16_t)((*word & 0xFF00) | value);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pitch (note << 4, plus the sum of the offsets) becomes a period: the octave halves the table's entry.
 
 static uint16_t pitch_to_period(const DsrModule* module, uint16_t pitch_sum) {
@@ -87,7 +81,6 @@ static uint16_t pitch_to_period(const DsrModule* module, uint16_t pitch_sum) {
     return (uint16_t)(period >> 1);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's end flags: the stop command of the voice on a channel clears the channel's flag; when all four are
 // clear the song has ended.
 
@@ -105,8 +98,6 @@ static void flag_voice_stopped(DsrPlayer* player, int channel) {
     }
     player->song_ended = true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void start_voice(DsrPlayer* player, DsrVoice* voice, NuadePaulaChannel* channel) {
     voice->modulation_pos = 0;
@@ -126,7 +117,6 @@ static void start_voice(DsrPlayer* player, DsrVoice* voice, NuadePaulaChannel* c
     channel->volume = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The order table index of a request: given directly, or the entry of the voice's song list.
 
 static uint8_t order_index(const DsrPlayer* player, const DsrVoice* voice, DsrRequest request) {
@@ -136,15 +126,12 @@ static uint8_t order_index(const DsrPlayer* player, const DsrVoice* voice, DsrRe
     return dsr_read_song_list(&player->module, (uint16_t)(voice->order_base + request.index));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void start_track(const DsrPlayer* player, DsrVoice* voice, uint8_t index) {
     voice->order_pos = (uint16_t)(index * DSR_ORDER_ENTRY);
     voice->pos = dsr_read_order(&player->module, voice->order_pos);
     voice->order_pos += DSR_ORDER_ENTRY;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note: the pitch to slide to, and the channel's DMA off now and back on at the next tick.
 
 static void start_note(DsrPlayer* player, DsrVoice* voice, uint8_t note) {
@@ -158,7 +145,6 @@ static void start_note(DsrPlayer* player, DsrVoice* voice, uint8_t note) {
     voice->display_note = nuade_period_to_note(pitch_to_period(&player->module, pitch_sum));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Instrument: the sample registers of the voice's channel and the voice's transposition.
 
 static void set_instrument(DsrPlayer* player, DsrVoice* voice, NuadePaulaChannel* channel, uint8_t number) {
@@ -170,7 +156,6 @@ static void set_instrument(DsrPlayer* player, DsrVoice* voice, NuadePaulaChannel
     voice->display_instrument = number;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The commands from 0x90: they set a field and the sequencer reads on, except those that the replayer ends the tick's
 // sequencer with (values 0x50 to 0x70). Returns false for those.
 
@@ -192,8 +177,6 @@ static bool run_nibble_command(DsrVoice* voice, uint8_t command) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void clear_voice_states(DsrPlayer* player) {
     for (int i = 0; i < dsr_record_count(&player->module.version); i++) {
         player->voices[i].mode = DsrMode_Stop;
@@ -201,7 +184,6 @@ static void clear_voice_states(DsrPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One command 0x80 to 0x8F at `at`; the voice's position is already past the command byte and the command moves it
 // past its arguments. The sequencer reads on after every command.
 
@@ -284,7 +266,6 @@ static void run_command(DsrPlayer* player, DsrVoice* voice, NuadePaulaChannel* c
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sequencer. Returns false when the tick read a note or a rest: the voice's other stages then wait for the next
 // tick.
 
@@ -321,7 +302,6 @@ static bool run_sequencer(DsrPlayer* player, DsrVoice* voice, NuadePaulaChannel*
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The envelope level (0 to 255) by state: attack up, hold, decay down to the sustain level, sustain, or release.
 
 static void run_envelope(DsrVoice* voice) {
@@ -367,7 +347,6 @@ static void run_envelope(DsrVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxVOL = level * voice volume * master volume >> 18. Each voice that writes its volume also steps the fade; at its
 // end every voice is told to stop.
 
@@ -385,8 +364,6 @@ static void write_volume(DsrPlayer* player, DsrVoice* voice, NuadePaulaChannel* 
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_slide(DsrVoice* voice) {
     if (voice->slide_speed == 0) {
         voice->pitch = voice->target;
@@ -403,7 +380,6 @@ static void run_slide(DsrVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Pitch modulation: the next step of the modulation table. A 0x7F step is the end of the table: the position backs
 // up one and the step before it repeats. The index is a byte position plus a word base; the replayer's register keeps
 // the previous sum's high byte when it goes round again.
@@ -424,15 +400,12 @@ static void run_modulation(const DsrModule* module, DsrVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void write_period(const DsrModule* module, const DsrVoice* voice, NuadePaulaChannel* channel) {
     const uint16_t pitch_sum
         = (uint16_t)((voice->pitch >> 1) + voice->pitch_base + voice->modulation + voice->pitch_offset + PITCH_BIAS);
     channel->period = pitch_to_period(module, pitch_sum);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The stages of a running voice, in the replayer's order.
 
 static void run_voice(DsrPlayer* player, DsrVoice* voice, NuadePaulaChannel* channel) {
@@ -446,7 +419,6 @@ static void run_voice(DsrPlayer* player, DsrVoice* voice, NuadePaulaChannel* cha
     write_period(&player->module, voice, channel);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One voice's step. `channel` is the Paula channel whose registers the voice writes.
 
 static void step_voice(DsrPlayer* player, int voice_index, int channel_index) {
@@ -486,7 +458,6 @@ static void step_voice(DsrPlayer* player, int voice_index, int channel_index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Voice 3 and the sound effect share Paula channel 3. While the effect runs, voice 3 writes to registers nobody reads;
 // after it, voice 3 is muted for a few ticks (it cannot start DMA) and gets its sample registers back.
 
@@ -514,8 +485,6 @@ static void step_voice_3_and_effect(DsrPlayer* player) {
     voice->mute_ticks = player->module.version.effect_mute_ticks;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void dsr_replayer_tick(DsrPlayer* player) {
     for (int voice = 0; voice < DSR_VOICES - 1; voice++) {
         step_voice(player, voice, voice);
@@ -527,13 +496,11 @@ void dsr_replayer_tick(DsrPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // DeliTracker points every channel at a silent word before the replayer runs; a track that starts a note before it
 // names an instrument plays that.
 
 static const int8_t HOST_SAMPLE[2];
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitSound: each song voice starts the track of the subsong (1 based) in its song list.
 
 void dsr_replayer_start(DsrPlayer* player, int subsong) {

@@ -10,7 +10,6 @@
 #define RATIO_ROUND_UP 4
 #define PERIOD_SIGN 0x8000 // a period that a signed word reads as negative: no voice
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period of the faster voice (the first of two equal ones).
 
 static uint16_t channel_period(const Mm8Block* b, uint16_t* raw_period) {
@@ -20,13 +19,10 @@ static uint16_t channel_period(const Mm8Block* b, uint16_t* raw_period) {
     return *raw_period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool defines_period(const Mm8Block* b, int voice) {
     return b->ch->pair_period[voice] == b->channel_period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The step of the stepped voice per sample (a 16 bit fraction): the smaller period over the larger.
 
 static uint16_t step_of(uint16_t pa, uint16_t pb) {
@@ -35,7 +31,6 @@ static uint16_t step_of(uint16_t pa, uint16_t pb) {
     return (uint16_t)(((uint32_t)small << 16) / large);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What a block uses to count how much of the stepped voice it takes: the step in 8.8, rounded up.
 
 static uint16_t consumption(const Mm8Block* b, int voice) {
@@ -46,7 +41,6 @@ static uint16_t consumption(const Mm8Block* b, int voice) {
     return (uint16_t)((step >> 8) + ((step & 0xFF) != 0 ? RATIO_ROUND_UP : 0));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The bytes of a voice with `period` that a block of n samples at the channel period takes: the stepped voice's
 // samples, and one more.
 
@@ -58,15 +52,12 @@ static uint16_t bytes_needed(uint16_t n, uint16_t channel, uint16_t period) {
     return (uint16_t)(((uint32_t)n * q >> 16) + 1);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void needs(Mm8Block* b, uint16_t n) {
     for (int i = 0; i < 2; i++) {
         b->need[i] = bytes_needed(n, b->channel_period, b->ch->pair_period[i]);
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer's choice of routine. One voice is stepped when its period is above the other's, and scaled when the
 // other is louder (a voice that has no data has period 0xFFFF and volume 0). Two voices: the quieter is scaled, the
 // slower is stepped; with equal periods both are copied, with equal volumes none is scaled.
@@ -116,7 +107,6 @@ static void select_routine(Mm8Block* b) {
     b->plan020 = p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The next byte of a voice, through the volume table when the voice is the scaled one.
 
 static int8_t fetch(const MmBlock* data, uint32_t* ptr, const int8_t* row) {
@@ -124,7 +114,6 @@ static int8_t fetch(const MmBlock* data, uint32_t* ptr, const int8_t* row) {
     return row != nullptr ? row[sample] : (int8_t)sample;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Mixes `m` samples into the block. Reports the bytes taken from each voice (the stepped voice is read one sample
 // ahead; the replayer's exit routine takes that back).
 

@@ -40,7 +40,6 @@ const ScmEngine* scm_engine(ScmDriver driver);
 bool scm_module_load(ScmModule* module, const uint8_t* data, size_t size);
 void scm_module_free(ScmModule* module);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module's records. Loading proved that everything the driver can read is inside the module; a read outside
 // returns zeros.
 

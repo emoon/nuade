@@ -19,43 +19,29 @@
 #define FALLBACK_SAMPLES "mdtest.ssd"
 #define SUFFIX_LENGTH 4
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t pr_song_u8(const PrSong* song, uint32_t offset) {
     return offset < song->size ? song->data[offset] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t song_u16(const PrSong* song, uint32_t offset) {
     return (uint16_t)(pr_song_u8(song, offset) << 8 | pr_song_u8(song, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t song_u32(const PrSong* song, uint32_t offset) {
     return (uint32_t)song_u16(song, offset) << 16 | song_u16(song, offset + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t pr_song_stream(const PrSong* song, uint32_t voice) {
     return song_u32(song, PR_HEADER_BYTES + 4 * voice);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t pr_song_vibrato(const PrSong* song, uint32_t table) {
     return song_u32(song, PR_HEADER_BYTES + 4 * ((uint32_t)song->voice_count + table));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t pr_song_envelope(const PrSong* song, uint32_t table) {
     return song_u32(song, PR_HEADER_BYTES + 4 * ((uint32_t)song->voice_count + song->vibrato_count + table));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PrInstrument pr_song_instrument(const PrSong* song, uint32_t number) {
     const uint32_t records
@@ -67,26 +53,18 @@ PrInstrument pr_song_instrument(const PrSong* song, uint32_t number) {
                             .loop_length_words = song_u16(song, at + 10) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t pr_song_end_marker(const PrSong* song) {
     return pr_song_stream(song, 1) - 1;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const int8_t* pr_song_sample(const PrSong* song, uint32_t offset) {
     offset &= ~1u;
     return offset < song->sample_size ? song->samples + offset : nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool pr_stream_note_ok(uint8_t byte) {
     return byte == PR_STREAM_TIE || byte < PR_PERIOD_COUNT;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t pr_command_arg_count(uint32_t command) {
     switch (command) {
@@ -111,7 +89,6 @@ uint32_t pr_command_arg_count(uint32_t command) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2. Every read is bounded by the file: the eagleplayer reads on into memory.
 
 static bool offset_table_ok(const PrSong* song, uint32_t from, uint32_t count) {
@@ -123,8 +100,6 @@ static bool offset_table_ok(const PrSong* song, uint32_t from, uint32_t count) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool check2(const PrSong* song) {
     const uint32_t voices = song->voice_count;
@@ -169,7 +144,6 @@ static bool check2(const PrSong* song) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The model's own limits: walk every stream the way the replayer reads it, and refuse what it does not model (a note
 // past the period table, an instrument or table that does not exist, loops nested deeper than the loop stack). Loops
 // only jump back to the position after their start command, so the linear walk sees every byte the replayer can read.
@@ -225,16 +199,12 @@ static bool stream_ok(const PrSong* song, uint32_t stream) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void song_parse_header(PrSong* song) {
     song->voice_count = song_u16(song, 0);
     song->vibrato_count = song_u16(song, 2);
     song->envelope_count = song_u16(song, 4);
     song->instrument_count = song_u16(song, 6);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool song_ok(PrSong* song) {
     if (song->size < MIN_SONG_BYTES) {
@@ -255,8 +225,6 @@ static bool song_ok(PrSong* song) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool pr_probe(const uint8_t* data, size_t size) {
     if (data == nullptr || size > UINT32_MAX) {
         return false;
@@ -265,7 +233,6 @@ bool pr_probe(const uint8_t* data, size_t size) {
     return song_ok(&song);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer wants the sample file to cover every instrument's first run: the furthest sample + 2 * length, taken as a
 // signed long as the eagleplayer compares it.
 
@@ -281,15 +248,12 @@ static int32_t samples_needed(const PrSong* song) {
     return needed;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool has_suffix(const char* name, const char* suffix) {
     const size_t length = strlen(name);
     const size_t suffix_length = strlen(suffix);
     return length > suffix_length && strcasecmp(name + length - suffix_length, suffix) == 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ExtLoad: "<name>.ssd" for a song called "<name>.dat", else (or when that file does not exist) "mdtest.ssd", both in
 // the song's directory; a file that cannot be read is replaced by the fixed name too.
 
@@ -302,8 +266,6 @@ static uint8_t* read_url(const NuadeIo* io, NuadeFileIndex* index, const char* n
     *size = file.size;
     return file.data;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t* read_sample_file(const char* path, const NuadeIo* io, uint64_t* size) {
     char dir[1024] = { 0 };
@@ -333,8 +295,6 @@ static uint8_t* read_sample_file(const char* path, const NuadeIo* io, uint64_t* 
     return data;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static PrStatus load_samples(PrSong* song, const char* path, const NuadeIo* io) {
     uint64_t size = 0;
     uint8_t* file = read_sample_file(path, io, &size);
@@ -350,8 +310,6 @@ static PrStatus load_samples(PrSong* song, const char* path, const NuadeIo* io) 
     NuadeIo_free_url_to_memory(io, file);
     return status;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PrCreateResult pr_create(const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
     PrCreateResult result = { .status = PrStatus_InvalidData };
@@ -384,8 +342,6 @@ PrCreateResult pr_create(const uint8_t* data, size_t size, const char* path, con
     result.player = player;
     return result;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void pr_destroy(PrPlayer* player) {
     if (player == nullptr) {

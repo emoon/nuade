@@ -13,7 +13,6 @@ typedef enum StepKind {
     StepKind_Stopped,
 } StepKind;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The instrument command: a record of three offsets picks the sample table entry and the two envelopes. False when the
 // sample table has no such entry.
 
@@ -33,14 +32,12 @@ static bool select_instrument(PshPlayer* p, uint32_t channel) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer moves a byte into the low half of the level and leaves the high half.
 
 static uint16_t low_byte_set(uint16_t level, uint8_t low) {
     return (uint16_t)((level & 0xFF00u) | low);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pattern bytes up to the next note or rest.
 
 static StepKind read_commands(PshPlayer* p, uint32_t channel) {
@@ -104,7 +101,6 @@ static StepKind read_commands(PshPlayer* p, uint32_t channel) {
     return StepKind_Stopped;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One tick of a voice. The envelope steps in the tick of a note start and while the note goes on, not in the tick of a
 // rest.
 

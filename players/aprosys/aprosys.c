@@ -24,7 +24,6 @@ typedef enum SequencerPhase {
     SequencerPhase_AfterRow, // the row has lasted its ticks: go on with the next one
 } SequencerPhase;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Rows
 
 // The channel volume moves by `step` per row towards `target`; a step of 0 sets it. The byte arithmetic wraps like the
@@ -48,8 +47,6 @@ static uint8_t slide_channel_volume(uint8_t volume, uint8_t step, uint8_t target
     return volume;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Pick the instrument and sample record of a note (or of its release). With the entry's "direct" flag the cell names
 // the instrument and the entry offsets the sample; otherwise the entry offsets the instrument.
 static void select_sound(const ApsModule* m, ApsVoice* v, const ApsCell* cell, const ApsTrackEntry* t, bool release) {
@@ -66,8 +63,6 @@ static void select_sound(const ApsModule* m, ApsVoice* v, const ApsCell* cell, c
     v->sample = m->sample_records + (uint32_t)(release ? ins.release_sample : ins.sample) * APS_SAMPLE_RECORD_SIZE;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A row without a new note ends the one that sounds: the release sample and envelope take over
 static void release_note(ApsPlayer* p, ApsVoice* v, const ApsCell* cell, const ApsTrackEntry* t) {
     if (!v->note_on) {
@@ -80,8 +75,6 @@ static void release_note(ApsPlayer* p, ApsVoice* v, const ApsCell* cell, const A
     }
     aps_release_envelope(p, v);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void start_note(ApsPlayer* p, ApsVoice* v, const ApsCell* cell, const ApsTrackEntry* t) {
     const ApsModule* m = &p->module;
@@ -102,8 +95,6 @@ static void start_note(ApsPlayer* p, ApsVoice* v, const ApsCell* cell, const Aps
     v->shown_instrument = (int)((v->instrument - m->instruments) / APS_INSTRUMENT_SIZE);
     aps_start_sound(p, v, t);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void play_row(ApsPlayer* p) {
     const ApsModule* m = &p->module;
@@ -134,7 +125,6 @@ static void play_row(ApsPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sequencer
 
 // A step starts: the row length and each voice's first track entry
@@ -146,8 +136,6 @@ static void load_step(ApsPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Move the order position by the entry's argument. False when the jump budget ran out.
 static bool jump_order(ApsPlayer* p, const ApsOrderEntry* entry) {
     if (entry->command == ApsOrder_Jump && entry->param >= 0x80) {
@@ -156,8 +144,6 @@ static bool jump_order(ApsPlayer* p, const ApsOrderEntry* entry) {
     p->order_pos = (uint8_t)(p->order_pos + entry->param);
     return --p->jump_budget != 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Read order entries until one plays steps; false when the song ends
 static bool fetch_order(ApsPlayer* p) {
@@ -201,8 +187,6 @@ static bool fetch_order(ApsPlayer* p) {
     }
     return false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Walk the song from `phase` to the next row that lasts at least one tick, playing every row on the way. False when
 // the song ends.
@@ -253,8 +237,6 @@ static bool run_sequencer(ApsPlayer* p, SequencerPhase phase) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The order list reached its end command: all audio DMA and interrupts off. The 68k player goes on running its
 // sequencer into the data behind the order list; the port stops here.
 static void stop_audio(ApsPlayer* p) {
@@ -266,15 +248,12 @@ static void stop_audio(ApsPlayer* p) {
     p->ended = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Public interface
 
 bool aps_probe(const uint8_t* data, size_t size) {
     ApsModule module;
     return aps_module_parse(&module, data, size, nullptr);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ApsPlayer* aps_create(const uint8_t* data, size_t size) {
     ApsModule probe;
@@ -296,8 +275,6 @@ ApsPlayer* aps_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void aps_destroy(ApsPlayer* player) {
     if (player != nullptr) {
         free(player->data);
@@ -305,8 +282,6 @@ void aps_destroy(ApsPlayer* player) {
         free(player);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool aps_start(ApsPlayer* p, int subsong, NuadeVoices* voices) {
     if (p == nullptr || voices == nullptr || subsong != 0) {
@@ -353,8 +328,6 @@ bool aps_start(ApsPlayer* p, int subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 ApsTickResult aps_tick(ApsPlayer* p, NuadeVoices* voices) {
     if (p->ended) {
         return (ApsTickResult) { .ended = true };
@@ -376,8 +349,6 @@ ApsTickResult aps_tick(ApsPlayer* p, NuadeVoices* voices) {
     }
     return (ApsTickResult) { .looped = p->looped, .ended = p->ended };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ApsVoiceState aps_voice_state(const ApsPlayer* p, int voice) {
     const ApsVoice* v = &p->voices[voice];

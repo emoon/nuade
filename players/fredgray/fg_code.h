@@ -6,7 +6,6 @@
 
 #include "fg_internal.h"
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Instruction words. A name says what the instruction does; "ABS" is an absolute long address operand, "IMM" an
 // immediate, "REC" d16(a6) with a6 = the voice records.
 
@@ -121,7 +120,6 @@
 #define OP_MOVE_SR_POP 0x46df  // move.w (a7)+,sr
 #define OP_BNE_HIGH 0x66       // high byte of bne
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The custom chip registers the module writes through absolute addresses or a6: the base and the audio channels
 // (channel n is n * CUSTOM_CHANNEL_STRIDE on), and DMACON
 
@@ -138,7 +136,6 @@
 // The voice that `value` addresses when it is `base` + voice * stride; false if it is none of the voices
 bool fg_voice_of_offset(uint32_t value, uint32_t base, uint32_t stride, uint8_t* voice);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Instruction decoding, as far as the locator needs it: the length, and where control goes
 
 typedef enum FgFlow {
@@ -157,7 +154,6 @@ typedef struct FgInsn {
 
 FgInsn fg_decode(const FgModule* m, uint32_t at);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Instruction cursor over the code: reads the words at `at` and moves on
 
 typedef struct FgCursor {
@@ -178,7 +174,6 @@ bool fg_is_table_load(uint16_t word);
 // The load of the voice offset into d6 at `at` (clr.l, moveq or move.l): its value and length in bytes
 bool fg_read_voice_offset_load(const FgModule* m, uint32_t at, uint32_t* value, uint32_t* length);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Walking the code: the instructions reachable from a routine, by branches (a routine) or also by calls (the engine)
 
 typedef struct FgWalk {

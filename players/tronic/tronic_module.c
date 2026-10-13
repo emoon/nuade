@@ -18,8 +18,6 @@
 #define FIRST_INSTRUMENT_OFFSET 0x0058
 #define SECOND_INSTRUMENT_OFFSET 0x00B0
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const uint16_t k_periods[TRONIC_PERIOD_COUNT] = {
     0,    6848, 6464, 6096, 5760, 5424, 5120, 4832, 4560, 4304, 4064, 3840, 3616, 3424, 3232, 3048, 2880, 2712,
     2560, 2416, 2280, 2152, 2032, 1920, 1808, 1712, 1616, 1524, 1440, 1356, 1280, 1208, 1140, 1076, 1016, 960,
@@ -28,13 +26,9 @@ static const uint16_t k_periods[TRONIC_PERIOD_COUNT] = {
     113,  113,  113,  113,  113,  113,  113,  113,  113,  113,  113,  113,  0,    113,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t tronic_period(unsigned index) {
     return index < TRONIC_PERIOD_COUNT ? k_periods[index] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint8_t tronic_byte(TronicModule* module, uint64_t at) {
     if (at >= module->size) {
@@ -44,19 +38,13 @@ uint8_t tronic_byte(TronicModule* module, uint64_t at) {
     return module->data[at];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t tronic_word(TronicModule* module, uint64_t at) {
     return (uint16_t)((tronic_byte(module, at) << 8) | tronic_byte(module, at + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t tronic_long(TronicModule* module, uint64_t at) {
     return ((uint32_t)tronic_word(module, at) << 16) | tronic_word(module, at + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const int8_t* tronic_silence(const TronicModule* module) {
     return (const int8_t*)(module->data + module->size);
@@ -68,7 +56,6 @@ typedef struct Block {
     uint32_t size;
 } Block;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Reads the block at *cursor and moves the cursor past it. False if it is not inside the file.
 static bool read_block(const uint8_t* data, size_t size, uint32_t* cursor, Block* block) {
     if ((uint64_t)*cursor + 2 > size) {
@@ -82,8 +69,6 @@ static bool read_block(const uint8_t* data, size_t size, uint32_t* cursor, Block
     *cursor = block->at + block->size;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The four sequences follow the header, each `length` bytes.
 static bool parse_sequences(TronicModule* module, const uint8_t* data, size_t size, uint32_t* cursor) {
@@ -100,8 +85,6 @@ static bool parse_sequences(TronicModule* module, const uint8_t* data, size_t si
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Wave tables, the instrument table with its records, the waveform index and the waveforms.
 static bool parse_tables(TronicModule* module, const uint8_t* data, size_t size, uint32_t* cursor) {
@@ -140,8 +123,6 @@ static bool parse_tables(TronicModule* module, const uint8_t* data, size_t size,
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The patterns (a long with the size), then the sample table and the samples.
 static bool parse_patterns_and_samples(TronicModule* module, const uint8_t* data, size_t size, uint32_t* cursor) {
     if ((uint64_t)*cursor + 4 > size) {
@@ -159,8 +140,6 @@ static bool parse_patterns_and_samples(TronicModule* module, const uint8_t* data
     module->samples = *cursor + TRONIC_SAMPLE_COUNT * 4;
     return module->samples <= size;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool tronic_module_parse(TronicModule* module, const uint8_t* data, size_t size) {
     *module = (TronicModule) { 0 };
@@ -180,22 +159,16 @@ bool tronic_module_parse(TronicModule* module, const uint8_t* data, size_t size)
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void tronic_module_free(TronicModule* module) {
     free(module->data);
     module->data = nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TronicStep tronic_step(TronicModule* module, int voice, unsigned position) {
     const uint32_t at = module->sequence[voice].at + position;
     return (TronicStep) { .pattern = module->patterns + (uint32_t)tronic_byte(module, at) * TRONIC_PATTERN_BYTES,
                           .transpose = tronic_byte(module, (uint64_t)at + 1) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TronicCell tronic_pattern_row(TronicModule* module, uint32_t pattern, unsigned row) {
     const uint64_t at = (uint64_t)pattern + row * TRONIC_ROW_BYTES;
@@ -215,8 +188,6 @@ enum {
     Instrument_Param = 0x27,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool tronic_instrument(TronicModule* module, unsigned number, TronicInstrument* out) {
     if (number == 0 || number > module->instrument_count) {
         return false;
@@ -235,13 +206,9 @@ bool tronic_instrument(TronicModule* module, unsigned number, TronicInstrument* 
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t tronic_instrument_byte(TronicModule* module, const TronicInstrument* instrument, uint32_t field) {
     return tronic_byte(module, (uint64_t)instrument->at + field);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TronicEnvelopeStage tronic_envelope_stage(TronicModule* module, const TronicInstrument* instrument, uint16_t pos) {
     const uint32_t at = TronicField_Envelope + pos;
@@ -249,8 +216,6 @@ TronicEnvelopeStage tronic_envelope_stage(TronicModule* module, const TronicInst
                                    .target = tronic_instrument_byte(module, instrument, at + 1),
                                    .hold = tronic_instrument_byte(module, instrument, at + 2) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TronicVibratoStage tronic_vibrato_stage(TronicModule* module, const TronicInstrument* instrument, uint8_t stage) {
     const uint32_t at = TronicField_Vibrato + stage;

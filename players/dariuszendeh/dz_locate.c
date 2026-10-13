@@ -11,7 +11,6 @@
 #define SEARCH_LIMIT 0x800 // patterns are searched at even offsets below this
 #define MAX_PATTERN_WORDS 24
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Opcode word patterns: words of four hex digits separated by spaces, an "x" digit matches any value
 // ("43fa xxxx", "66xx").
 
@@ -21,16 +20,12 @@ typedef struct Pattern {
     int count;
 } Pattern;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static unsigned hex_value(char digit) {
     if (digit >= '0' && digit <= '9') {
         return (unsigned)(digit - '0');
     }
     return (unsigned)((digit | 0x20) - 'a' + 10);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static Pattern parse_pattern(const char* text) {
     Pattern pattern = { 0 };
@@ -56,8 +51,6 @@ static Pattern parse_pattern(const char* text) {
     return pattern;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool pattern_matches(const DzModule* m, uint32_t at, const Pattern* pattern) {
     if (at + 2u * (uint32_t)pattern->count > m->size) {
         return false;
@@ -70,14 +63,11 @@ static bool pattern_matches(const DzModule* m, uint32_t at, const Pattern* patte
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool match_at(const DzModule* m, uint32_t at, const char* text) {
     const Pattern pattern = parse_pattern(text);
     return pattern_matches(m, at, &pattern);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The first even offset in [from, to] where the pattern matches
 static bool find_pattern(const DzModule* m, uint32_t from, uint32_t to, const char* text, uint32_t* found) {
     const Pattern pattern = parse_pattern(text);
@@ -90,7 +80,6 @@ static bool find_pattern(const DzModule* m, uint32_t from, uint32_t to, const ch
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Instruction reader
 
 typedef struct Reader {
@@ -99,13 +88,10 @@ typedef struct Reader {
     bool ok;
 } Reader;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t peek(const Reader* r) {
     return dzm_u16(r->m, r->pos);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The next word if it is `word`; consumed
 static bool accept(Reader* r, uint16_t word) {
     if (!r->ok || peek(r) != word) {
@@ -115,7 +101,6 @@ static bool accept(Reader* r, uint16_t word) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The next words are the words of the pattern `text`
 static void expect(Reader* r, const char* text) {
     const Pattern pattern = parse_pattern(text);
@@ -123,7 +108,6 @@ static void expect(Reader* r, const char* text) {
     r->pos += 2u * (uint32_t)pattern.count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An immediate word
 static uint16_t take_word(Reader* r) {
     const uint16_t word = peek(r);
@@ -131,14 +115,12 @@ static uint16_t take_word(Reader* r) {
     return word;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A d16(pc) operand: the address it names
 static uint32_t take_target(Reader* r) {
     const uint32_t extension = r->pos;
     return extension + (uint32_t)(int32_t)(int16_t)take_word(r);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An instruction `opcode d16(pc)`: the address the operand names
 static uint32_t take_pc(Reader* r, uint16_t opcode) {
     if (!accept(r, opcode)) {
@@ -148,7 +130,6 @@ static uint32_t take_pc(Reader* r, uint16_t opcode) {
     return take_target(r);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An instruction `opcode d16(pc)` that must name `address`
 static void expect_pc(Reader* r, uint16_t opcode, uint32_t address) {
     if (take_pc(r, opcode) != address) {
@@ -156,7 +137,6 @@ static void expect_pc(Reader* r, uint16_t opcode, uint32_t address) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A branch whose opcode high byte is `condition` (0x60 bra, 0x66 bne, 0x67 beq): its target. The assembler used the
 // byte, word and long displacement forms.
 static uint32_t take_branch(Reader* r, uint8_t condition) {
@@ -178,7 +158,6 @@ static uint32_t take_branch(Reader* r, uint8_t condition) {
     return at + 2 + (uint32_t)displacement;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2
 
 static bool check_version(const DzModule* m, DzVersion* version) {
@@ -204,7 +183,6 @@ static bool check_version(const DzModule* m, DzVersion* version) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the code leaves to the init code: the module's own variable words (offsets, 0 for what the version keeps as a
 // constant in the code) and the constants.
 
@@ -236,16 +214,12 @@ typedef struct RowAdvance {
     uint32_t one_shot;
 } RowAdvance;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static PatternBase take_pattern_base(Reader* r) {
     if (peek(r) == 0x45fa) {
         return (PatternBase) { .variable = false, .address = take_pc(r, 0x45fa) };
     }
     return (PatternBase) { .variable = true, .address = take_pc(r, 0x247a) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void expect_pattern_base(Reader* r, PatternBase pattern_base) {
     const PatternBase found = take_pattern_base(r);
@@ -254,7 +228,6 @@ static void expect_pattern_base(Reader* r, PatternBase pattern_base) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tick that alternates with the row tick: the module's phase word, and the word with the channels whose DMA it
 // stops. bsr clear_registers; lea phase,a0; cmpi.w #0,(a0); bne row; move.w #1,(a0); move.w stop_mask(pc),d0;
 // move.w d0,DMACON; rts
@@ -274,7 +247,6 @@ static bool locate_stop_tick(const DzModule* m, DzLayout* layout, uint32_t* stop
     return r.ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The routine that moves on to the next row:
 // clr.w (a0); addq.w #4,a2; suba.w step(pc),a1; cmpi.b #$ff,(a2); bne row; lea/movea pattern_base,a2;
 // adda.w step(pc),a1; cmpi.b #$ff,(a1); bne row; lea end_flag,a0; move.w #1,(a0); lea one_shot,a0;
@@ -298,7 +270,6 @@ static RowAdvance read_row_advance(Reader* r) {
     return a;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The entry of the row routine: the list a song starts from and the pattern base.
 // lea start,a1 [bra.b; lea loop,a1]; movea.l (a1),a1; lea/movea pattern_base,a2; move.w voices(pc),d4;
 // lea stop_mask,a0; clr.w (a0); move.w #1,-2(a0); lea AUD0,a3
@@ -316,7 +287,6 @@ static bool read_row_entry(Reader* r, const RowAdvance* advance, uint32_t stop_m
     return r->ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The same in version S, where the list and the pattern base are constants: clr.w (a0); addq.w #4,a2;
 // subq.w #8,a1; cmpi.b #$ff,(a2); bne row; lea pattern_base,a2; addq.w #8,a1; cmpi.b #$ff,(a1); bne row;
 // lea list,a1; lea pattern_base,a2; moveq #3,d4; lea stop_mask,a0; clr.w (a0); move.w #1,-2(a0); lea AUD0,a3
@@ -334,7 +304,6 @@ static bool read_row_routine_s(Reader* r, uint32_t stop_mask, CodeFacts* facts) 
     return r->ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The loop over the voices of a row, up to its dbra back to the start.
 static bool read_row_body(Reader* r, uint32_t stop_mask, DzLayout* layout, CodeFacts* facts) {
     const uint32_t loop_start = r->pos;
@@ -406,7 +375,6 @@ static bool read_row_body(Reader* r, uint32_t stop_mask, DzLayout* layout, CodeF
     return r->ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The init code: assignments of pointers and words to the module's variables
 
 // What an init path leaves in the variables, built up statement by statement. The init paths consist only of
@@ -418,8 +386,6 @@ typedef struct Assignments {
     uint32_t value;   // the pointer the last "move.l a0,d0" took
     uint32_t pending; // the pointer of the last lea
 } Assignments;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void assign_pointer(Assignments* a, uint32_t variable) {
     if (variable == a->variables->start_list) {
@@ -433,8 +399,6 @@ static void assign_pointer(Assignments* a, uint32_t variable) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void assign_word(Assignments* a, uint32_t variable, uint16_t value) {
     if (variable == a->variables->record_size) {
         a->song.record_size = value;
@@ -444,7 +408,6 @@ static void assign_word(Assignments* a, uint32_t variable, uint16_t value) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Runs the statements at the reader until it reaches an instruction that is none of them; false if the reader failed
 static bool run_assignments(Reader* r, Assignments* a) {
     while (r->ok) {
@@ -475,7 +438,6 @@ static bool run_assignments(Reader* r, Assignments* a) {
     return r->ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The song the variables hold as the file has them, before any init code ran
 static Assignments assignments_from_file(const DzModule* m, const CodeFacts* facts) {
     const Variables* v = &facts->variables;
@@ -491,7 +453,6 @@ static Assignments assignments_from_file(const DzModule* m, const CodeFacts* fac
     return a;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Version 2: the init command stores the one song. cmpi.b #$ff,d0; bne other; <assignments>; bra init
 static bool locate_song_2(const DzModule* m, const CodeFacts* facts, DzLayout* layout) {
     Reader r = { m, 0, true };
@@ -509,7 +470,6 @@ static bool locate_song_2(const DzModule* m, const CodeFacts* facts, DzLayout* l
     return r.ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The subsongs of version 1 are the eagleplayer's SubSongRange: 0 .. 2 + the immediate of the first
 // "cmpi.b #n,d4; bne; lea" of the code (2 when there is none). Songs 1 and 2 are the two voice songs; subsong n >= 3
 // goes to the chain "d4 == n - 2", and every other subsong takes the last entry.
@@ -522,7 +482,6 @@ static int subsong_count_1(const DzModule* m) {
     return max_subsong + 1 < DZ_MAX_SONGS ? max_subsong + 1 : DZ_MAX_SONGS;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 typedef struct Leaf {
     uint16_t selector;
     uint32_t address; // the pointer the leaf loads before the shared tail
@@ -530,7 +489,6 @@ typedef struct Leaf {
 
 #define MAX_LEAVES 8
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Version 1: the init command is in d4 (the song number as the high byte, 0xff in the low byte) for the four voice
 // songs, or in d3 (0xff with d1 = 0 or not 0) for the two voice songs.
 static bool locate_songs_1(const DzModule* m, const CodeFacts* facts, DzLayout* layout) {
@@ -604,8 +562,6 @@ static bool locate_songs_1(const DzModule* m, const CodeFacts* facts, DzLayout* 
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool dz_locate(const DzModule* m, DzLayout* layout) {
     *layout = (DzLayout) { 0 };

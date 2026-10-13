@@ -10,7 +10,6 @@
 #include "nuade_base.h"
 #include <nuade/players/soundimages.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module is the driver. It keeps its variables in a header at offset 4 (the register a5 of the code) and its
 // four voice records behind the sample table; both are initialised in the file.
 
@@ -25,7 +24,6 @@
 // The eagleplayer's Check2: the first word is a `bra.w` to the driver's interrupt entry, behind an `rte`.
 #define SI_BRA_W 0x6000u
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An image describes one version of the driver's code.
 
 #define SI_TARGET_FREE (-2) // a target that moves with the data of the module and that the port does not use
@@ -33,7 +31,6 @@
 extern const SiImage si_images[];
 extern const size_t si_image_count;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module as the port reads it
 
 // The eagleplayer's Check2 and the proof that the code is one of the images. False if either fails.

@@ -16,27 +16,22 @@
 #include "nuade_paula_channel.h"
 #include <nuade/players/beathoven.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline uint8_t bthm_u8(const BthModule* m, uint32_t address) {
     return address < m->size ? m->data[address] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline uint16_t bthm_u16(const BthModule* m, uint32_t address) {
     return (uint16_t)((bthm_u8(m, address) << 8) | bthm_u8(m, address + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline int16_t bthm_s16(const BthModule* m, uint32_t address) {
     return (int16_t)bthm_u16(m, address);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline uint32_t bthm_u32(const BthModule* m, uint32_t address) {
     return ((uint32_t)bthm_u16(m, address) << 16) | bthm_u16(m, address + 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline void bthm_set16(BthModule* m, uint32_t address, uint16_t value) {
     if (address < m->size && m->size - address >= 2) {
         m->data[address] = (uint8_t)(value >> 8);
@@ -44,7 +39,6 @@ static inline void bthm_set16(BthModule* m, uint32_t address, uint16_t value) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline void bthm_set32(BthModule* m, uint32_t address, uint32_t value) {
     if (address < m->size && m->size - address >= 4) {
         bthm_set16(m, address, (uint16_t)(value >> 16));
@@ -52,7 +46,6 @@ static inline void bthm_set32(BthModule* m, uint32_t address, uint32_t value) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A paula pointer to `address` with AUDxLEN `length_words` readable there (65536 words for 0); null if it does not fit.
 // An address outside the module is chip memory the module does not own, which reads as silence.
 static inline const int8_t* bthm_sample(const BthModule* m, uint32_t address, uint16_t length_words) {
@@ -60,13 +53,11 @@ static inline const int8_t* bthm_sample(const BthModule* m, uint32_t address, ui
     return address <= m->size + NUADE_PAULA_MAX_SAMPLE_BYTES - bytes ? (const int8_t*)(m->data + address) : nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The target of a 16 bit pc-relative displacement whose extension word is at `extension`
 static inline uint32_t bthm_pc16(const BthModule* m, uint32_t extension) {
     return extension + (uint32_t)(int32_t)bthm_s16(m, extension);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The loaded hunk: the bytes and which longwords the hunk's relocation table marks as pointers
 
 #define BTH_VERSION_100 0x4E313030u // "N100"
@@ -79,14 +70,12 @@ void bthi_free(BthImage* image);
 bool bthi_is_pointer(const BthImage* image, uint32_t address);
 BthHeader bthi_header(const BthImage* image);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer of a module, as the locator read it from the code. The replayers of different modules differ in a
 // few instructions: where the tempo and the note offset come from, the period table, and a handful of switches.
 
 // Finds the replayer in the code; false if the module has one this port does not know
 bool bth_locate(const BthImage* image, const BthHeader* header, BthReplayer* out);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The songs: what the module's init routine sets up for each subsong
 
 // Runs the routine the eagleplayer calls once after it loads the module (the header's `once`), if the module has one
@@ -101,7 +90,6 @@ void bth_songs_free(BthSong* songs, uint32_t count);
 uint32_t bth_decode_songs(const BthImage* image, const BthHeader* header, const BthReplayer* replayer, BthSong* songs,
                           uint32_t capacity);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The player: the voices (the replayer's voice records) and the module the replayers run on
 
 // An instrument record of BEATHOVEN109 and BEATHOVENNEW. The init routines of two modules rewrite its sample address
@@ -119,17 +107,14 @@ typedef struct BthInstrument {
     bool one_shot; // the sample plays once, then the voice repeats silence
 } BthInstrument;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline uint32_t bthm_instrument_sample_address(uint32_t record) {
     return record + BTH_INSTRUMENT_SAMPLE_FIELD;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline uint32_t bthm_instrument_one_shot_length_address(uint32_t record) {
     return record + BTH_INSTRUMENT_ONE_SHOT_LENGTH_FIELD;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline BthInstrument bthm_instrument(const BthModule* m, uint32_t record) {
     return (BthInstrument) { .volume = bthm_u16(m, record),
                              .one_shot_length = bthm_u16(m, bthm_instrument_one_shot_length_address(record)),
@@ -148,7 +133,6 @@ typedef struct BthLegacyInstrument {
     uint32_t sample;
 } BthLegacyInstrument;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline BthLegacyInstrument bthm_legacy_instrument(const BthModule* m, uint32_t record) {
     return (BthLegacyInstrument) { .volume = bthm_u16(m, record),
                                    .length = bthm_u32(m, record + 2),
@@ -182,7 +166,6 @@ typedef struct BthCommandWords {
     uint32_t record;  // the longword after the command word
 } BthCommandWords;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline BthCommandWords bthm_command_words(const BthModule* m, uint32_t address) {
     return (BthCommandWords) { .word = bthm_u16(m, address),
                                .operand = bthm_u16(m, address + 2),
@@ -190,7 +173,6 @@ static inline BthCommandWords bthm_command_words(const BthModule* m, uint32_t ad
                                .record = bthm_u32(m, address + 2) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the replayers write to AUDxVOL. The eagleplayer's patch masks the volume with 0x7F (the channel applies Paula's
 // rule to it).
 static inline uint8_t bth_paula_volume(uint16_t written) {
@@ -206,12 +188,10 @@ typedef struct BthTrackEntry {
     uint32_t note_base;
 } BthTrackEntry;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline BthTrackEntry bthm_track_entry(const BthModule* m, uint32_t address) {
     return (BthTrackEntry) { .stream = bthm_u32(m, address), .note_base = bthm_u32(m, address + 4) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The arpeggio goes on to the next note number of its table, and wraps
 static inline void bth_advance_arpeggio(BthVoice* v) {
     v->arpeggio_index++;

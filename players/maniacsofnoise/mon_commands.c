@@ -11,19 +11,13 @@
 #define PATTERN_COMMAND_BIT 0x80 // a pattern byte with this bit is a command (not MonVersion_Gyroscope)
 #define PATTERN_COMMAND_MASK 0x0F
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool mon_sequence_is_pattern(uint16_t word) {
     return word < SEQUENCE_COMMAND_BASE;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t mon_sequence_parameter(uint16_t word) {
     return word & SEQUENCE_PARAMETER_MASK;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MonSequenceCommand mon_sequence_command(uint16_t word) {
     static const MonSequenceCommand k_commands[] = {
@@ -34,7 +28,6 @@ MonSequenceCommand mon_sequence_command(uint16_t word) {
     return index < nuade_sizeof_array(k_commands) ? k_commands[index] : MonSequenceCommand_Unknown;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // MonVersion_Gyroscope marks its five commands with the bytes 0xFB to 0xFF; the other versions index a table of
 // handlers with the low bits of a byte with bit 7 set, the older of them with six entries, the newer with ten.
 
@@ -73,8 +66,6 @@ MonPatternCommand mon_pattern_command(MonVersion version, uint8_t byte) {
     }
     return index < nuade_sizeof_array(k_new) ? k_new[index] : MonPatternCommand_Unknown;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 unsigned mon_pattern_arguments(MonPatternCommand command) {
     switch (command) {

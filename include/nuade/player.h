@@ -1,9 +1,8 @@
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // nuade player API: the vtable every player implements, and the types it shares with the host API (nuade.h).
 // Optional entries may be 0. (out, cap) fill calls return the count written.
 //
 // Single-threaded per instance. A player never touches the OS for files: everything goes through NuadeSongSource.io.
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -91,7 +90,6 @@ typedef struct NuadeRenderResult {
     uint32_t flags;  // NuadeRenderFlags
 } NuadeRenderResult;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Metadata: the player pushes it once after open; the framework stores it and serves nuade_meta().
 
 typedef struct NuadeMetadataSink {
@@ -99,8 +97,6 @@ typedef struct NuadeMetadataSink {
     void (*set_tag)(void* ctx, const char* key, const char* value);
     void (*add_instrument)(void* ctx, uint32_t index, const char* name);
 } NuadeMetadataSink;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 typedef struct NuadePlayer {
     uint64_t api_version; // NUADE_PLAYER_API_VERSION

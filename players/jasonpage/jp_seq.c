@@ -35,13 +35,10 @@ typedef enum StepResult {
     StepResult_NextTrackWord,
 } StepResult;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t pattern_address(const JpPlayer* player, uint8_t code) {
     return jp_table_pointer(player, player->layout.pattern_table, player->layout.pattern_base, code);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The loop marker of a voice's track list. The song has looped once every voice has passed its marker.
 
 static void mark_loop(JpPlayer* player, const JpVoice* voice) {
@@ -57,7 +54,6 @@ static void mark_loop(JpPlayer* player, const JpVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note: transposed, capped, and looked up. A note of the instrument that the replayer calls "no instrument" is
 // ignored without a queued instrument as well.
 
@@ -66,7 +62,6 @@ static uint8_t transposed_note(const JpVoice* voice, uint8_t note) {
     return (int8_t)sum < MAX_NOTE ? sum : MAX_NOTE;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Graftgold and Realms patterns. A byte is an instrument (bit 7), a new speed for this voice (bit 6) or a note; 0xF9
 // rests, 0xFE sets a slide and 0xFF ends the pattern.
 
@@ -107,7 +102,6 @@ static StepResult graftgold_pattern(JpPlayer* player, JpVoice* voice, uint32_t p
     return StepResult_VoiceDone;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Virocop patterns: a byte below 0x40 is a note, 0x40..0x7F a new speed, 0x80..0xF8 an instrument. 0xF9 (and 0xFA,
 // 0xFB, 0xFD) rest, 0xFC sets the hold volume, 0xFE a slide that runs to the end of the period range, 0xFF ends the
 // pattern. The position is kept in a 16-bit register whose low byte wraps.
@@ -115,8 +109,6 @@ static StepResult graftgold_pattern(JpPlayer* player, JpVoice* voice, uint32_t p
 static uint16_t advance_byte(uint16_t position, uint16_t n) {
     return (uint16_t)((position & 0xFF00) | ((position + n) & JP_BYTE_MASK));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void virocop_note(JpPlayer* player, JpVoice* voice, uint32_t pattern, uint16_t* position, uint8_t byte) {
     const uint16_t instrument = voice->instrument;
@@ -134,8 +126,6 @@ static void virocop_note(JpPlayer* player, JpVoice* voice, uint32_t pattern, uin
     const int16_t speed = jp_u8(&player->mem, pattern + *position);
     voice->slide = (int16_t)(period - voice->period) >= 0 ? speed : (int16_t)-speed;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static StepResult virocop_pattern(JpPlayer* player, JpVoice* voice, uint32_t pattern) {
     uint16_t position = voice->pattern_pos;
@@ -177,7 +167,6 @@ static StepResult virocop_pattern(JpPlayer* player, JpVoice* voice, uint32_t pat
     return StepResult_VoiceDone;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One sequencer step of a voice. Returns false when the track list ended the song.
 
 static bool voice_step(JpPlayer* player, JpVoice* voice) {
@@ -215,8 +204,6 @@ static bool voice_step(JpPlayer* player, JpVoice* voice) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void jp_seq_step(JpPlayer* player) {
     if (!player->active) {
         return;
@@ -233,7 +220,6 @@ void jp_seq_step(JpPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Start a subsong: its speed, the track list of each voice, and every voice back at the head of its track list with the
 // idle script. Fields the song does not name keep what the previous run left in them.
 

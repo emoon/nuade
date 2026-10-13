@@ -21,7 +21,6 @@
 // The period table has three octaves (C-1 to B-3); a note beyond it uses the last entry.
 #define JT_PERIOD_COUNT 36
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module as the player keeps it: a read outside returns 0 (the original would read whatever is in memory there).
 // The allocation comes from nuade_paula_padded_copy, so a sample that starts inside the module can run past its end.
 

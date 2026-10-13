@@ -31,8 +31,6 @@
 #define PERIOD_TABLE_BYTES (16 * 36 * 2)
 #define VOICE_RECORD_SIZE 0x2E
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // ProTracker periods, 16 finetunes of 36 notes (note 1 = C-1). Finetune 8..15 are -8..-1.
 static const uint16_t k_periods[16 * 36] = {
     856, 808, 762, 720, 678, 640, 604, 570, 538, 508, 480, 453, 428, 404, 381, 360, 339, 320, 302, 285, 269, 254, 240,
@@ -78,8 +76,6 @@ static const uint8_t k_volume_tail[35] = {
     64, 2, 136, 2, 208, 3, 24,  3, 96,  3, 168, 3, 240, 4, 56,  0, 0,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The 8-byte sample table entry.
 typedef struct SampleHeader {
     uint16_t length;      // words
@@ -89,19 +85,13 @@ typedef struct SampleHeader {
     uint8_t volume; // not limited to 64
 } SampleHeader;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t mod_byte(const TtModule* m, uint32_t offset) {
     return offset < m->size ? m->data[offset] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t mod_word(const TtModule* m, uint32_t offset) {
     return (uint16_t)(mod_byte(m, offset) << 8 | mod_byte(m, offset + 1));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static SampleHeader sample_header(const TtModule* m, uint32_t table, uint32_t index) {
     const uint32_t at = table + index * SAMPLE_HEADER_SIZE;
@@ -111,8 +101,6 @@ static SampleHeader sample_header(const TtModule* m, uint32_t table, uint32_t in
                             .finetune = mod_byte(m, at + 6),
                             .volume = mod_byte(m, at + 7) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A voice's variables as the words the replayer keeps them in.
 static uint16_t voice_word(const TtVoice* v, unsigned index, uint32_t offset) {
@@ -152,8 +140,6 @@ static uint16_t voice_word(const TtVoice* v, unsigned index, uint32_t offset) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A word of the period tables, by byte offset from the start of the first one. The tables are followed by the
 // voice records: a note or an arpeggio on the highest finetune reads them as periods.
 static uint16_t table_word(const TtSong* s, uint32_t offset) {
@@ -165,16 +151,12 @@ static uint16_t table_word(const TtSong* s, uint32_t offset) {
     return voice < TT_VOICES ? voice_word(&s->voices[voice], voice, past % VOICE_RECORD_SIZE) : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The byte offset of finetune `finetune`'s table. The replayer indexes its offset table (0, 72, 144, ... for the 16
 // finetunes) with the whole finetune byte, which only E5x keeps within a nibble; the data past the table is not
 // modelled.
 static uint32_t finetune_offset(uint8_t finetune) {
     return finetune < 16 ? (uint32_t)finetune * 72 : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t volume_table(uint8_t volume) {
     if (volume <= 64) {
@@ -183,8 +165,6 @@ static uint8_t volume_table(uint8_t volume) {
     const uint32_t i = (uint32_t)volume - 65;
     return i < sizeof(k_volume_tail) ? k_volume_tail[i] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The word index of the first entry at or below `period` among `entries` words from byte offset `base`, -1 if none.
 static int period_index(const TtSong* s, uint32_t base, uint16_t period, unsigned entries) {
@@ -196,33 +176,24 @@ static int period_index(const TtSong* s, uint32_t base, uint16_t period, unsigne
     return -1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // AUDxVOL from the volume register: through the volume table.
 static void write_volume(TtVoice* v, uint8_t volume) {
     v->paula.volume = volume_table(volume);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void set_volume(TtVoice* v, uint8_t volume) {
     v->volume = volume;
     write_volume(v, volume);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void write_period(TtVoice* v, uint16_t period) {
     v->paula.period = period;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void song_end(TtSong* s) {
     s->looped = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Pattern cells
 
 typedef struct Cell {
@@ -231,8 +202,6 @@ typedef struct Cell {
     uint8_t cmd;
     uint8_t param;
 } Cell;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Reads the cell at `offset`; returns its size. A cell is one byte (0x80: empty), two (0xC0 | effect, parameter; or
 // 0x80 | note, sample) or three (note << 1 | sample bit 4, sample << 4 | effect, parameter).
@@ -260,8 +229,6 @@ static uint32_t read_cell(const TtModule* m, uint32_t offset, Cell* cell) {
     return 3;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The offset of the data of `row` of the pattern at `order`.
 static uint32_t row_data(const TtModule* m, const TtBlock* b, uint32_t order, uint32_t row) {
     const uint8_t entry = mod_byte(m, b->patterns + order);
@@ -269,8 +236,6 @@ static uint32_t row_data(const TtModule* m, const TtBlock* b, uint32_t order, ui
     const uint32_t pattern_base = entry < 128 ? (uint32_t)(entry & ~1u) * 64 : 0;
     return b->refs + mod_word(m, b->refs + pattern_base + row * 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 124a: EFx moves the loop start through the sample's loop by the loop's length.
 static void funk_step(TtVoice* v) {
@@ -296,8 +261,6 @@ static void funk_step(TtVoice* v) {
     v->paula.lc = pos;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // ef2: 9xx
 static void sample_offset(TtVoice* v) {
     if (v->param != 0) {
@@ -314,8 +277,6 @@ static void sample_offset(TtVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void volume_up(TtVoice* v, uint8_t amount) {
     uint8_t volume = (uint8_t)(v->volume + amount);
     if (((volume - 0x40) & 0x80) == 0) { // cmp.b #$40 / bmi
@@ -324,8 +285,6 @@ static void volume_up(TtVoice* v, uint8_t amount) {
     set_volume(v, volume);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void volume_down(TtVoice* v, uint8_t amount) {
     uint8_t volume = (uint8_t)(v->volume - amount);
     if ((int8_t)volume < 0) {
@@ -333,8 +292,6 @@ static void volume_down(TtVoice* v, uint8_t amount) {
     }
     set_volume(v, volume);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // f1e: Axy
 static void volume_slide(TtVoice* v) {
@@ -346,8 +303,6 @@ static void volume_slide(TtVoice* v) {
         volume_down(v, v->param & 0x0F);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 1146: restart the sample (E9x, EDx): DMA off, the sample, DMA on, then the repeat. The repeat is written as a long
 // over AUDxLEN and AUDxPER, which sets the period too.
@@ -361,8 +316,6 @@ static void retrigger(TtVoice* v) {
     write_period(v, v->period);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // c08 / c52: 1xx, 2xx, E1x, E2x
 static void porta_up(TtSong* s, TtVoice* v) {
     const uint8_t amount = v->param & s->fine_mask;
@@ -374,8 +327,6 @@ static void porta_up(TtSong* s, TtVoice* v) {
     write_period(v, v->period & 0xFFF);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void porta_down(TtSong* s, TtVoice* v) {
     const uint8_t amount = v->param & s->fine_mask;
     s->fine_mask = 0xFF;
@@ -385,8 +336,6 @@ static void porta_down(TtSong* s, TtVoice* v) {
     }
     write_period(v, v->period & 0xFFF);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // c8e: 3xx / 5xx at a row with a note: the note's period (finetune 0) becomes the target
 static void tone_porta_setup(const TtSong* s, TtVoice* v) {
@@ -408,8 +357,6 @@ static void tone_porta_setup(const TtSong* s, TtVoice* v) {
         v->porta_down = true;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // cfa: one step of the tone portamento (3xx, 5xy)
 static void tone_porta_step(const TtSong* s, TtVoice* v) {
@@ -441,8 +388,6 @@ static void tone_porta_step(const TtSong* s, TtVoice* v) {
     write_period(v, period);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // b92: 0xy
 static void arpeggio(const TtSong* s, TtVoice* v) {
     uint8_t semitones;
@@ -464,8 +409,6 @@ static void arpeggio(const TtSong* s, TtVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The vibrato and tremolo shape: 0 sine, 1 ramp down, otherwise square. The ramp takes its sign from the vibrato
 // position, also for the tremolo.
 static uint8_t wave_amplitude(const TtVoice* v, uint8_t position, uint8_t waveform) {
@@ -479,8 +422,6 @@ static uint8_t wave_amplitude(const TtVoice* v, uint8_t position, uint8_t wavefo
     }
     return 0xFF;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // d84: 4xy; the parameter nibbles that are zero keep the old speed or depth
 static void update_wave_parameter(TtVoice* v, uint8_t* wave) {
@@ -497,8 +438,6 @@ static void update_wave_parameter(TtVoice* v, uint8_t* wave) {
     *wave = value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // dae
 static void vibrato_step(TtVoice* v) {
     const uint8_t amplitude = wave_amplitude(v, v->vibrato_pos, v->waveform & 3);
@@ -506,8 +445,6 @@ static void vibrato_step(TtVoice* v) {
     write_period(v, (v->vibrato_pos & 0x80) ? (uint16_t)(v->period - delta) : (uint16_t)(v->period + delta));
     v->vibrato_pos = (uint8_t)(v->vibrato_pos + ((v->vibrato >> 2) & 0x3C));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // e2e: 7xy
 static void tremolo_step(TtVoice* v) {
@@ -525,8 +462,6 @@ static void tremolo_step(TtVoice* v) {
     write_volume(v, (uint8_t)volume);
     v->tremolo_pos = (uint8_t)(v->tremolo_pos + ((v->tremolo >> 2) & 0x3C));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 102c: Exy, on the row and on every tick; most take effect on the first tick only
 static void extended_effect(TtSong* s, TtVoice* v) {
@@ -619,8 +554,6 @@ static void extended_effect(TtSong* s, TtVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The effects of the first tick of a row (ff6)
 static void row_effect(TtSong* s, TtVoice* v) {
     funk_step(v);
@@ -656,8 +589,6 @@ static void row_effect(TtSong* s, TtVoice* v) {
             break;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // b1e: the effects of the other ticks
 static void tick_effect(TtSong* s, TtVoice* v) {
@@ -710,8 +641,6 @@ static void tick_effect(TtSong* s, TtVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // 9cc: a sample number selects the sample, its loop, finetune and volume
 static void select_sample(const TtModule* m, TtVoice* v, unsigned number) {
     const unsigned index = number - 1;
@@ -735,14 +664,10 @@ static void select_sample(const TtModule* m, TtVoice* v, unsigned number) {
     set_volume(v, h.volume);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The period of table note `note` (1-based) in the table of finetune 0
 static uint16_t note_period(const TtSong* s, unsigned note) {
     return note == 0 ? 0 : table_word(s, (note - 1) * 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // a9a: start the note
 static void start_note(TtSong* s, TtVoice* v, unsigned note) {
@@ -763,8 +688,6 @@ static void start_note(TtSong* s, TtVoice* v, unsigned note) {
     write_period(v, v->period);
     v->started = true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 958: one cell of the row
 static void play_cell(TtSong* s, const TtModule* m, TtVoice* v, const Cell* cell) {
@@ -794,8 +717,6 @@ static void play_cell(TtSong* s, const TtModule* m, TtVoice* v, const Cell* cell
     row_effect(s, v);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // 762: after a row, the channels that got a note start their DMA, then every channel's repeat is written (the
 // replayer waits for the DMA start in between)
 static void start_dma(TtSong* s) {
@@ -811,8 +732,6 @@ static void start_dma(TtSong* s) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // 89e: decode the row and play it
 static void play_row(TtSong* s, const TtModule* m) {
     s->shown_position = s->position;
@@ -827,8 +746,6 @@ static void play_row(TtSong* s, const TtModule* m) {
     start_dma(s);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // 92a
 static void next_position(TtSong* s) {
     s->row = s->jump_row;
@@ -840,8 +757,6 @@ static void next_position(TtSong* s) {
         song_end(s);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 8f4 and 94c: on to the next row
 static void advance_row(TtSong* s) {
@@ -868,8 +783,6 @@ static void advance_row(TtSong* s) {
         next_position(s);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 7e4: the interrupt
 static void run_interrupt(TtPlayer* p) {
@@ -898,13 +811,9 @@ static void run_interrupt(TtPlayer* p) {
     advance_row(s);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool tt_probe(const uint8_t* data, size_t size) {
     return data != nullptr && size >= 4 && data[0] == 'T' && data[1] == 'M' && data[2] == 'K' && data[3] != 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The sample file's name for a module file name: "name.pat" -> "name.SAM", "TMK.name" -> "SMP.name"; any other name
 // loses its last character.
@@ -922,8 +831,6 @@ static void sample_file_name(const char* module_name, char* out, size_t cap) {
         out[n - 1] = '\0';
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool load_sample_file(const NuadeIo* io, const char* path, uint8_t** data, uint64_t* size, char* missing,
                              size_t missing_cap) {
@@ -950,8 +857,6 @@ static bool load_sample_file(const NuadeIo* io, const char* path, uint8_t** data
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // InitPlayer's size check: the sample bytes the table asks for must fit the sample file. It sums the table entries
 // by the count in byte 5 of the file (the first block's, for a single subsong). A count of 0 makes the replayer's
 // dbra loop run 65536 times, far past the table, which a real module cannot satisfy.
@@ -964,8 +869,6 @@ static bool sample_file_fits(const TtModule* m, uint64_t file_size) {
     }
     return bytes <= file_size;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 634: with the delta flag every sample byte is the sum of itself and all the bytes after it, over all samples. The
 // first four bytes of every sample are cleared (the silent loop of a sample without one). The copy has room for the
@@ -995,8 +898,6 @@ static bool prepare_samples(TtModule* m, const uint8_t* file, uint64_t file_size
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TtCreateResult tt_create(const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
     TtCreateResult result = { .status = TtStatus_InvalidData };
@@ -1048,8 +949,6 @@ TtCreateResult tt_create(const uint8_t* data, size_t size, const char* path, con
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void tt_destroy(TtPlayer* player) {
     if (player == nullptr) {
         return;
@@ -1059,13 +958,9 @@ void tt_destroy(TtPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int tt_subsong_count(const TtPlayer* player) {
     return player->module.subsong_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The block of a subsong (1-based): the sizes of the blocks before it are in the table after the subsong count. Bit 7
 // of the sample count is the delta flag in the first block only.
@@ -1082,8 +977,6 @@ static TtBlock subsong_block(const TtModule* m, int subsong) {
     return b;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // 6ba: InitSound
 bool tt_start(TtPlayer* player, int subsong, NuadeVoices* voices) {
     if (player == nullptr || voices == nullptr || subsong < 0 || subsong >= player->module.subsong_count) {
@@ -1099,8 +992,6 @@ bool tt_start(TtPlayer* player, int subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 TtTickResult tt_tick(TtPlayer* player, NuadeVoices* voices) {
     TtSong* s = &player->song;
     s->looped = false;
@@ -1111,27 +1002,19 @@ TtTickResult tt_tick(TtPlayer* player, NuadeVoices* voices) {
     return (TtTickResult) { .looped = s->looped };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 TtPosition tt_position(const TtPlayer* player) {
     const TtSong* s = &player->song;
     return (TtPosition) { .order = s->shown_position, .row = s->shown_row, .speed = s->speed };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int tt_order_count(const TtPlayer* player) {
     return player->song.block.order_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TtVoiceState tt_voice_state(const TtPlayer* player, int voice) {
     const TtVoice* v = &player->song.voices[voice];
     return (TtVoiceState) { .note = v->note, .sample = v->sample_number };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TtCell tt_pattern_cell(const TtPlayer* player, int order, int voice, int row) {
     const TtModule* m = &player->module;

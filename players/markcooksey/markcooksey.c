@@ -77,8 +77,6 @@
 // records follow.
 #define VARIABLES_HEADER_SIZE 4
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 typedef enum McCommand {
     McCommand_Wait = 0x60,
     McCommand_Volume = 0x63,
@@ -91,40 +89,29 @@ typedef enum McCommand {
     McCommand_GlideOff = 0x6B,
 } McCommand;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // McModule reads. A read outside the file gives 0.
 
 static uint8_t module_u8(const McModule* m, uint32_t offset) {
     return offset < m->size ? m->data[offset] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t module_u16(const McModule* m, uint32_t offset) {
     return (uint16_t)((module_u8(m, offset) << 8) | module_u8(m, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t module_u32(const McModule* m, uint32_t offset) {
     return ((uint32_t)module_u16(m, offset) << 16) | module_u16(m, offset + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The target of the pc-relative displacement word at `offset`.
 static uint32_t pc_relative_target(const McModule* m, uint32_t offset) {
     return offset + (uint32_t)(int32_t)(int16_t)module_u16(m, offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The target of a bra.w at `offset`; 0 if there is none.
 static uint32_t bra_target(const McModule* m, uint32_t offset) {
     return module_u16(m, offset) == OP_BRA_W ? pc_relative_target(m, offset + 2) : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The end of a scan of the code at [from, from + span): the span cut at the end of the file and of the 32-bit offsets.
 static uint64_t scan_end(const McModule* m, uint32_t from, uint32_t span) {
@@ -132,8 +119,6 @@ static uint64_t scan_end(const McModule* m, uint32_t from, uint32_t span) {
     end = end < m->size ? end : m->size;
     return end < UINT32_MAX ? end : UINT32_MAX;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The target of the `index`-th (from 0) `lea d16(pc),aN` with the opcode `lea_opcode` in the code at [from, from +
 // span); 0 if there are fewer.
@@ -147,14 +132,10 @@ static uint32_t find_lea(const McModule* m, uint32_t from, uint32_t span, uint16
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The sample at `offset`; null if it starts outside the file.
 static const int8_t* module_sample(const McModule* m, uint32_t offset) {
     return offset == 0 || offset >= m->size ? nullptr : (const int8_t*)(m->data + offset);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The silent block at the start of the sample data.
 static const int8_t* silent_block(const McModule* m, uint16_t* words) {
@@ -162,14 +143,10 @@ static const int8_t* silent_block(const McModule* m, uint16_t* words) {
     return module_sample(m, m->samples);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static McFlavor flavor_of(const uint8_t* data, size_t size) {
     return size >= CHECK_ENTRY_LATE + 2 && nuade_read_be16(data + CHECK_ENTRY_LATE) == OP_BRA_W ? McFlavor_Late
                                                                                                 : McFlavor_Early;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool mc_probe(const uint8_t* data, size_t size) {
     if (size < CHECK_LEA_LATE + 2 || nuade_read_be32(data) != MAGIC_HEADER
@@ -188,8 +165,6 @@ bool mc_probe(const uint8_t* data, size_t size) {
            && nuade_read_be16(data + CHECK_LEA_LATE) == OP_LEA_A1_PC;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The distance between the voice records of the variables: the tick steps from one record to the previous one with
 // `lea -N(a5),a5`. 0 if there is no such step.
 static int find_voice_stride(const McModule* m, uint32_t tick) {
@@ -201,8 +176,6 @@ static int find_voice_stride(const McModule* m, uint32_t tick) {
     }
     return 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Finds the tables through the leas of the replayer's routines. The entries are the routines the eagleplayer calls:
 // the tick, the subsong start and the start of the second (effects) subsong table, which ends the first.
@@ -235,8 +208,6 @@ static bool locate_tables(McModule* m) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 McPlayer* mc_create(const uint8_t* data, size_t size) {
     if (!mc_probe(data, size)) {
         return nullptr;
@@ -260,8 +231,6 @@ McPlayer* mc_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void mc_destroy(McPlayer* player) {
     if (player != nullptr) {
         free(player->module.data);
@@ -269,13 +238,10 @@ void mc_destroy(McPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int mc_subsong_count(const McPlayer* player) {
     return player->module.subsong_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Records
 
 // The instrument record `number`: the instrument table holds the distance of each record from its own entry.
@@ -301,14 +267,11 @@ static McInstrument read_instrument(const McModule* m, int number) {
     return ins;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The period of pitch step `step`.
 static uint16_t period_at(const McModule* m, uint16_t step) {
     return module_u16(m, m->periods + 2u * step);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Volume
 
 // AUDxVOL: half the level, at most 64 (the patched replayer).
@@ -316,21 +279,16 @@ static uint8_t hardware_volume(uint16_t level) {
     return (uint8_t)(level >> 1 > VOLUME_MAX ? VOLUME_MAX : level >> 1);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void set_volume(McVoice* v, uint16_t level) {
     v->paula.volume = hardware_volume(level);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Starting a note
 
 // period * scale / 0x10000, the period of a note at the instrument's tuning.
 static uint16_t scaled_period(uint16_t period, uint16_t scale) {
     return (uint16_t)(((uint32_t)period * scale) >> 16);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A note with a sample restarts the channel and plays the first block once, then the repeat block; a note without one
 // only retunes the running sample.
@@ -358,8 +316,6 @@ static void start_sample(const McModule* m, McVoice* v, uint16_t period) {
         v->paula.lc = silent_block(m, &v->paula.len_words);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A note byte: pitch (with the transposition of the sub-sequence), instrument, length and a byte that nothing reads.
 static void start_note(const McModule* m, McVoice* v, uint8_t note_byte) {
@@ -391,7 +347,6 @@ static void start_note(const McModule* m, McVoice* v, uint8_t note_byte) {
     start_sample(m, v, period);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Commands
 
 // Pushes a call of sub-sequence `sequence`, repeated `repeats` more times; false when the stack is full.
@@ -405,8 +360,6 @@ static bool call_sequence(const McModule* m, McVoice* v, uint8_t sequence, int8_
     v->stream = target;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The end of a sub-sequence: play it again while repeats are left, else go back to the caller.
 static bool return_from_sequence(McVoice* v) {
@@ -424,8 +377,6 @@ static bool return_from_sequence(McVoice* v) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 typedef enum StepResult {
     StepResult_Continue, // read the next command
     StepResult_Note,     // a note started: the envelopes run
@@ -433,16 +384,12 @@ typedef enum StepResult {
     StepResult_Stop,     // the stream is broken: the voice stops
 } StepResult;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static StepResult end_voice(const McModule* m, McVoice* v) {
     v->stream = 0;
     v->paula.lc = silent_block(m, &v->paula.len_words);
     v->paula.volume = 0;
     return StepResult_Done;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The patched replayer reports every end and jump command it decodes (with bit 7 clear); when all voices have reported
 // one, the song has ended and the reports start over.
@@ -458,8 +405,6 @@ static void report_end_command(McPlayer* p, McVoice* v) {
         p->voices[i].reached_end = false;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static StepResult step_command(McPlayer* p, McVoice* v) {
     const McModule* m = &p->module;
@@ -515,7 +460,6 @@ static StepResult step_command(McPlayer* p, McVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Envelopes and glide
 
 // The volume envelope: a list of levels, one per `speed` ticks; 0 ends it and the last level stays.
@@ -537,8 +481,6 @@ static void run_volume_envelope(const McModule* m, McVoice* v) {
     set_volume(v, (uint16_t)(((product & 0xFFFFu) * v->instrument.gain) >> 16));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The glide moves the pitch by `glide_step` sixteenths of a step per tick (the fraction is dropped every tick).
 static void run_glide(McVoice* v) {
     if (v->glide_step == 0) {
@@ -557,8 +499,6 @@ static void run_glide(McVoice* v) {
         v->pitch = position;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The pitch envelope adds a signed step to the pitch for one tick; 0x80 ends it. Without one the period follows the
 // glide.
@@ -586,7 +526,6 @@ static void run_pitch(const McModule* m, McVoice* v) {
     v->paula.period = scaled_period(period_at(m, pitch), scale);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tick
 
 static void run_voice(McPlayer* p, McVoice* v) {
@@ -618,8 +557,6 @@ static void run_voice(McPlayer* p, McVoice* v) {
     run_pitch(m, v);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 McTickResult mc_tick(McPlayer* player, NuadeVoices* voices) {
     player->song_ended = false;
     for (int i = MC_VOICES - 1; i >= 0; i--) {
@@ -633,8 +570,6 @@ McTickResult mc_tick(McPlayer* player, NuadeVoices* voices) {
     return (McTickResult) { .looped = player->song_ended, .ended = !running };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // What a voice's record in the replayer's variables holds that matters at the start: the voice volume that notes play
 // at until the first volume command (the record holds a snapshot of the state the game was in; every other field is
 // written before it is read).
@@ -642,14 +577,10 @@ typedef struct VoiceSnapshot {
     uint16_t volume_scale;
 } VoiceSnapshot;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static VoiceSnapshot read_voice_snapshot(const McModule* m, int voice) {
     const uint32_t record = m->state + VARIABLES_HEADER_SIZE + (uint32_t)(voice * m->voice_stride);
     return (VoiceSnapshot) { .volume_scale = module_u16(m, record + 0x48) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool mc_start(McPlayer* player, int subsong, NuadeVoices* voices) {
     McModule* m = &player->module;
@@ -668,8 +599,6 @@ bool mc_start(McPlayer* player, int subsong, NuadeVoices* voices) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 McVoiceState mc_voice_state(const McPlayer* player, int voice) {
     const McVoice* v = &player->voices[voice];

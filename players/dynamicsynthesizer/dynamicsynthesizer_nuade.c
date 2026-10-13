@@ -9,13 +9,9 @@
 
 #define MODULE_PREFIX "dns"
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe dynamicsynthesizer_probe(const uint8_t* data, size_t size, const char* filename) {
     return dns_probe(data, size, filename) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult dynamicsynthesizer_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -39,34 +35,24 @@ static NuadePlayerOpenResult dynamicsynthesizer_open(const NuadeSongSource* sour
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void dynamicsynthesizer_close(void* user_data) {
     dns_destroy((DnsPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool dynamicsynthesizer_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return dns_start((DnsPlayer*)user_data, (int)subsong, voices);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult dynamicsynthesizer_tick(void* user_data, NuadeVoices* voices) {
     const DnsTickResult tick = dns_tick((DnsPlayer*)user_data, voices);
     return (NuadeTickResult) { .length = tick.length, .flags = tick.looped ? NuadeTick_Looped : NuadeTick_None };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void dynamicsynthesizer_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Dynamic Synthesizer");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t dynamicsynthesizer_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const DnsPlayer* player = (const DnsPlayer*)user_data;
@@ -78,13 +64,9 @@ static uint32_t dynamicsynthesizer_voice_info(void* user_data, NuadeVoiceInfo* o
     return count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t dynamicsynthesizer_grid_ticks(void* user_data, uint32_t subsong) {
     return dns_grid_ticks((const DnsPlayer*)user_data, (int)subsong);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_dynamicsynthesizer = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -101,8 +83,6 @@ const NuadePlayer nuade_player_dynamicsynthesizer = {
     .voice_info = dynamicsynthesizer_voice_info,
     .grid_ticks = dynamicsynthesizer_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DnsPlayer* dns_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_dynamicsynthesizer) {

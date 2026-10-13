@@ -29,8 +29,6 @@
 #define MDL_RANDOM_WAIT_TICK_MASK 3
 #define MDL_TIE_BIT 0x80
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 MdlPlayer* mdl_create(const uint8_t* data, size_t size) {
     MdlPlayer* player = calloc(1, sizeof(*player));
     if (player == nullptr) {
@@ -57,8 +55,6 @@ MdlPlayer* mdl_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void mdl_destroy(MdlPlayer* player) {
     if (player != nullptr) {
         free(player->module.bytes);
@@ -67,21 +63,16 @@ void mdl_destroy(MdlPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool mdl_probe(const uint8_t* data, size_t size) {
     MdlPlayer* player = mdl_create(data, size);
     mdl_destroy(player);
     return player != nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int mdl_subsong_count(const MdlPlayer* player) {
     return player->module.subsong_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume table of the replayer: entry n is n * scale / 63, counted with a running remainder.
 
 static void mdl_build_volume_table(uint8_t* table, uint8_t scale) {
@@ -98,7 +89,6 @@ static void mdl_build_volume_table(uint8_t* table, uint8_t scale) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The arpeggio table gives each voice a period offset; a frame is applied to all four voices.
 
 static void mdl_apply_arpeggio_frame(MdlPlayer* player, const int8_t* frame) {
@@ -107,7 +97,6 @@ static void mdl_apply_arpeggio_frame(MdlPlayer* player, const int8_t* frame) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer starts a voice by clearing its record and switching its DMA off.
 
 static void mdl_reset_voice(MdlVoice* voice) {
@@ -115,7 +104,6 @@ static void mdl_reset_voice(MdlVoice* voice) {
     mdl_build_volume_table(voice->volume_table, MDL_FULL_VOLUME);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The song set-up of one voice (InitSound runs it for each voice that has a track). The shared settings are written
 // again by every voice, and the arpeggio's first frame goes to all four voices, so the voices after this one clear
 // their detune when they are reset.
@@ -149,7 +137,6 @@ static void mdl_setup_voice(MdlPlayer* player, MdlVoice* voice) {
     voice->sequence_running = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitSound for subsong `subsong` (the replayer numbers them from 1).
 
 static void mdl_reset(MdlPlayer* player, int subsong) {
@@ -180,8 +167,6 @@ static void mdl_reset(MdlPlayer* player, int subsong) {
     player->playing = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool mdl_start(MdlPlayer* player, int subsong, NuadeVoices* voices) {
     if (player == nullptr || voices == nullptr || subsong < 0 || subsong >= mdl_subsong_count(player)) {
         return false;
@@ -193,7 +178,6 @@ bool mdl_start(MdlPlayer* player, int subsong, NuadeVoices* voices) {
     return !player->module.unmapped;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer's random numbers: a sum of the tick counter, 12 bits of it.
 
 static uint16_t mdl_random(MdlPlayer* player) {
@@ -201,7 +185,6 @@ static uint16_t mdl_random(MdlPlayer* player) {
     return (uint16_t)(player->random_state >> 4);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A voice with a random wait waits, then starts a track picked from the list of choices at its own track's start.
 
 static void mdl_random_start(MdlPlayer* player, MdlVoice* voice) {
@@ -230,7 +213,6 @@ static void mdl_random_start(MdlPlayer* player, MdlVoice* voice) {
     voice->active = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Command 0: return from a call, or the end of the track. The end of a voice's own track restarts it and tells the
 // eagleplayer; a random voice stops. False when the voice stopped.
 
@@ -250,7 +232,6 @@ static bool mdl_command_end(MdlPlayer* player, MdlVoice* voice, uint32_t* positi
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Command 3: a new instrument; an empty entry leaves the old one.
 
 static void mdl_command_instrument(MdlPlayer* player, MdlVoice* voice, uint8_t number) {
@@ -261,7 +242,6 @@ static void mdl_command_instrument(MdlPlayer* player, MdlVoice* voice, uint8_t n
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Command 4: jump to a track picked at random from the list that follows the command (pairs of a byte and a track
 // number). The replayer adds the entry's long to the start of the track table, not to the entry's address.
 
@@ -277,7 +257,6 @@ static void mdl_command_random_track(MdlPlayer* player, uint8_t count, uint32_t*
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Command 5: call another track; the call stack holds eight returns, and a call on a full stack does nothing.
 
 static void mdl_command_call(MdlPlayer* player, MdlVoice* voice, uint8_t track, uint32_t* position) {
@@ -289,7 +268,6 @@ static void mdl_command_call(MdlPlayer* player, MdlVoice* voice, uint8_t track, 
     *position = start;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Commands 6 and 7: a loop of `count` passes (a byte count that wraps: 0 is 256 passes).
 
 static void mdl_command_loop_start(MdlVoice* voice, uint8_t count, uint32_t position) {
@@ -300,8 +278,6 @@ static void mdl_command_loop_start(MdlVoice* voice, uint8_t count, uint32_t posi
     voice->loop_count[voice->loop_depth] = count;
     voice->loop_depth++;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void mdl_command_loop_end(MdlVoice* voice, uint32_t* position) {
     if (voice->loop_depth == 0) {
@@ -316,7 +292,6 @@ static void mdl_command_loop_end(MdlVoice* voice, uint32_t* position) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Runs one command with its parameter; false when the voice stopped.
 
 static bool mdl_run_command(MdlPlayer* player, MdlVoice* voice, uint8_t command, uint8_t param, uint32_t* position) {
@@ -350,7 +325,6 @@ static bool mdl_run_command(MdlPlayer* player, MdlVoice* voice, uint8_t command,
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Reads the track up to the next note or rest: a note byte (1 up) or a rest (0) and a duration byte; a duration of 0
 // is skipped, one with the top bit set ties the note to the one before. False when the voice stopped.
 
@@ -391,7 +365,6 @@ static bool mdl_next_step(MdlPlayer* player, MdlVoice* voice) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Sets the wave the voice plays: the replayer reads the wave table without a check for an empty entry.
 
 static void mdl_select_wave(MdlPlayer* player, MdlVoice* voice, uint8_t number) {
@@ -399,8 +372,6 @@ static void mdl_select_wave(MdlPlayer* player, MdlVoice* voice, uint8_t number) 
         player->module.unmapped = true;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t mdl_period(MdlPlayer* player, uint32_t index) {
     if (index < MDL_PERIOD_COUNT) {
@@ -421,7 +392,6 @@ static uint16_t mdl_period(MdlPlayer* player, uint32_t index) {
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pitch of a new note. A synthesised wave takes the octave from the note and shrinks with it; a sampled
 // instrument picks the wave of the note's range (the nearest below that has one) and the period from the note's
 // distance to the wave's octave.
@@ -447,7 +417,6 @@ static void mdl_select_pitch(MdlPlayer* player, MdlVoice* voice) {
     voice->shown_note = index - MDL_C1_INDEX + MDL_C1_NOTE;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The envelope: attack to the maximum, then decay to the sustain level while the key is down, release after it.
 
 static void mdl_envelope(MdlVoice* voice) {
@@ -476,7 +445,6 @@ static void mdl_envelope(MdlVoice* voice) {
     voice->envelope = level;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The two voice flags a modulator can be tied to (index 1 and 2): set for voices 1, 2 and for voices 2, 3.
 
 static bool mdl_voice_flag(MdlPlayer* player, const MdlVoice* voice, uint8_t flag) {
@@ -487,7 +455,6 @@ static bool mdl_voice_flag(MdlPlayer* player, const MdlVoice* voice, uint8_t fla
     return flag == 1 ? voice->index == 1 || voice->index == 2 : voice->index >= 2;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A modulator at a note start: the delay, and where it begins.
 
 static void mdl_modulator_start(MdlPlayer* player, const MdlVoice* voice, const MdlModulatorSetup* setup,
@@ -509,7 +476,6 @@ static void mdl_modulator_start(MdlPlayer* player, const MdlVoice* voice, const 
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One step of a modulator: after its delay it rises to the level, then falls to zero, and rises again unless it is a
 // one-shot.
 
@@ -536,7 +502,6 @@ static void mdl_modulator_step(const MdlModulatorSetup* setup, MdlModulatorState
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Applies a modulator's output to the part of the voice its kind names.
 
 static void mdl_modulator_apply(MdlVoice* voice, const MdlModulatorSetup* setup, uint16_t out) {
@@ -567,7 +532,6 @@ static void mdl_modulator_apply(MdlVoice* voice, const MdlModulatorSetup* setup,
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The modulators of the instrument run after the envelope has set the voice's volume and period.
 
 static void mdl_modulators(MdlPlayer* player, MdlVoice* voice) {
@@ -597,7 +561,6 @@ static void mdl_modulators(MdlPlayer* player, MdlVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxLC for a sample in the module: Paula ignores the low bit of the address. A sample that ends outside the file
 // plays memory the port does not model.
 
@@ -609,7 +572,6 @@ static const int8_t* mdl_module_lc(MdlPlayer* player, int64_t offset, uint16_t w
     return (const int8_t*)player->module.bytes + (offset & ~INT64_C(1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Fills the voice's buffer with the sum of two reads of the wave: each steps through it at its own rate, the
 // instrument's tone setting names the two steps (a nibble each). The rates double with the note's octave from the
 // fourth, while the buffer shrinks to keep the cycle in step with the period.
@@ -651,15 +613,12 @@ static void mdl_build_wave(MdlPlayer* player, MdlVoice* voice, uint16_t phase) {
     voice->wave_built = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample a voice plays this tick, as AUDxLC and AUDxLEN.
 
 typedef struct MdlSampleChoice {
     const int8_t* lc;
     uint16_t words;
 } MdlSampleChoice;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static MdlSampleChoice mdl_choose_sample(MdlPlayer* player, MdlVoice* voice) {
     const MdlWave* wave = &voice->wave;
@@ -701,7 +660,6 @@ static MdlSampleChoice mdl_choose_sample(MdlPlayer* player, MdlVoice* voice) {
     return sample;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Writes the voice's Paula registers, in the replayer's order, and switches the DMA on.
 
 static void mdl_write_registers(MdlPlayer* player, MdlVoice* voice) {
@@ -714,7 +672,6 @@ static void mdl_write_registers(MdlPlayer* player, MdlVoice* voice) {
     nuade_paula_channel_dma_on(&voice->paula);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One tick of one voice.
 
 static void mdl_voice_tick(MdlPlayer* player, MdlVoice* voice) {
@@ -744,7 +701,6 @@ static void mdl_voice_tick(MdlPlayer* player, MdlVoice* voice) {
     voice->retrigger = false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The arpeggio table advances every `arpeggio_speed` ticks.
 
 static void mdl_arpeggio_tick(MdlPlayer* player) {
@@ -764,7 +720,6 @@ static void mdl_arpeggio_tick(MdlPlayer* player) {
     player->arpeggio_position++;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The interrupt. True when a voice called SongEnd.
 
 static bool mdl_run_tick(MdlPlayer* player) {
@@ -779,8 +734,6 @@ static bool mdl_run_tick(MdlPlayer* player) {
     }
     return player->song_end;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MdlTickResult mdl_tick(MdlPlayer* player, NuadeVoices* voices) {
     MdlTickResult result = { 0 };
@@ -799,8 +752,6 @@ MdlTickResult mdl_tick(MdlPlayer* player, NuadeVoices* voices) {
     }
     return result;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MdlVoiceState mdl_voice_state(const MdlPlayer* player, int voice) {
     const MdlVoice* v = &player->voices[voice];

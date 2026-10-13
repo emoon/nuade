@@ -22,7 +22,6 @@
 #define SLOT_SIZE 10u         // Offsets layout: bytes of a sample slot
 #define SUBSONG_ENTRY_SIZE 3u // the subsong table: first position, loop start, end
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module
 
 // A read outside the image returns 0, as the zeroed memory around the module would.
@@ -92,7 +91,6 @@ const int8_t* smst_sample_pointer(const SmstModule* m, uint32_t address);
 // The period table entry.
 uint16_t smst_period(const SmstModule* m, uint8_t index);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The voice routines (sm_voice.c)
 
 // AUDxLC / AUDxLEN of the voice's loop, which Paula takes over when the sample ends.

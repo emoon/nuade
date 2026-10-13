@@ -55,25 +55,17 @@
 #define PERIOD_MARKER_1 0x064E
 #define CHECK_BRANCH_SIZE 4
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t dns_u8(const DnsMemory* m, int64_t offset) {
     return offset >= 0 && offset < (int64_t)m->size ? m->data[offset] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t dns_u16(const DnsMemory* m, int64_t offset) {
     return (uint16_t)(dns_u8(m, offset) << 8 | dns_u8(m, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t dns_u32(const DnsMemory* m, int64_t offset) {
     return (uint32_t)dns_u16(m, offset) << 16 | dns_u16(m, offset + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool dns_samples_init(DnsSamples* samples, const uint8_t* data, size_t size) {
     if (size > MAX_SAMPLES_SIZE) {
@@ -89,14 +81,11 @@ bool dns_samples_init(DnsSamples* samples, const uint8_t* data, size_t size) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void dns_samples_free(DnsSamples* samples) {
     free(samples->data);
     samples->data = nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's Check2: five `bra.w` with even, positive displacements; the last one leads to `move.l a0,abs`
 // and `rts` (the entry that sets the sample base).
 
@@ -119,7 +108,6 @@ static bool check_entry_points(const DnsMemory* m) {
 
 #define ANY 0x10000u // in a code pattern: any word
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The first even offset in [from, to) where the words of `pattern` follow each other.
 
 static uint32_t find_words(const DnsMemory* m, uint32_t from, uint32_t to, const uint32_t* pattern, size_t count) {
@@ -135,7 +123,6 @@ static uint32_t find_words(const DnsMemory* m, uint32_t from, uint32_t to, const
     return NOT_FOUND;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A link address in the code, as an offset into the module; NOT_FOUND for an address below the link base.
 
 static uint32_t operand_offset(const DnsModule* module, uint32_t at) {
@@ -143,7 +130,6 @@ static uint32_t operand_offset(const DnsModule* module, uint32_t at) {
     return address >= module->link_base ? address - module->link_base : NOT_FOUND;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The lea sequence at the end of a sequencer step that loads the six tracks' tables:
 //   lea notes,a0; lea var,a1; lea note_adds,a2; lea var,a3; lea sample_adds,a4; lea var,a5; bsr
 
@@ -168,7 +154,6 @@ static bool find_track_tables(DnsModule* module, uint32_t code_end) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sequencer's tables. The newer replayers have a table of pattern pointers: the long that follows the `rts` that
 // ends the song start routine points to it, and its first entry (the first pattern) ends it.
 
@@ -189,7 +174,6 @@ static bool find_pattern_table(DnsModule* module, uint32_t first_variable) {
     return module->pattern_count <= MAX_PATTERNS;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The rows version: `lea rows,a0; lea dest,a2; moveq #0,d0; move.w pos,d0; mulu.w #24,d0; adda.l d0,a0`
 
 static bool find_rows(DnsModule* module, uint32_t code_end) {
@@ -202,7 +186,6 @@ static bool find_rows(DnsModule* module, uint32_t code_end) {
     return module->rows != NOT_FOUND;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The fixed patterns version: `subi.w #$60,d2; addi.l #first,d2` turns the pattern number into an address.
 
 static bool find_fixed_patterns(DnsModule* module, uint32_t code_end) {
@@ -215,7 +198,6 @@ static bool find_fixed_patterns(DnsModule* module, uint32_t code_end) {
     return module->first_pattern != NOT_FOUND;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The note's volume offset: `move.b d7,d5` is followed by `lsr.b #2,d5`, `lsr.b #4,d5` or `andi.b #$f0,d5; lsr.b
 // #2,d5`.
 
@@ -241,7 +223,6 @@ static bool find_volume_decode(DnsVersion* version, const DnsMemory* m, uint32_t
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The state that the note sets in the DMA step: `lea dma_states,a1; move.w #n,(a1,d7.w)`.
 
 static bool find_dma_note_state(DnsVersion* version, const DnsMemory* m, uint32_t code_end) {
@@ -258,7 +239,6 @@ static bool find_dma_note_state(DnsVersion* version, const DnsMemory* m, uint32_
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer versions, from the sequencer and the one instruction that tells the two table versions apart (the
 // later one skips a note-off for a voice that has been released: `cmpi.w #$7fff,(a1,d7.w)`).
 
@@ -292,7 +272,6 @@ static DnsVersion base_version(DnsSequencer sequencer, bool has_age_guard) {
     return v;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // SubSongRange: the eagleplayer counts the songs of the first field of the song table up to the first pair of equal
 // words, at most 32.
 
@@ -314,7 +293,6 @@ typedef struct CodeAddresses {
     uint16_t song_offset_mask; // `andi.l #n,d0` after `lea songs,a0`: the mask of the doubled song number
 } CodeAddresses;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The addresses that the code gives: the link base from the period table, the first two variables (the code ends at
 // the second), the song table, the sample records.
 
@@ -372,7 +350,6 @@ static bool find_addresses(DnsModule* module, CodeAddresses* out) {
     return module->songs != NOT_FOUND && module->instruments != NOT_FOUND;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sequencer's kind and its tables: no pattern pointer table means fixed patterns; the rows version addresses a
 // table of 24 byte rows with `mulu.w #24,d0`. The first two kinds have the six tracks' tables.
 
@@ -389,8 +366,6 @@ static bool find_sequencer(DnsModule* module, uint32_t first_variable, uint32_t 
     *out = DnsSequencer_PatternTable;
     return find_track_tables(module, code_end);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool dns_module_locate(DnsModule* module, const uint8_t* data, size_t size) {
     memset(module, 0, sizeof(*module));
@@ -426,13 +401,9 @@ bool dns_module_locate(DnsModule* module, const uint8_t* data, size_t size) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool dns_has_module_prefix(const char* name) {
     return name != nullptr && strncasecmp(name, DNS_MODULE_PREFIX, sizeof(DNS_MODULE_PREFIX) - 1) == 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool dns_probe(const uint8_t* data, size_t size, const char* filename) {
     if (filename == nullptr || !dns_has_module_prefix(nuade_path_basename(filename))) {
@@ -441,8 +412,6 @@ bool dns_probe(const uint8_t* data, size_t size, const char* filename) {
     DnsModule module;
     return dns_module_locate(&module, data, size);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DnsStatus dns_module_load(DnsModule* module, const uint8_t* data, size_t size) {
     if (!dns_module_locate(module, data, size)) {
@@ -457,20 +426,15 @@ DnsStatus dns_module_load(DnsModule* module, const uint8_t* data, size_t size) {
     return DnsStatus_Ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void dns_module_free(DnsModule* module) {
     free(module->owned);
     module->owned = nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t dns_read_period(const DnsModule* module, unsigned index) {
     return dns_u16(&module->memory, module->periods + 2 * (index % PERIOD_COUNT));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The song table has a field per word of a song, 16 songs each.
 
 DnsSong dns_read_song(const DnsModule* module, unsigned song) {
@@ -493,8 +457,6 @@ DnsSong dns_read_song(const DnsModule* module, unsigned song) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 DnsInstrument dns_read_instrument(const DnsModule* module, unsigned number) {
     const DnsMemory* m = &module->memory;
     const uint32_t at = module->instruments + (number & 0xFF) * INSTRUMENT_SIZE;
@@ -515,8 +477,6 @@ DnsInstrument dns_read_instrument(const DnsModule* module, unsigned number) {
                              .detune = dns_u16(m, at + 0x4A) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 DnsTrackRow dns_read_track_row(const DnsModule* module, unsigned track, uint16_t position) {
     const DnsMemory* m = &module->memory;
     if (module->version.sequencer == DnsSequencer_Rows) {
@@ -532,8 +492,6 @@ DnsTrackRow dns_read_track_row(const DnsModule* module, unsigned track, uint16_t
                            .sample_add = dns_u8(m, t->sample_adds + index) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t dns_pattern_offset(const DnsModule* module, uint8_t pattern) {
     if (pattern == 0) {
         return 0;
@@ -548,8 +506,6 @@ uint32_t dns_pattern_offset(const DnsModule* module, uint8_t pattern) {
     const uint32_t address = dns_u32(&module->memory, entry);
     return address >= module->link_base ? address - module->link_base : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t dns_read_pattern_word(const DnsModule* module, uint32_t pattern, int16_t step) {
     return dns_u16(&module->memory, (int64_t)pattern + step);

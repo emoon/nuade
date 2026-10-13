@@ -8,15 +8,11 @@
 #include <nuade/players/sonicarranger.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Both the module mark and the compiled block's offset header are specific enough to be sure.
 static NuadeProbe sonicarranger_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return sa_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult sonicarranger_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -35,20 +31,14 @@ static NuadePlayerOpenResult sonicarranger_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void sonicarranger_close(void* user_data) {
     sa_destroy((SaModule*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool sonicarranger_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return sa_start((SaModule*)user_data, (int)subsong, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult sonicarranger_tick(void* user_data, NuadeVoices* voices) {
     (void)voices;
@@ -56,8 +46,6 @@ static NuadeTickResult sonicarranger_tick(void* user_data, NuadeVoices* voices) 
     const bool looped = sa_tick(module);
     return (NuadeTickResult) { .length = sa_tick_length(module), .flags = looped ? NuadeTick_Looped : NuadeTick_None };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void sonicarranger_metadata(void* user_data, const NuadeMetadataSink* sink) {
     const SaModule* module = (const SaModule*)user_data;
@@ -70,8 +58,6 @@ static void sonicarranger_metadata(void* user_data, const NuadeMetadataSink* sin
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The notes are period table indexes; 49 is the 856 period of ProTracker's C-1. NuadeColumn_Note counts semitones from
 // C-0, so the lowest note is value 0 and the column spells it three octaves down.
@@ -93,8 +79,6 @@ static NuadePositionResult sonicarranger_position(void* user_data) {
                                                  .speed = (uint32_t)p.speed } };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t sonicarranger_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const SaModule* module = (const SaModule*)user_data;
     const SaPosition p = sa_position(module);
@@ -109,8 +93,6 @@ static uint32_t sonicarranger_voice_info(void* user_data, NuadeVoiceInfo* out, u
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The rows of the pattern a position asks for: the count it carries, else the subsong's; none outside the song.
 static uint32_t sonicarranger_rows(const SaModule* module, const NuadePosition* at) {
     if ((int)at->order >= sa_get_num_positions(module)) {
@@ -118,8 +100,6 @@ static uint32_t sonicarranger_rows(const SaModule* module, const NuadePosition* 
     }
     return at->rows != 0 ? at->rows : (uint32_t)sa_track_rows(module);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTrackerInfoResult sonicarranger_tracker_info(void* user_data, const NuadePosition* at) {
     const uint32_t rows = sonicarranger_rows((const SaModule*)user_data, at);
@@ -136,8 +116,6 @@ static NuadeTrackerInfoResult sonicarranger_tracker_info(void* user_data, const 
                                                              { "fx", NuadeColumn_Hex, 1 },
                                                              { "arg", NuadeColumn_Hex, 2 } } } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePatternCell sonicarranger_cell(const void* ctx, uint32_t order, uint32_t channel, uint32_t row) {
     NuadePatternCell cell = nuade_cell_empty();
@@ -162,16 +140,12 @@ static NuadePatternCell sonicarranger_cell(const void* ctx, uint32_t order, uint
     return cell;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t sonicarranger_tracker_cells(void* user_data, const NuadePosition* at, uint32_t channel, int32_t row_lo,
                                             int32_t row_hi, NuadePatternCell* out, uint32_t cap) {
     const SaModule* module = (const SaModule*)user_data;
     return nuade_tracker_fill(at, SA_VOICES, sonicarranger_rows(module, at), channel, row_lo, row_hi, out, cap,
                               sonicarranger_cell, module);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_sonicarranger = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -190,8 +164,6 @@ const NuadePlayer nuade_player_sonicarranger = {
     .tracker_info = sonicarranger_tracker_info,
     .tracker_cells = sonicarranger_tracker_cells,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SaModule* sa_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_sonicarranger) {

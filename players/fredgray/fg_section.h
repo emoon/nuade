@@ -16,7 +16,6 @@ typedef enum FgRequestVar {
     FgRequestVar_Section = 2,     // the current section
 } FgRequestVar;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline uint32_t fg_request_var(uint32_t base, FgRequestVar which) {
     return base + (uint32_t)which;
 }

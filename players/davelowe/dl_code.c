@@ -14,8 +14,6 @@
 #define MODULE_FIRST_INSTRUCTIONS 0x70ff4e75u
 #define HUNK_SIZE_MASK 0x3fffffffu
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool dl_code_matches(const DlImage* image, uint32_t at, const uint32_t* pattern, uint32_t count) {
     for (uint32_t i = 0; i < count; i++) {
         if (pattern[i] != DL_ANY_WORD && dli_u16(image, at + i * 2) != pattern[i]) {
@@ -25,8 +23,6 @@ bool dl_code_matches(const DlImage* image, uint32_t at, const uint32_t* pattern,
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t dl_code_find(const DlImage* image, uint32_t from, uint32_t to, const uint32_t* pattern, uint32_t count) {
     for (uint32_t at = from; at + count * 2 <= to && at + count * 2 <= image->module_size; at += 2) {
         if (dl_code_matches(image, at, pattern, count)) {
@@ -35,8 +31,6 @@ uint32_t dl_code_find(const DlImage* image, uint32_t from, uint32_t to, const ui
     }
     return DL_NOT_FOUND;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool dl_hunk_code(const DlImage* file, uint32_t* code_size) {
     DlCursor cursor = { .image = file, .address = 0 };

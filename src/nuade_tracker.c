@@ -3,8 +3,6 @@
 #include <math.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 NuadePatternCell nuade_cell_empty(void) {
     NuadePatternCell cell;
     for (u32 i = 0; i < NUADE_MAX_COLUMNS; i++) {
@@ -12,8 +10,6 @@ NuadePatternCell nuade_cell_empty(void) {
     }
     return cell;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 u32 nuade_tracker_fill(const NuadePosition* at, u32 channels, u32 rows, u32 channel, i32 row_lo, i32 row_hi,
                        NuadePatternCell* out, u32 cap, NuadeCellFn cell, const void* ctx) {
@@ -24,8 +20,6 @@ u32 nuade_tracker_fill(const NuadePosition* at, u32 channels, u32 rows, u32 chan
     }
     return n;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 i32 nuade_period_to_note_shifted(u32 period, i32 octave_shift) {
     if (period == 0) {
@@ -38,8 +32,6 @@ i32 nuade_period_to_note_shifted(u32 period, i32 octave_shift) {
 i32 nuade_period_to_note(u32 period) {
     return nuade_period_to_note_shifted(period, 0);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void nuade_note_name(char out[8], i32 value, i32 octave_shift) {
     static const char* const names[12] = { "C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-" };

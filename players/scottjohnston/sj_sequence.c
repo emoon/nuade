@@ -7,8 +7,6 @@
 // Rows a track steps in the proof, for the whole module; a tune that does not repeat within them is not accepted.
 #define PROOF_STEP_BUDGET (1u << 22)
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void sj_track_init(SjTrack* track) {
     track->row = -1;
     track->loop_row = SJ_ROW_UNSET;
@@ -16,13 +14,9 @@ void sj_track_init(SjTrack* track) {
     track->wait = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void advance_row(SjTrack* track) {
     track->row++;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sj_track_step(SjTrack* track, const SjModule* module, uint32_t voice, SjCell* cell, bool* read) {
     // A wait holds the row for its count of steps; the step that ends it moves on.
@@ -37,8 +31,6 @@ bool sj_track_step(SjTrack* track, const SjModule* module, uint32_t voice, SjCel
     *read = track->wait == 0;
     return !*read || sj_module_cell(module, track->row, voice, cell);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void sj_track_apply(SjTrack* track, SjCommand command) {
     switch (command.kind) {
@@ -72,13 +64,10 @@ void sj_track_apply(SjTrack* track, SjCommand command) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool same_state(const SjTrack* a, const SjTrack* b) {
     return a->row == b->row && a->loop_row == b->loop_row && a->loop_count == b->loop_count && a->wait == b->wait;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One step of a track as the replayer takes it: the walk, then the command of the cell it read.
 
 static bool walk_step(SjTrack* track, const SjModule* module, uint32_t voice) {
@@ -96,7 +85,6 @@ static bool walk_step(SjTrack* track, const SjModule* module, uint32_t voice) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Brent's cycle search on one track: the track's state after each step against a saved one. The tracks do not affect
 // each other, so the states the tune can reach are in the product of the tracks' own.
 
@@ -123,8 +111,6 @@ static bool track_is_closed(const SjModule* module, uint32_t voice, uint32_t* bu
     }
     return false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sj_tune_is_closed(const SjModule* module) {
     uint32_t budget = PROOF_STEP_BUDGET;

@@ -52,7 +52,6 @@ typedef enum PsCommand {
     PsCommand_End,    // the voice has finished
 } PsCommand;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A byte of the command stream; the cursor moves on. Past the image the data is out of the model.
 
 static uint8_t next_byte(PsPlayer* player, uint32_t* cursor) {
@@ -64,7 +63,6 @@ static uint8_t next_byte(PsPlayer* player, uint32_t* cursor) {
     return value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The 32 bit big-endian operand of a jump, call or table command.
 
 static uint32_t next_long(PsPlayer* player, uint32_t* cursor) {
@@ -75,8 +73,6 @@ static uint32_t next_long(PsPlayer* player, uint32_t* cursor) {
     return value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void push(PsPlayer* player, PsVoice* voice, uint32_t value) {
     if (voice->stack_used >= PS_STACK_WORDS) {
         player->fault = true;
@@ -84,8 +80,6 @@ static void push(PsPlayer* player, PsVoice* voice, uint32_t value) {
     }
     voice->stack[voice->stack_used++] = value;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t pop(PsPlayer* player, PsVoice* voice) {
     if (voice->stack_used == 0) {
@@ -95,7 +89,6 @@ static uint32_t pop(PsPlayer* player, PsVoice* voice) {
     return voice->stack[--voice->stack_used];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The routine the eagleplayer calls when a voice reads its end command: the song ends when all four have.
 
 static void voice_song_end(PsPlayer* player, uint32_t index) {
@@ -111,7 +104,6 @@ static void voice_song_end(PsPlayer* player, uint32_t index) {
     player->song_end = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The length of the note: the byte behind it, with the high byte a command left.
 
 static void set_length(PsPlayer* player, PsVoice* voice, uint32_t* cursor) {
@@ -121,7 +113,6 @@ static void set_length(PsPlayer* player, PsVoice* voice, uint32_t* cursor) {
     voice->note_active = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // After the DMA start every note writes the silent repeat, unless the status byte of its voice has the skip bit set.
 // Only voice 3 can have it (see PS_STACK_TOP_LOW_BYTE); then the sample repeats.
 
@@ -133,7 +124,6 @@ static bool repeat_is_written(const PsPlayer* player, uint32_t index) {
     return (pointer_low_byte & PS_REPEAT_SKIP_BIT) == 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note: the instrument range it falls in gives the sample, the length of the sample, and the period table index
 // (the note counted from the range's base).
 
@@ -178,7 +168,6 @@ static void start_note(PsPlayer* player, uint32_t index, uint8_t note) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The slide command: step and delay of the slide, unless one is set already (then its two bytes are skipped).
 
 static void command_slide_set(PsPlayer* player, PsVoice* voice, uint32_t* cursor) {
@@ -195,7 +184,6 @@ static void command_slide_set(PsPlayer* player, PsVoice* voice, uint32_t* cursor
     voice->stream = *cursor;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The slide command: the number of steps; its divisor is the share of a step one unit of the slide step moves.
 
 static void command_slide_steps(PsPlayer* player, PsVoice* voice, uint32_t* cursor) {
@@ -206,7 +194,6 @@ static void command_slide_steps(PsPlayer* player, PsVoice* voice, uint32_t* curs
     voice->stream = *cursor;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The end of a loop: count down; while it is not 0 the stream goes back to the loop start.
 
 static void command_loop_end(PsPlayer* player, PsVoice* voice, uint32_t* cursor) {
@@ -221,7 +208,6 @@ static void command_loop_end(PsPlayer* player, PsVoice* voice, uint32_t* cursor)
     voice->stream = *cursor;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A command byte: the low nibble selects the routine. Returns false when the voice is done for this tick.
 
 static bool run_command(PsPlayer* player, uint32_t index, uint8_t command, uint32_t* cursor) {
@@ -291,7 +277,6 @@ static bool run_command(PsPlayer* player, uint32_t index, uint8_t command, uint3
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Reads the stream until a note or a rest sets a length. Returns false when the voice ended or the data is out of
 // the model.
 
@@ -317,7 +302,6 @@ static bool read_stream(PsPlayer* player, uint32_t index) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period a slide gives: `steps` semitones' share of the way from the note to the next one.
 
 static uint16_t slide_period(PsPlayer* player, PsVoice* voice) {
@@ -345,7 +329,6 @@ static uint16_t slide_period(PsPlayer* player, PsVoice* voice) {
     return (uint16_t)((pair.current - share) >> 16);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The parameters of the next slide: bytes of the stream up to the next set mark; any other byte ends the slide.
 
 static void read_slide_script(PsPlayer* player, PsVoice* voice) {
@@ -368,7 +351,6 @@ static void read_slide_script(PsPlayer* player, PsVoice* voice) {
     player->fault = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One tick of a slide: wait out the delay, write the slid period, read the parameters of the next one.
 
 static void run_slide(PsPlayer* player, PsVoice* voice) {
@@ -387,7 +369,6 @@ static void run_slide(PsPlayer* player, PsVoice* voice) {
     read_slide_script(player, voice);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One voice of the tick.
 
 static void run_voice(PsPlayer* player, uint32_t index) {
@@ -430,7 +411,6 @@ static void run_voice(PsPlayer* player, uint32_t index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The request for a subsong: every voice stops and the voices with a stream start it.
 
 static void start_subsong(PsPlayer* player) {
@@ -453,7 +433,6 @@ static void start_subsong(PsPlayer* player) {
     player->restart_pending = false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tick gate: tempo 0 runs every tick, a negative tempo skips one tick in -tempo + 1.
 
 static bool tempo_runs(PsPlayer* player) {
@@ -468,8 +447,6 @@ static bool tempo_runs(PsPlayer* player) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 PsPlayer* ps_create(const uint8_t* data, size_t size) {
     PsPlayer* player = calloc(1, sizeof(*player));
     if (player == nullptr) {
@@ -482,8 +459,6 @@ PsPlayer* ps_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool ps_probe(const uint8_t* data, size_t size) {
     PsModule module;
     if (!ps_module_parse(&module, data, size)) {
@@ -493,8 +468,6 @@ bool ps_probe(const uint8_t* data, size_t size) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void ps_destroy(PsPlayer* player) {
     if (player == nullptr) {
         return;
@@ -503,13 +476,10 @@ void ps_destroy(PsPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t ps_subsong_count(const PsPlayer* player) {
     return player->module.subsong_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitSound: clears the engine's variables, takes the tempo and the timer of the song and requests the subsong.
 
 bool ps_start(PsPlayer* player, uint32_t subsong, NuadeVoices* voices) {
@@ -541,8 +511,6 @@ bool ps_start(PsPlayer* player, uint32_t subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 PsTickResult ps_tick(PsPlayer* player, NuadeVoices* voices) {
     player->song_end = false;
     if (!player->fault && tempo_runs(player)) {
@@ -562,8 +530,6 @@ PsTickResult ps_tick(PsPlayer* player, NuadeVoices* voices) {
     }
     return (PsTickResult) { .length = player->timer, .looped = player->song_end, .ended = player->fault || finished };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PsVoiceState ps_voice_state(const PsPlayer* player, uint32_t voice) {
     const PsVoice* v = &player->voices[voice];

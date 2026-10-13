@@ -14,8 +14,6 @@ enum {
     Command_SwitchFseq = HhCommand_E7,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // AUDxLC/AUDxLEN = the sample. The repeat is written when `delay` ticks have passed, if the high word of the sample's
 // address is not zero; it is written in the same tick otherwise.
 static void load_sample(const HhModule* m, HhVoice* v, uint8_t number, uint8_t delay) {
@@ -28,8 +26,6 @@ static void load_sample(const HhModule* m, HhVoice* v, uint8_t number, uint8_t d
     const bool high_word_zero = ((HH_LOAD_ADDRESS + start) >> 16) == 0;
     v->delayed.countdown = (uint8_t)((high_word_zero ? 0 : delay) + 1);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The commands that are not common to the engines
 static HhNext run_command(const HhModule* m, const HhVersion* version, HhVoice* v, uint8_t command, uint32_t at) {
@@ -50,13 +46,9 @@ static HhNext run_command(const HhModule* m, const HhVersion* version, HhVoice* 
     return HhNext_Value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_frequency(const HhModule* m, const HhVersion* version, HhVoice* v) {
     hh_run_fseq_chain(m, version, v, run_command);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void init_voice(HhVoice* v) {
     v->note = 0;
@@ -64,8 +56,6 @@ static void init_voice(HhVoice* v) {
     v->delayed.offset = 0;
     v->delayed.countdown = 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The repeat of a new sample is written a few ticks after its start
 static void write_repeat(HhSong* song, const HhModule* m, const HhVersion* version) {
@@ -80,8 +70,6 @@ static void write_repeat(HhSong* song, const HhModule* m, const HhVersion* versi
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const HhEngine k_hh_engine_c = {
     .name = "engine C",

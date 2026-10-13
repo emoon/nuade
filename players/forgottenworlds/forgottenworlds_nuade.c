@@ -10,14 +10,10 @@
 // The grid of the pattern view: the voices play on their own timing.
 #define GRID_TICKS 6
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe forgottenworlds_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return fw_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult forgottenworlds_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -34,13 +30,9 @@ static NuadePlayerOpenResult forgottenworlds_open(const NuadeSongSource* source)
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void forgottenworlds_close(void* user_data) {
     fw_destroy((FwPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool forgottenworlds_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
@@ -51,8 +43,6 @@ static bool forgottenworlds_start(void* user_data, uint32_t subsong, uint32_t sa
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult forgottenworlds_tick(void* user_data, NuadeVoices* voices) {
     const FwTickResult tick = fw_tick((FwPlayer*)user_data, voices);
     return (NuadeTickResult) { .length = FW_TICK_LENGTH,
@@ -60,14 +50,10 @@ static NuadeTickResult forgottenworlds_tick(void* user_data, NuadeVoices* voices
                                         | (tick.ended ? NuadeTick_Ended : NuadeTick_None) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void forgottenworlds_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Forgotten Worlds");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t forgottenworlds_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const FwPlayer* player = (const FwPlayer*)user_data;
@@ -79,15 +65,11 @@ static uint32_t forgottenworlds_voice_info(void* user_data, NuadeVoiceInfo* out,
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t forgottenworlds_grid_ticks(void* user_data, uint32_t subsong) {
     (void)user_data;
     (void)subsong;
     return GRID_TICKS;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_forgottenworlds = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -104,8 +86,6 @@ const NuadePlayer nuade_player_forgottenworlds = {
     .voice_info = forgottenworlds_voice_info,
     .grid_ticks = forgottenworlds_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 FwPlayer* fw_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_forgottenworlds) {

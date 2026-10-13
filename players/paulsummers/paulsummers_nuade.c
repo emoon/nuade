@@ -7,14 +7,10 @@
 #include <nuade/players/paulsummers.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe paulsummers_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return ps_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult paulsummers_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -32,20 +28,14 @@ static NuadePlayerOpenResult paulsummers_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void paulsummers_close(void* user_data) {
     ps_destroy((PsPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool paulsummers_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return ps_start((PsPlayer*)user_data, subsong, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult paulsummers_tick(void* user_data, NuadeVoices* voices) {
     const PsTickResult tick = ps_tick((PsPlayer*)user_data, voices);
@@ -59,14 +49,10 @@ static NuadeTickResult paulsummers_tick(void* user_data, NuadeVoices* voices) {
     return (NuadeTickResult) { .length = tick.length, .flags = flags };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void paulsummers_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Paul Summers");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t paulsummers_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const PsPlayer* player = (const PsPlayer*)user_data;
@@ -77,8 +63,6 @@ static uint32_t paulsummers_voice_info(void* user_data, NuadeVoiceInfo* out, uin
     }
     return n;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_paulsummers = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -94,8 +78,6 @@ const NuadePlayer nuade_player_paulsummers = {
     .metadata = paulsummers_metadata,
     .voice_info = paulsummers_voice_info,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PsPlayer* ps_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_paulsummers) {

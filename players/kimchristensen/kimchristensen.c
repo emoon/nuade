@@ -18,7 +18,6 @@
 #define KIM_MASTER_VOLUME 64u // the eagleplayer's volume scaling at full volume
 #define KIM_DRY_RUN_TICKS 1000000u
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // 68000 DIVS.W: a quotient that does not fit in 16 bits leaves the dividend, and the word that the replayer keeps is
 // then the dividend's low word. A divisor of 0 is tested for before the division and gives 0.
 
@@ -33,7 +32,6 @@ static int16_t divide_word(int32_t dividend, uint8_t divisor) {
     return (int16_t)quotient;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tick's first half for a voice that got a note: the registers the note writes, AUDxVOL 0 included.
 
 static void write_note_registers(KimPlayer* player, KimVoice* voice) {
@@ -47,7 +45,6 @@ static void write_note_registers(KimPlayer* player, KimVoice* voice) {
     voice->paula.period = (uint16_t)(voice->period >> KIM_PITCH_SHIFT);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume ramps of an instrument: each goes from the previous target to its own in `ticks` ticks.
 
 static void set_volume_ramps(KimVoice* voice, const KimInstrument* instrument) {
@@ -62,7 +59,6 @@ static void set_volume_ramps(KimVoice* voice, const KimInstrument* instrument) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pitch ramps: each goes from the period of the note before it to the period of the note it names. The note is a
 // byte, so it wraps. A ramp of 0 ticks has no slide whatever the notes are; a ramp that slides needs both periods from
 // the table, and a note the table does not hold leaves the model.
@@ -86,7 +82,6 @@ static void set_pitch_ramps(KimPlayer* player, KimVoice* voice, const KimInstrum
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note on a voice: the voice's sample, volume, pitch and the three effects of the instrument. The registers follow
 // in write_note_registers.
 
@@ -119,7 +114,6 @@ static void start_note(KimPlayer* player, KimVoice* voice, const KimCell* cell) 
     };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pattern for the current position: the order list byte, skipping 0xFF bytes (each moves the position on). More
 // than KIM_MAX_SKIPPED_BYTES of them in a row are not a song.
 
@@ -138,7 +132,6 @@ static bool current_pattern(KimPlayer* player, uint8_t* pattern) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The row's step: the voices with a note start it. Returns true when the order list has run out.
 
 static bool step_row(KimPlayer* player) {
@@ -181,7 +174,6 @@ static bool step_row(KimPlayer* player) {
     return looped;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume of a voice: the first ramp that has ticks left adds its delta.
 
 static void volume_effect(KimVoice* voice) {
@@ -195,7 +187,6 @@ static void volume_effect(KimVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pitch of a voice: each stage holds, then slides; the stages follow one another.
 
 static void pitch_effect(KimVoice* voice) {
@@ -213,7 +204,6 @@ static void pitch_effect(KimVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The vibrato: after its delay the period moves by `delta` every tick, the direction changing after each half cycle.
 
 static void vibrato_effect(KimVoice* voice) {
@@ -229,7 +219,6 @@ static void vibrato_effect(KimVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The registers a voice gets every tick: AUDxVOL is the volume's high byte through the eagleplayer's volume scaling
 // (times 64, low word, divided by 64), AUDxPER the period.
 
@@ -239,7 +228,6 @@ static void write_effect_registers(KimVoice* voice) {
     voice->paula.period = (uint16_t)(voice->period >> KIM_PITCH_SHIFT);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // DMA on for the voices of the row, then their repeat: the loop of a sample that has one, four zero bytes otherwise.
 
 static void start_dma(KimPlayer* player) {
@@ -267,8 +255,6 @@ static void start_dma(KimPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static KimTickResult run_tick(KimPlayer* player) {
     KimTickResult result = { 0 };
     player->row_countdown--;
@@ -290,8 +276,6 @@ static KimTickResult run_tick(KimPlayer* player) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool kim_start(KimPlayer* player, NuadeVoices* voices) {
     if (player == nullptr) {
         return false;
@@ -309,8 +293,6 @@ bool kim_start(KimPlayer* player, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 KimTickResult kim_tick(KimPlayer* player, NuadeVoices* voices) {
     const KimTickResult result = run_tick(player);
     for (uint32_t v = 0; v < KIM_VOICES; v++) {
@@ -319,7 +301,6 @@ KimTickResult kim_tick(KimPlayer* player, NuadeVoices* voices) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Plays the song to its first end (or KIM_DRY_RUN_TICKS ticks) without a mixer: the data it reaches must stay inside
 // what the port models.
 
@@ -339,8 +320,6 @@ static bool dry_run(KimPlayer* player) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 KimPlayer* kim_create(const uint8_t* data, size_t size) {
     KimPlayer* player = calloc(1, sizeof(*player));
     if (player == nullptr) {
@@ -354,8 +333,6 @@ KimPlayer* kim_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void kim_destroy(KimPlayer* player) {
     if (player != nullptr) {
         free(player->chip);
@@ -363,7 +340,6 @@ void kim_destroy(KimPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Ticks between two rows. The counter is reloaded with `speed` and counts down as a signed byte, so speeds from 0x81 on
 // start a row every tick and 0x80 waits for the byte to wrap round.
 
@@ -374,8 +350,6 @@ uint32_t kim_grid_ticks(const KimPlayer* player) {
     }
     return speed == 0x80 ? 129 : 1;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 KimVoiceState kim_voice_state(const KimPlayer* player, uint32_t voice) {
     if (voice >= KIM_VOICES) {

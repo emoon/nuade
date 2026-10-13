@@ -41,7 +41,6 @@
 #define RR_EVENT_BUDGET (1u << 16)
 #define RR_ZERO_BUFFER_WORDS 2 // the eagleplayer's four zero bytes of chip memory, kept at offset `size`
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Pattern commands (the byte minus 0x80 indexes the version's jump table).
 
 typedef enum RrCommand {
@@ -66,7 +65,6 @@ typedef struct RrCommandInfo {
 
 RrCommandInfo rr_command_info(RrDriver driver, uint8_t byte);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module readers. Each returns false when the bytes are outside the module, inside the replayer's code or
 // variables, or a relocated long (the original would read other values there).
 

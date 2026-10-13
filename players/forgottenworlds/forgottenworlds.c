@@ -44,8 +44,6 @@
 #define IDLE_PERIOD 0x7C
 #define IDLE_WORDS 2
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 typedef enum Command {
     Command_End = 0x80,
     Command_Loop = 0x82,
@@ -65,40 +63,29 @@ static const uint16_t k_periods[] = {
 // The block the voices play when idle.
 static const int8_t k_idle_block[IDLE_WORDS * 2];
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // FwModule reads. A read outside the file gives 0.
 
 static uint8_t module_u8(const FwModule* m, uint32_t offset) {
     return offset < m->size ? m->data[offset] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t module_u16(const FwModule* m, uint32_t offset) {
     return (uint16_t)((module_u8(m, offset) << 8) | module_u8(m, offset + 1));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // `base` moved by the signed word at `offset` (the original adds the word to an address register, sign extended).
 static uint32_t word_relative(const FwModule* m, uint32_t base, uint32_t offset) {
     return base + (uint32_t)(int32_t)(int16_t)module_u16(m, offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The sample data at `offset`; null if it starts outside the file.
 static const int8_t* module_sample(const FwModule* m, uint32_t offset) {
     return offset < m->size ? (const int8_t*)(m->data + offset) : nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool fw_probe(const uint8_t* data, size_t size) {
     return size >= DATA_BASE + SONG_TABLE_SIZE && nuade_read_be32(data) == MAGIC_HEADER;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 FwPlayer* fw_create(const uint8_t* data, size_t size) {
     if (!fw_probe(data, size)) {
@@ -128,8 +115,6 @@ FwPlayer* fw_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void fw_destroy(FwPlayer* player) {
     if (player != nullptr) {
         free(player->module.data);
@@ -138,7 +123,6 @@ void fw_destroy(FwPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Records
 
 static FwInstrument read_instrument(const FwModule* m, uint32_t at) {
@@ -150,8 +134,6 @@ static FwInstrument read_instrument(const FwModule* m, uint32_t at) {
                             .release = module_u8(m, at + 5) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The word at 0 is the distance of the sample from the sample table, the word at 4 the distance of the repeat block
 // from the sample (both signed).
 static FwSample read_sample(const FwModule* m, uint32_t at) {
@@ -162,7 +144,6 @@ static FwSample read_sample(const FwModule* m, uint32_t at) {
                         .loop_words = module_u16(m, at + 6) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Paula
 
 // Restarts the channel with the voice's sample: the sample plays once, then its repeat block. The original waits for
@@ -178,7 +159,6 @@ static void start_sample(const FwModule* m, FwVoice* v) {
     v->paula.len_words = v->sample.loop_words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Envelope
 
 static void run_envelope_stage(FwVoice* v) {
@@ -216,8 +196,6 @@ static void run_envelope_stage(FwVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // An instrument with a hold time of 0 has no envelope: its level stays and the volume register is not written.
 static void run_envelope(FwVoice* v) {
     if (v->instrument.hold == 0) {
@@ -227,7 +205,6 @@ static void run_envelope(FwVoice* v) {
     v->paula.volume = v->level;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Commands
 
 typedef enum StepResult {
@@ -236,8 +213,6 @@ typedef enum StepResult {
     StepResult_EndTick,  // the end command: the tick stops here, for the voices after this one too
     StepResult_Stall,    // the stream is broken
 } StepResult;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A note: pitch, then the length. The instrument's start level and the attack stage restart.
 static StepResult start_note(const FwModule* m, FwVoice* v, uint8_t note, uint32_t* pos) {
@@ -256,8 +231,6 @@ static StepResult start_note(const FwModule* m, FwVoice* v, uint8_t note, uint32
     return StepResult_Done;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The instrument command: the instrument number (a signed byte), then the sample it names. The instrument number's
 // word (number * 8) keeps its high byte when the sample offset byte is loaded, so numbers of 32 and above add it to
 // the sample offset.
@@ -274,8 +247,6 @@ static void select_instrument(FwPlayer* p, FwVoice* v, uint32_t* pos) {
     p->end_target = v->sample.loop;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The call command: a signed pattern number; the pattern table holds the distance of each pattern from the table.
 // There is one return address.
 static void call_pattern(const FwModule* m, FwVoice* v, uint32_t* pos) {
@@ -284,8 +255,6 @@ static void call_pattern(const FwModule* m, FwVoice* v, uint32_t* pos) {
     v->return_to = *pos;
     *pos = word_relative(m, m->patterns, m->patterns + (uint32_t)(int32_t)(number * PATTERN_ENTRY_SIZE));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The end command writes a zero word at the repeat block of the last instrument command run in this tick. An odd
 // address is an address error on the 68000 and is not modelled.
@@ -296,8 +265,6 @@ static void clear_end_target(FwPlayer* p) {
         m->data[p->end_target + 1] = 0;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static StepResult step_command(FwPlayer* p, FwVoice* v, uint32_t* pos) {
     const FwModule* m = &p->module;
@@ -337,7 +304,6 @@ static StepResult step_command(FwPlayer* p, FwVoice* v, uint32_t* pos) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tick
 
 // Runs one voice; false when the tick ends here.
@@ -359,8 +325,6 @@ static bool run_voice(FwPlayer* p, FwVoice* v) {
     }
     return result != StepResult_EndTick;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 FwTickResult fw_tick(FwPlayer* player, NuadeVoices* voices) {
     player->end_target_known = false;
@@ -389,8 +353,6 @@ FwTickResult fw_tick(FwPlayer* player, NuadeVoices* voices) {
     return (FwTickResult) { .looped = all_wrapped, .ended = all_ended };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void fw_start(FwPlayer* player, NuadeVoices* voices) {
     FwModule* m = &player->module;
     memcpy(m->data, m->original, m->size);
@@ -407,8 +369,6 @@ void fw_start(FwPlayer* player, NuadeVoices* voices) {
         nuade_voice_stop(voices, (uint32_t)i);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 FwVoiceState fw_voice_state(const FwPlayer* player, int voice) {
     const FwVoice* v = &player->voices[voice];

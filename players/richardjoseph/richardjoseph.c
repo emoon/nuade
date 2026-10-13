@@ -36,7 +36,6 @@ static const uint16_t s_periods[PERIOD_ENTRIES]
     = { 453, 480, 508, 538, 570, 604, 640, 678, 720, 762, 808, 856, 226, 240, 254, 269, 285, 302,
         320, 339, 360, 381, 404, 428, 113, 120, 127, 135, 143, 151, 160, 170, 180, 190, 202, 214 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxLC ignores its lowest bit; AUDxLEN is written as the instrument has it (0 plays 65536 words). The image is a
 // nuade_paula_padded_copy, so a sample inside it that runs past its end plays zeros. A start outside the image (a
 // sample that ends beyond the 68000's address space, see samples_end) points nowhere.
@@ -47,8 +46,6 @@ static void set_sample(const RjpImage* samples, NuadePaulaChannel* paula, uint32
     paula->len_words = words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void stop_voice(RjpPlayer* player, RjpVoice* voice) {
     if (voice->active) {
         voice->active = false;
@@ -56,7 +53,6 @@ static void stop_voice(RjpPlayer* player, RjpVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's audio interrupt hook, run when a voice's pattern list wraps or stops: when every voice that has a
 // list has done so, SongEnd is called and the marks start over.
 
@@ -71,7 +67,6 @@ static void mark_wrapped(RjpPlayer* player, uint32_t index) {
     player->looped = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pattern list ends: the next entry is 0 and then 0 (stop), a distance back (loop) or a negative byte followed by a
 // sequence number (jump). Sets `*pattern_pos` to the next pattern's commands; false when the voice stops.
 
@@ -101,7 +96,6 @@ static bool next_pattern(RjpPlayer* player, RjpVoice* voice, uint32_t index, uin
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Instrument change: the voice takes the instrument's volume, LFOs and loop. The instrument that is already selected
 // stays as it is (its LFOs keep their positions).
 
@@ -126,7 +120,6 @@ static void select_instrument(RjpPlayer* player, RjpVoice* voice, uint8_t number
                                    .position = 0 };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The envelope ramps from `target - step` to `target` in `duration + 1` ticks.
 
 static void start_ramp(RjpEnvelopeState* envelope, RjpEnvelopeStage stage, uint8_t from, uint8_t to, uint8_t ticks) {
@@ -137,8 +130,6 @@ static void start_ramp(RjpEnvelopeState* envelope, RjpEnvelopeStage stage, uint8
     envelope->remaining = ticks;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void start_envelope(const RjpModule* module, RjpVoice* voice) {
     RjpEnvelopeState* envelope = &voice->envelope;
     envelope->has_block = true;
@@ -147,7 +138,6 @@ static void start_envelope(const RjpModule* module, RjpVoice* voice) {
     start_ramp(envelope, RjpEnvelopeStage_Attack, shape.start, shape.peak, shape.attack_ticks);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The release command: a ramp from the current level to 0.
 
 static void release_envelope(const RjpModule* module, RjpVoice* voice) {
@@ -159,7 +149,6 @@ static void release_envelope(const RjpModule* module, RjpVoice* voice) {
     start_ramp(envelope, RjpEnvelopeStage_Release, envelope->level, 0, shape.release_ticks);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note: stops the channel, clears the first word of the attack, points the channel at the attack and starts the
 // envelope. DMA goes on in the next tick. A voice without an instrument plays nothing.
 
@@ -185,7 +174,6 @@ static void start_note(RjpPlayer* player, RjpVoice* voice, uint16_t period) {
     voice->dma_pending = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The note byte indexes the period table in bytes; a byte outside the table reads the driver's variables, which no
 // song does. It plays no period.
 
@@ -194,7 +182,6 @@ static uint16_t note_period(uint8_t note) {
     return (note & 1) == 0 && entry < PERIOD_ENTRIES ? s_periods[entry] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Semitones from C-0: the table's entries run down from the B of each octave.
 
 static int note_to_semitone(uint8_t note) {
@@ -206,7 +193,6 @@ static int note_to_semitone(uint8_t note) {
                  + (SEMITONES_PER_OCTAVE - 1 - entry % SEMITONES_PER_OCTAVE));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pitch slide command: 1 byte of ticks, then the step as a big-endian long.
 
 static void start_slide(const RjpImage* image, RjpVoice* voice, uint32_t* pos) {
@@ -217,7 +203,6 @@ static void start_slide(const RjpImage* image, RjpVoice* voice, uint32_t* pos) {
     voice->slide_pos = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What a command does to the voice. Returns false when the row ends. A command above 8 jumps into the middle of
 // the driver's instructions; the voice stops.
 
@@ -262,7 +247,6 @@ static bool run_command(RjpPlayer* player, RjpVoice* voice, uint32_t index, uint
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Runs the commands up to the next note or the end of the row.
 
 static void read_row(RjpPlayer* player, RjpVoice* voice, uint32_t index) {
@@ -282,7 +266,6 @@ static void read_row(RjpPlayer* player, RjpVoice* voice, uint32_t index) {
     voice->pattern_pos = pos;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sequencer: a count every `speed` ticks, a row every `row_length` counts.
 
 static void run_sequencer(RjpPlayer* player, RjpVoice* voice, uint32_t index) {
@@ -296,7 +279,6 @@ static void run_sequencer(RjpPlayer* player, RjpVoice* voice, uint32_t index) {
     voice->speed_counter = voice->speed;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tick after a note: the channel's DMA goes on, and it latches the attack.
 
 static void start_dma(RjpVoice* voice) {
@@ -307,7 +289,6 @@ static void start_dma(RjpVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One tick after that: the registers get the loop, which the channel plays when the attack ends.
 
 static void write_loop(const RjpImage* samples, RjpVoice* voice) {
@@ -318,7 +299,6 @@ static void write_loop(const RjpImage* samples, RjpVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A stage of the envelope has run its ticks. The attack goes on to the decay to the sustain level, which stays.
 
 static void end_envelope_stage(const RjpModule* module, RjpEnvelopeState* envelope) {
@@ -330,7 +310,6 @@ static void end_envelope_stage(const RjpModule* module, RjpEnvelopeState* envelo
     start_ramp(envelope, RjpEnvelopeStage_Decay, shape.peak, shape.sustain, shape.decay_ticks);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Returns false when the release ends: that tick leaves the volume register as the last tick wrote it (the original
 // returns from the envelope routine before it loads the level).
 
@@ -348,7 +327,6 @@ static bool run_envelope(const RjpModule* module, RjpEnvelopeState* envelope) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The next signed byte of an LFO table; the position wraps back to the restart when it reaches the end.
 
 static int8_t run_lfo(const RjpImage* samples, RjpLfo* lfo) {
@@ -360,14 +338,12 @@ static int8_t run_lfo(const RjpImage* samples, RjpLfo* lfo) {
     return value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // word * word >> 6 on the low word of the product, as the 68000 code does it.
 
 static int16_t scale_volume(int16_t value, int16_t factor) {
     return (int16_t)((int16_t)(value * factor) >> VOLUME_SHIFT);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The envelope level, the volume LFO, the instrument volume and the master volume give AUDxVOL.
 
 static void update_volume(const RjpPlayer* player, RjpVoice* voice) {
@@ -388,7 +364,6 @@ static void update_volume(const RjpPlayer* player, RjpVoice* voice) {
     voice->paula.volume = (uint8_t)volume;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pitch LFO moves the period by a fraction of it (a rise is halved), the slide adds to it every tick.
 
 static void update_pitch(RjpPlayer* player, RjpVoice* voice) {
@@ -408,8 +383,6 @@ static void update_pitch(RjpPlayer* player, RjpVoice* voice) {
     voice->paula.period = period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_voice(RjpPlayer* player, uint32_t index) {
     RjpVoice* voice = &player->voices[index];
     voice->slide_keep = false;
@@ -423,7 +396,6 @@ static void run_voice(RjpPlayer* player, uint32_t index) {
     update_pitch(player, voice);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A voice starts on a pattern list: its first pattern is the first entry.
 
 static void start_sequence(RjpPlayer* player, uint32_t index, uint8_t sequence) {
@@ -440,8 +412,6 @@ static void start_sequence(RjpPlayer* player, uint32_t index, uint8_t sequence) 
     player->sequence_count++;
     player->voices_active++;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool rjp_start(RjpPlayer* player, uint32_t subsong, NuadeVoices* voices) {
     if (player == nullptr || voices == nullptr || subsong >= player->module.subsong_count) {
@@ -466,8 +436,6 @@ bool rjp_start(RjpPlayer* player, uint32_t subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 RjpTickResult rjp_tick(RjpPlayer* player, NuadeVoices* voices) {
     // The Interrupt calls SongEnd when the subsong started without a voice
     player->looped = player->sequence_count == 0;
@@ -480,13 +448,9 @@ RjpTickResult rjp_tick(RjpPlayer* player, NuadeVoices* voices) {
     return (RjpTickResult) { .looped = player->looped, .ended = player->voices_active == 0 };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t rjp_grid_ticks(void) {
     return START_SPEED;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RjpVoiceState rjp_voice_state(const RjpPlayer* player, uint32_t voice) {
     if (voice >= RJP_VOICES) {

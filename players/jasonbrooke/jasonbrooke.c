@@ -11,8 +11,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // JbVersion A's check: a movem within 26 words of 0xAC that saves the registers, switches the CIA LED filter, disables
 // the audio interrupts and loads the module start pc-relative. Returns the offset of the movem or JB_NOT_FOUND.
 static uint32_t find_version_a(const JbModule* m) {
@@ -30,14 +28,10 @@ static uint32_t find_version_a(const JbModule* m) {
     return JB_NOT_FOUND;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // JbVersion B's check: the first instructions of the interrupt routine
 static bool is_version_b(const JbModule* m) {
     return jbm_u32(m, 0) == 0x48e7f0f0 && jbm_u32(m, 4) == 0x424047fa && jbm_u32(m, 8) == 0xfff84a2b;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool jb_probe(const uint8_t* data, size_t size) {
     if (size < 16) {
@@ -46,8 +40,6 @@ bool jb_probe(const uint8_t* data, size_t size) {
     JbModule m = { .data = (uint8_t*)(uintptr_t)data, .size = (uint32_t)size };
     return is_version_b(&m) || find_version_a(&m) != JB_NOT_FOUND;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 JbPlayer* jb_create(const uint8_t* data, size_t size) {
     if (!jb_probe(data, size)) {
@@ -84,8 +76,6 @@ JbPlayer* jb_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void jb_destroy(JbPlayer* player) {
     if (player != nullptr) {
         free(player->original.data);
@@ -94,19 +84,13 @@ void jb_destroy(JbPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int jb_subsong_count(const JbPlayer* player) {
     return player->version == JbVersion_A ? player->a.config.subsong_count : player->b.config.subsong_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const char* jb_driver_name(const JbPlayer* player) {
     return player->driver_name;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool jb_start(JbPlayer* player, int subsong) {
     if (subsong < 0 || subsong >= jb_subsong_count(player)) {
@@ -121,14 +105,10 @@ bool jb_start(JbPlayer* player, int subsong) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 JbTickResult jb_tick(JbPlayer* player, NuadeVoices* voices) {
     return player->version == JbVersion_A ? jb_a_tick(&player->a, &player->work, voices)
                                           : jb_b_tick(&player->b, &player->work, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int jb_ticks_per_step(const JbPlayer* player) {
     if (player->version == JbVersion_B) {
@@ -137,8 +117,6 @@ int jb_ticks_per_step(const JbPlayer* player) {
     const int tempo = player->a.globals.tempo;
     return tempo > 0 ? (256 + tempo / 2) / tempo : 1;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 JbVoiceState jb_voice_state(const JbPlayer* player, int voice) {
     if (voice < 0 || voice >= JB_VOICES) {

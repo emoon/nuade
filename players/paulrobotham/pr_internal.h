@@ -52,7 +52,6 @@ typedef enum PrCommand {
     // The other numbers run a routine that only flashes the screen colour: no argument, no effect.
 } PrCommand;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The song
 
 typedef struct PrInstrument {

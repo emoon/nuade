@@ -4,14 +4,10 @@
 #include "dsr_internal.h"
 #include <stdlib.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool dsr_probe(const uint8_t* data, size_t size) {
     DsrModule module;
     return dsr_module_locate(&module, data, size);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DsrCreateResult dsr_create(const uint8_t* data, size_t size) {
     DsrPlayer* player = calloc(1, sizeof(*player));
@@ -26,8 +22,6 @@ DsrCreateResult dsr_create(const uint8_t* data, size_t size) {
     return (DsrCreateResult) { .player = player, .status = DsrStatus_Ok };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void dsr_destroy(DsrPlayer* player) {
     if (player == nullptr) {
         return;
@@ -36,13 +30,9 @@ void dsr_destroy(DsrPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int dsr_subsong_count(const DsrPlayer* player) {
     return (int)player->module.subsongs;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool dsr_start(DsrPlayer* player, int subsong, NuadeVoices* voices) {
     if (player == nullptr || voices == nullptr || subsong < 0 || subsong >= dsr_subsong_count(player)) {
@@ -55,8 +45,6 @@ bool dsr_start(DsrPlayer* player, int subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 DsrTickResult dsr_tick(DsrPlayer* player, NuadeVoices* voices) {
     player->song_ended = false;
     dsr_replayer_tick(player);
@@ -65,8 +53,6 @@ DsrTickResult dsr_tick(DsrPlayer* player, NuadeVoices* voices) {
     }
     return (DsrTickResult) { .ended = player->song_ended };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DsrVoiceState dsr_voice_state(const DsrPlayer* player, int voice) {
     if (voice < 0 || voice >= DSR_VOICES) {

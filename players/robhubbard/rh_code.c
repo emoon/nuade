@@ -61,8 +61,6 @@ typedef struct Cursor {
     Instruction* insn;
 } Cursor;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Takes the next word of the instruction.
 static bool take_word(Cursor* c, WordKind kind) {
     Instruction* in = c->insn;
@@ -76,14 +74,10 @@ static bool take_word(Cursor* c, WordKind kind) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The brief extension word of an indexed address; the 68020 formats are not part of the replayers.
 static bool take_index_extension(Cursor* c) {
     return take_word(c, WordKind_Plain) && (c->insn->word[c->insn->word_count - 1] & BRIEF_EXTENSION_FULL_FORMAT) == 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The extension words of an effective address for an operand of `size` bytes.
 static bool take_address_extension(Cursor* c, int mode, int reg, int size) {
@@ -112,25 +106,17 @@ static bool take_address_extension(Cursor* c, int mode, int reg, int size) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int ea_mode(uint16_t op) {
     return (op >> 3) & 7;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static int ea_reg(uint16_t op) {
     return op & 7;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool take_ea(Cursor* c, uint16_t op, int size) {
     return take_address_extension(c, ea_mode(op), ea_reg(op), size);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The operand size in bits 6..7 of the opcode; 0 for the encoding that selects another instruction.
 static int size_of_field(uint16_t op) {
@@ -145,8 +131,6 @@ static int size_of_field(uint16_t op) {
             return 0;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool decode_immediate_and_bit_operations(Cursor* c, uint16_t op) {
     if ((op & 0x0100) != 0) {
@@ -165,8 +149,6 @@ static bool decode_immediate_and_bit_operations(Cursor* c, uint16_t op) {
     return take_word(c, WordKind_Plain) && (size != SIZE_LONG || take_word(c, WordKind_Plain)) && take_ea(c, op, size);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool decode_move(Cursor* c, uint16_t op) {
     int size = 0;
     switch (op >> 12) {
@@ -184,8 +166,6 @@ static bool decode_move(Cursor* c, uint16_t op) {
     const int destination_reg = (op >> 9) & 7;
     return take_ea(c, op, size) && take_address_extension(c, destination_mode, destination_reg, size);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool decode_miscellaneous(Cursor* c, uint16_t op) {
     if ((op & 0xF1C0) == 0x41C0) {
@@ -207,8 +187,6 @@ static bool decode_miscellaneous(Cursor* c, uint16_t op) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool decode_quick_and_conditions(Cursor* c, uint16_t op) {
     if ((op & 0x00C0) == 0x00C0) {
         if (ea_mode(op) == MODE_ADDRESS_REG) {
@@ -220,8 +198,6 @@ static bool decode_quick_and_conditions(Cursor* c, uint16_t op) {
     return take_ea(c, op, size); // addq, subq
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool decode_branch(Cursor* c, uint16_t op) {
     const int displacement = op & 0xFF;
     if (displacement == 0xFF) {
@@ -229,8 +205,6 @@ static bool decode_branch(Cursor* c, uint16_t op) {
     }
     return displacement != 0 || take_word(c, WordKind_Plain);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The or, and, add, sub, cmp and eor group with its address register, multiply and divide forms.
 static bool decode_arithmetic(Cursor* c, uint16_t op) {
@@ -248,8 +222,6 @@ static bool decode_arithmetic(Cursor* c, uint16_t op) {
     }
     return take_ea(c, op, size_of_field(op));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool decode_instruction(Cursor* c) {
     if (!take_word(c, WordKind_Plain)) {
@@ -284,21 +256,15 @@ static bool decode_instruction(Cursor* c) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint64_t hash_byte(uint64_t hash, uint8_t value) {
     return (hash ^ value) * 0x100000001B3ull;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint64_t hash_token(uint64_t hash, WordKind kind, uint16_t value) {
     hash = hash_byte(hash, (uint8_t)kind);
     hash = hash_byte(hash, (uint8_t)(value >> 8));
     return hash_byte(hash, (uint8_t)value);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Decodes from the start of the module up to the first zero opcode behind the entry hooks.
 static bool decode_code(const uint8_t* data, size_t size, Instruction* code, int* count) {
@@ -323,8 +289,6 @@ static bool decode_code(const uint8_t* data, size_t size, Instruction* code, int
     }
     return false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool rh_scan_code(const uint8_t* data, size_t size, uint32_t song_table, uint32_t sample_count_at, RhCodeScan* scan) {
     Instruction* code = (Instruction*)calloc(MAX_INSTRUCTIONS, sizeof(Instruction));

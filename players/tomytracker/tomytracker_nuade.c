@@ -8,14 +8,10 @@
 #include <nuade/players/tomytracker.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe tomytracker_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return tmy_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult tomytracker_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -32,34 +28,24 @@ static NuadePlayerOpenResult tomytracker_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void tomytracker_close(void* user_data) {
     tmy_destroy((TmyPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool tomytracker_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return subsong == 0 && tmy_start((TmyPlayer*)user_data, voices);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult tomytracker_tick(void* user_data, NuadeVoices* voices) {
     const TmyTickResult tick = tmy_tick((TmyPlayer*)user_data, voices);
     return (NuadeTickResult) { .length = TMY_TICK_LENGTH, .flags = tick.looped ? NuadeTick_Looped : NuadeTick_None };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void tomytracker_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Tomy Tracker");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePositionResult tomytracker_position(void* user_data) {
     const TmyPosition p = tmy_position((const TmyPlayer*)user_data);
@@ -70,8 +56,6 @@ static NuadePositionResult tomytracker_position(void* user_data) {
                                                  .rows = TMY_ROWS,
                                                  .speed = (uint32_t)p.speed } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t tomytracker_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const TmyPlayer* player = (const TmyPlayer*)user_data;
@@ -86,8 +70,6 @@ static uint32_t tomytracker_voice_info(void* user_data, NuadeVoiceInfo* out, uin
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTrackerInfoResult tomytracker_tracker_info(void* user_data, const NuadePosition* at) {
     if ((int)at->order >= tmy_order_count((const TmyPlayer*)user_data)) {
         return (NuadeTrackerInfoResult) { 0 };
@@ -101,8 +83,6 @@ static NuadeTrackerInfoResult tomytracker_tracker_info(void* user_data, const Nu
                                                              { "fx", NuadeColumn_Hex, 1, 0 },
                                                              { "arg", NuadeColumn_Hex, 2, 0 } } } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePatternCell tomytracker_cell(const void* ctx, uint32_t order, uint32_t channel, uint32_t row) {
     NuadePatternCell cell = nuade_cell_empty();
@@ -122,8 +102,6 @@ static NuadePatternCell tomytracker_cell(const void* ctx, uint32_t order, uint32
     return cell;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t tomytracker_tracker_cells(void* user_data, const NuadePosition* at, uint32_t channel, int32_t row_lo,
                                           int32_t row_hi, NuadePatternCell* out, uint32_t cap) {
     const TmyPlayer* player = (const TmyPlayer*)user_data;
@@ -132,8 +110,6 @@ static uint32_t tomytracker_tracker_cells(void* user_data, const NuadePosition* 
     }
     return nuade_tracker_fill(at, TMY_VOICES, TMY_ROWS, channel, row_lo, row_hi, out, cap, tomytracker_cell, user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_tomytracker = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -152,8 +128,6 @@ const NuadePlayer nuade_player_tomytracker = {
     .tracker_info = tomytracker_tracker_info,
     .tracker_cells = tomytracker_tracker_cells,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TmyPlayer* tmy_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_tomytracker) {

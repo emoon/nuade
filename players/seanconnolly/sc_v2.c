@@ -106,13 +106,10 @@ typedef struct Instrument {
     uint8_t sample;
 } Instrument;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t var_address(const ScoModule* m, int32_t at) {
     return (uint32_t)((int32_t)m->entry + at);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An instrument record. `index` is the instrument number; the record is 16 bytes behind the number shifted left.
 
 static Instrument instrument_read(const ScoModule* m, uint32_t index) {
@@ -140,20 +137,16 @@ static Instrument instrument_read(const ScoModule* m, uint32_t index) {
     };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period table is indexed by a word: the note doubled.
 
 static uint16_t period_at(const ScoModule* m, uint16_t index) {
     return sco_u16_indexed(m, m->base[ScoRole_Period], index);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t note_period(const ScoModule* m, uint8_t note) {
     return period_at(m, (uint16_t)(note * 2));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An 8SVX sample as the replayer reads its header: the chunk id at +8, the low words of the one-shot and repeat lengths
 // and the body at a fixed offset.
 
@@ -164,8 +157,6 @@ typedef struct Svx {
     uint32_t body;
 } Svx;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static Svx svx_read(const ScoModule* m, uint32_t start) {
     return (Svx) { .valid = sco_u32(m, start + V2_SVX_AT) == V2_SVX,
                    .oneshot = sco_u16(m, start + V2_SVX_ONESHOT),
@@ -173,14 +164,12 @@ static Svx svx_read(const ScoModule* m, uint32_t start) {
                    .body = start + V2_SVX_BODY };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A sample of the sample table (the entries are 4 bytes; the index is scaled in a word).
 
 static ScoSampleBounds sample_bounds(const ScoModule* m, uint8_t index) {
     return sco_sample_bounds(m, (uint16_t)(index << 2));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The noise generator: 32 words into one of the two buffers, alternately. The seed (x, y, z) lives in the image.
 
 static void noise_generate(Sco2* s) {
@@ -204,7 +193,6 @@ static void noise_generate(Sco2* s) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Stages the registers of a wave form of the 8-byte wave table, or the noise buffer.
 
 static void stage_wave(const ScoModule* m, Sco2Voice* v, uint32_t offset) {
@@ -212,14 +200,11 @@ static void stage_wave(const ScoModule* m, Sco2Voice* v, uint32_t offset) {
     v->staged.len_words = V2_WAVE_WORDS;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void stage_noise(const ScoModule* m, Sco2Voice* v) {
     v->staged.lc = sco_noise_address(m);
     v->staged.len_words = m->version->noise_words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume of a voice: the attack, then the release; held under the master level.
 
 static void envelope_stage_volume(Sco2Voice* v, uint8_t volume) {
@@ -228,8 +213,6 @@ static void envelope_stage_volume(Sco2Voice* v, uint8_t volume) {
     }
     v->staged.volume = volume;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void envelope_step(Sco2Voice* v) {
     Sco2Envelope* e = &v->envelope;
@@ -259,7 +242,6 @@ static void envelope_step(Sco2Voice* v) {
     envelope_stage_volume(v, e->target);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The master fade out of the volume limit.
 
 static void fade_step(Sco2Voice* v) {
@@ -277,7 +259,6 @@ static void fade_step(Sco2Voice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A sample that loops: its repeat part, or the end of the sample.
 
 static void sample_loop(const ScoModule* m, Sco2Voice* v) {
@@ -292,7 +273,6 @@ static void sample_loop(const ScoModule* m, Sco2Voice* v) {
     v->staged.len_words = 1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A swept wave form: the position moves by the step and turns at the limits.
 
 static void sweep_step(const ScoModule* m, Sco2Voice* v) {
@@ -316,7 +296,6 @@ static void sweep_step(const ScoModule* m, Sco2Voice* v) {
     stage_wave(m, v, (uint32_t)v->sweep_pos << 4);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A sample played in chunks of the chunk size, one more each tick; at the end the voice goes silent and sweeps.
 
 static void chunk_step(const ScoModule* m, Sco2Voice* v) {
@@ -340,7 +319,6 @@ static void chunk_step(const ScoModule* m, Sco2Voice* v) {
     v->chunk_count++;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A sequence of wave forms: records of 32 words (the wave in the first half, the note in the second); a wave of 0xFFFF
 // jumps to the record in the next word. Switching from the noise wave restarts the voice's DMA.
 
@@ -375,7 +353,6 @@ static void sequence_step(Sco2* s, uint32_t index) {
     s->unmodeled = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A pitch slide to the voice's note, from the note the pattern gave: the period moves by the rate each tick.
 
 static void slide_step(const ScoModule* m, Sco2Voice* v) {
@@ -398,7 +375,6 @@ static void slide_step(const ScoModule* m, Sco2Voice* v) {
     v->period = v->note_period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Vibrato: after the delay the period swings by the step (the distance to the next note, shifted) and half of it, for
 // two cycles' worth of ticks.
 
@@ -431,7 +407,6 @@ static void vibrato_step(const ScoModule* m, Sco2Voice* v) {
     v->phase++;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Arpeggio: after the delay, the next entry of the voice's arpeggio table is the period. Entries below 0x19 are
 // relative to the note, 0xFF jumps to the position in the next byte and 0xFE ends the arpeggio by switching the
 // voice's effect to the next byte.
@@ -468,7 +443,6 @@ static void arpeggio_step(Sco2* s, Sco2Voice* v) {
     s->unmodeled = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The wave type's per-tick work, then the pitch: a slide, or the voice's effect.
 
 static void wave_step(Sco2* s, uint32_t index) {
@@ -499,7 +473,6 @@ static void wave_step(Sco2* s, uint32_t index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the voice does between events: the instrument's parameters are read again every tick, a new note starts its
 // envelope and effect, then the master fade, the envelope and the wave type.
 
@@ -535,7 +508,6 @@ static void effects_step(Sco2* s, uint32_t index) {
     wave_step(s, index);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The registers for a note, by wave type. The voice's DMA restarts afterwards.
 
 static void note_wave(Sco2* s, uint32_t index) {
@@ -588,7 +560,6 @@ static void note_wave(Sco2* s, uint32_t index) {
     s->restart_next[index] = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note: the period (a slide keeps the period it started from), the instrument's first registers, the wave.
 
 static void note_start(Sco2* s, uint32_t index, uint8_t byte) {
@@ -622,7 +593,6 @@ static void note_start(Sco2* s, uint32_t index, uint8_t byte) {
     note_wave(s, index);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The end of an event: a note held for further plays does not move on, else the pattern position advances; at the end
 // of the pattern it repeats or the stream goes on (a stream byte 0xFF behind the pattern number jumps back).
 
@@ -658,7 +628,6 @@ static void event_end(Sco2* s, uint32_t index, uint32_t pattern) {
     v->stream_restart = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Reads the pattern from the voice's position until an event is over: a note, or a rest.
 
 static void pattern_run(Sco2* s, uint32_t index, uint32_t pattern) {
@@ -722,7 +691,6 @@ static void pattern_run(Sco2* s, uint32_t index, uint32_t pattern) {
     s->unmodeled = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The note counters ran out: read the stream. Modifier bytes change the voice and read on; a pattern number starts the
 // pattern at the voice's position.
 
@@ -788,7 +756,6 @@ static void sequence_advance(Sco2* s, uint32_t index) {
     s->unmodeled = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One voice of a tick.
 
 static void voice_run(Sco2* s, uint32_t index, NuadePaulaChannel* paula) {
@@ -810,8 +777,6 @@ static void voice_run(Sco2* s, uint32_t index, NuadePaulaChannel* paula) {
     }
     effects_step(s, index);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void sc2_tick(Sco2* s, NuadePaulaChannel* paula) {
     s->song_end = false;
@@ -842,8 +807,6 @@ void sc2_tick(Sco2* s, NuadePaulaChannel* paula) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sc2_ended(const Sco2* s) {
     for (uint32_t i = 0; i < SCO_VOICES; i++) {
         if (s->voice[i].active) {
@@ -853,7 +816,6 @@ bool sc2_ended(const Sco2* s) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The registers of a block of the module's variables.
 
 static ScoRegisters registers_read(const ScoModule* m, uint32_t at) {
@@ -865,7 +827,6 @@ static ScoRegisters registers_read(const ScoModule* m, uint32_t at) {
     };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The init routine: two noise buffers are made, the variables cleared and set, DMA is off and the period and volume
 // registers are 0. The register blocks and the noise seed's x and y are not touched; z is the raster position.
 

@@ -30,7 +30,6 @@
 #define BUNDLE_PREFIX "smp"
 #define FORM_TAG "FORM"
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer's search for a chunk tag: the first place in the first `window` bytes where the four bytes occur. The
 // result is the offset behind the tag; false when there is no such tag (the replayer then reads other memory).
 
@@ -45,7 +44,6 @@ static bool find_chunk(const uint8_t* data, size_t size, const char tag[CHUNK_TA
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InstallSamples for one form: the slot of an 8SVX form that starts at `form_at` in `data`. `base` is where `data`
 // sits in the arena. The data the replayer hands to Paula (the body up to the one-shot length, the loop) must lie in
 // `data`.
@@ -78,7 +76,6 @@ static bool read_slot(const uint8_t* data, size_t size, size_t form_at, uint32_t
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The index of directories next to the song (a bare file name: the current directory): the song's own directory for a
 // null entry of `subdirs`, else the subdirectory of that name.
 
@@ -104,7 +101,6 @@ static NuadeFileIndex* index_directories(const NuadeIo* io, const char* path, co
     return nuade_file_index_create(io, dirs, count);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Room for `needed` bytes in the arena.
 
 static bool reserve_arena(SjSamples* samples, size_t* capacity, size_t needed) {
@@ -125,7 +121,6 @@ static bool reserve_arena(SjSamples* samples, size_t* capacity, size_t needed) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One file of the ScottJohnston header: its slot, and its bytes appended to the arena.
 
 static SjLoadStatus load_file(SjSamples* samples, size_t* capacity, const NuadeIo* io, const char* url,
@@ -150,7 +145,6 @@ static SjLoadStatus load_file(SjSamples* samples, size_t* capacity, const NuadeI
     return status;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The files back to back behind the silent word, then the padding Paula needs behind any sample.
 
 static SjLoadStatus finish_arena(SjSamples* samples) {
@@ -160,7 +154,6 @@ static SjLoadStatus finish_arena(SjSamples* samples) {
     return padded != nullptr ? SjLoad_Ok : SjLoad_OutOfMemory;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The ScottJohnston eagleplayer's ExtLoad and InstallSamples: the files of the header from "instruments" next to the
 // song. An entry of 0 repeats the file before it, as the replayer's list repeats the last pointer.
 
@@ -186,7 +179,6 @@ static SjLoadStatus load_header_files(SjSamples* samples, const SjModule* module
     return status == SjLoad_Ok ? finish_arena(samples) : status;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The SoundPlayer eagleplayer's InstallSamples over the bundle: it steps through the bundle from the start, a form
 // takes the next slot and the next step is behind it, anything else takes the next slot and the next step is 4 bytes
 // on. At most SJ_INSTRUMENT_SLOTS slots.
@@ -214,7 +206,6 @@ static SjLoadStatus install_bundle(SjSamples* samples, const uint8_t* bundle, si
     return SjLoad_Ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The SoundPlayer eagleplayer's ExtLoad: "sjs.<name>" loads "smp.<name>" from the song's directory.
 
 static SjLoadStatus load_bundle(SjSamples* samples, const char* path, const NuadeIo* io) {
@@ -250,8 +241,6 @@ static SjLoadStatus load_bundle(SjSamples* samples, const char* path, const Nuad
     return status;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 SjLoadStatus sj_samples_load(SjSamples* samples, const SjModule* module, const char* path, const NuadeIo* io) {
     memset(samples, 0, sizeof(*samples));
     if (path == nullptr || io == nullptr) {
@@ -265,8 +254,6 @@ SjLoadStatus sj_samples_load(SjSamples* samples, const SjModule* module, const c
     }
     return status;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void sj_samples_free(SjSamples* samples) {
     free(samples->arena);

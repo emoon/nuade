@@ -42,8 +42,6 @@ static const u16 sonix_ratio_table[12] = {
 };
 // clang-format on
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sonix_song_set_instrument_pcm8_ex(SonixSong* song, u8 instrument_index, const i8* pcm_data, u32 num_samples,
                                        u32 loop_start, u32 loop_len, u8 base_note, u32 base_period, u32 source_rate_hz);
 
@@ -83,8 +81,6 @@ static u16 compute_smus_pitch_offset(u16 shdr_pitch_word) {
     return 255; // assembly: SUBQ.W #1,D0 when loop exhausts
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // SMUS and TINY run the same asm score engine (PlayScore: tempo index at 2(A6), pitch scaling at 4(A6),
 // master volume at 0(A6), per-note velocity); only the SNX format has the older cmd81/hw_vol engine.
 static bool sonix_uses_score_engine(const SonixSong* song) {
@@ -98,8 +94,6 @@ static bool has_mark(const u8* data, u32 size, const char* mark) {
 
     return memcmp(data, mark, 4) == 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static SonixFormat detect_format(const u8* data, u32 size) {
     if (data == nullptr || size < 4) {
@@ -129,15 +123,12 @@ static SonixFormat detect_format(const u8* data, u32 size) {
     return SONIX_FORMAT_UNKNOWN;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Bytes from an IFF chunk header to the next chunk: header, payload and pad byte. 64-bit, so that a length near 4 GiB
 // cannot wrap to a small advance.
 
 static u64 smus_chunk_advance(u32 len) {
     return 8u + (u64)len + (len & 1u);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool parse_smus(SonixSong* song) {
     const u8* data = song->data;
@@ -321,8 +312,6 @@ static bool parse_smus(SonixSong* song) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sonix_song_set_instrument_mod(SonixSong* song, u8 instrument_index, u16 vib_depth, u16 vib_speed, u16 vib_delay) {
     if (song == nullptr || instrument_index >= 64) {
         return false;
@@ -335,7 +324,6 @@ bool sonix_song_set_instrument_mod(SonixSong* song, u8 instrument_index, u16 vib
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Mirrors basic sanity checks from the original Check2/Check5 paths.
 
 static bool parse_tiny(SonixSong* song) {
@@ -436,8 +424,6 @@ static bool parse_tiny(SonixSong* song) {
 
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool parse_snx(SonixSong* song) {
     const u8* d = song->data;
@@ -552,8 +538,6 @@ static bool parse_snx(SonixSong* song) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // SMUS tempo lookup table (128 entries) from assembly lbW000CAE (line 7286).
 // Upper 4 bits = ticks-per-beat, lower 12 bits = timing divisor.
 // clang-format off
@@ -589,8 +573,6 @@ static const u16 smus_tempo_table[128] = {
 };
 // clang-format on
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool parse_song(SonixSong* song) {
     if (song->metadata.format == SONIX_FORMAT_SMUS) {
         return parse_smus(song);
@@ -607,8 +589,6 @@ static bool parse_song(SonixSong* song) {
     snprintf(song->error, sizeof(song->error), "unknown format");
     return false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void snx_update_tick_timing(SonixSong* song) {
     static const u32 CLOCK = (SONIX_CIA_PAL_HZ / 50u) * 125u; // 14187 * 125 = 1773375
@@ -630,8 +610,6 @@ static void snx_update_tick_timing(SonixSong* song) {
         song->snx_ticks_per_beat = (u16)(0x4B0000u / (u32)cur);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static u32 snx_note_to_period(int note) {
     // Mirrors Sonix note->period path used by the original player core.
@@ -658,15 +636,12 @@ static u32 snx_note_to_period(int note) {
     return period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static f64 snx_note_to_hz(int note) {
 
     u32 period = snx_note_to_period(note);
     return NUADE_PAULA_CLOCK_PAL / (2.0 * (f64)period);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Compute sample_inc matching the assembly's AIFF tech period computation.
 // Assembly flow (lbC01F944 + lbC01FA6A):
 // 1. Start with base_rate (16-bit source sample rate)
@@ -736,7 +711,6 @@ static f64 snx_compute_hw_sample_hz(u32 base_rate, int note, int base_note, u16 
     return NUADE_PAULA_CLOCK_PAL / (f64)final_period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // OneFilter: 64-band IIR filter bank pre-computation.
 //    Assembly lines 2866-2901 (OneFilter) + table at lbW01F0FE.
 //    Generates 64 filtered copies (each 128 bytes) of the source waveform.
@@ -751,7 +725,6 @@ static const u16 snx_filter_coeffs[64] = {
 };
 // clang-format on
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // cmd83 pitch modulation table (assembly: lbW01E3B2, 64 entries).
 // Index 32 = 0x8000 = unity (no modulation).
 // Values > 0x8000 increase period (lower pitch), < 0x8000 decrease period (higher pitch).
@@ -768,8 +741,6 @@ static const u16 snx_pitch_mod_table[64] = {
     0x5D98, 0x5C62, 0x5B2F, 0x5A01, 0x58D6, 0x57B0, 0x568D, 0x556E,
 };
 // clang-format on
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void snx_one_filter(const i8* source, i8* output) {
     i16 d3 = 0;                        // feedback accumulator
@@ -796,8 +767,6 @@ static void snx_one_filter(const i8* source, i8* output) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void snx_compute_filter_bank(SonixSong* song, u8 inst) {
     if (!song->synth_wave_set[inst])
         return;
@@ -823,8 +792,6 @@ static i8 snx_filter_bank_byte_after(const SonixSong* song, u8 inst, const i8* b
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static u8 snx_compute_hw_vol(u8 cmd81, u8 velocity) {
     // Assembly (lbC01E8E2):
     // D2 = cmd81 + 1, D3 = velocity * 2 + 1
@@ -835,7 +802,6 @@ static u8 snx_compute_hw_vol(u8 cmd81, u8 velocity) {
     return (u8)hw_vol;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Assembly FUN_002204c8 / lbC01EAB8 (line 2315):
 // Called once per tick. Updates all 8 ramp slots linearly.
 // step = (speed * ticks_per_beat * 2) >> 16
@@ -884,8 +850,6 @@ static void snx_ramp_volume_tick(SonixSong* song) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // SMUS tempo update (port of lbC0007F2, assembly lines 6845-6881).
 // Uses pitch_offset to index the 128-entry tempo table.
 // Upper 4 bits of table entry = ticks-per-beat (smus_tpb).
@@ -933,7 +897,6 @@ static void smus_update_tempo(SonixSong* song) {
     song->tick_length = timer_val + 1u;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // SMUS track scan (port of lbC0006E4, assembly lines 6743-6784).
 // Pre-scans track data to determine initial instrument and wait per channel.
 // start_tick controls how far into the track to advance. With start_tick=0,
@@ -1010,7 +973,6 @@ static void smus_scan_tracks(SonixSong* song, u32 start_tick) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // SMUS channel init (port of lbC000754, assembly lines 6786-6821).
 // Called at song start and on each loop restart. Sets up per-channel state
 // from the scan results and resets counters.
@@ -1042,8 +1004,6 @@ static void smus_init_channels(SonixSong* song) {
     // Reset tick counter to start value (assembly: MOVE.L 12(A6),$10(A6))
     song->smus_tick_count = 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void snx_reset_runtime(SonixSong* song) {
     song->tempo_base = song->snx_header_tempo_base ? song->snx_header_tempo_base : 0xA5u;
@@ -1153,8 +1113,6 @@ static void snx_reset_runtime(SonixSong* song) {
     song->debug_loop_resets++;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Synttech period computation (assembly lbC01EC82-lbC01EC94).
 // Note range: 36-107 (assembly $24-$6B). Period = 0xD5C8 * ratio[semi] >> (oct+17).
 // Returns the unfolded period before the halving loop.
@@ -1171,7 +1129,6 @@ static u32 snx_synttech_period(int note) {
     return period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Sample increment for a 128-sample synth waveform cycle (used at note-on).
 // At note-on, pcm_len=128. The assembly halves both period and DMA length by
 // the decimation shift, so the frequency is always Paula_clock / (period * 4).
@@ -1184,16 +1141,12 @@ static f64 snx_synttech_sample_hz(int note) {
     return NUADE_PAULA_CLOCK_PAL * 32.0 / (f64)period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Pitch offset used by sample/SS/IFF techs. SNX keeps it in 2(A6); SMUS uses 4(A6)
 // (SNX1 word 1) because 2(A6) holds the tempo index there.
 static u16 sonix_pitch_offset(const SonixSong* song) {
     bool smus = sonix_uses_score_engine(song);
     return smus ? song->smus_pitch_scaling : song->snx_pitch_offset;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // SStech note start (SMUS asm lbC0014F4 state 1, SNX asm lbC01F2.. state 1): base period and vibrato state.
 // cmd83 pitch modulation of an integer period (asm lbC01E328 with table lbW01E3B2: MULU, ADD.L D0,D0, SWAP =
@@ -1222,8 +1175,6 @@ static void ss_note_on(SonixSong* song, int ch, u8 inst, int semitone) {
     song->ss_vib_index[ch] = 0;
     song->ss_vib_delay[ch] = (u16)((tpb > 0 ? delay / tpb : 0) >> 1);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // SStech per-tick pitch (SMUS asm lbC0014F4 from lbC00161C, SNX asm 3167-3216): triangle vibrato, then
 // period = base * (0x1000 + vib*depth/128 - (pitch_offset - 0x80)) >> 19 (SMUS) / >> 16 (SNX).
@@ -1257,7 +1208,6 @@ static void ss_pitch_tick(SonixSong* song, int ch) {
     song->snx_sample_hz[ch] = (period > 0) ? NUADE_PAULA_CLOCK_PAL / (f64)period : 0.0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Voices: Paula's registers as the player holds them (active pcm, loop, period, volume) are handed to the framework's
 // voices at the end of every tick; what the voices did in between (wrap, switch to the queued synth buffer, run off
 // the end) is read back at the start of the next one.
@@ -1287,8 +1237,6 @@ static void snx_set_pans(SonixSong* song) {
         nuade_voice_set_pan(song->voices, (u32)ch, left ? -1.0f : 1.0f);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // An instrument slot a score can play: loaded sample/zones, a synth, or an SS instrument (which may have no
 // octave in range and then drops every note, see sonix_start_note).
@@ -1610,8 +1558,6 @@ static void sonix_start_note(SonixSong* song, int ch, int note, int velocity) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void sonix_release_note(SonixSong* song, int ch) {
     song->snx_pending_start[ch].valid = false; // asm ReleaseNOTE: CLR.B 0(A1) drops a not yet started note
     u8 inst = song->snx_inst_index[ch] & 63u;
@@ -1628,8 +1574,6 @@ static void sonix_release_note(SonixSong* song, int ch) {
         song->snx_hw_vol[ch] = 0;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void snx_queue_note_start(SonixSong* song, int ch, int note, int velocity) {
     // Assembly StartNote writes the volume (8(A1)) as soon as the track engine reads the note; only the tech
@@ -1689,8 +1633,6 @@ static void snx_update_sample_mod_tick(SonixSong* song, int ch) {
         song->snx_sample_hz[ch] = (period > 0) ? NUADE_PAULA_CLOCK_PAL / (f64)period : 0.0;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void snx_process_channel_tick(SonixSong* song, int ch) {
     int guard = 1024;
@@ -1782,7 +1724,6 @@ static void snx_process_channel_tick(SonixSong* song, int ch) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Synthesis envelope tick: updates the per-channel envelope accumulator.
 // Assembly lines 5538-5554 (Ghidra thunk_FUN_00220a46, around puVar15[8-10]).
 // The envelope scans a 128-byte table at instrument $A4 (file 0xC4).
@@ -1831,7 +1772,6 @@ static void snx_synth_envelope_tick(SonixSong* song, int ch) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Synttech pitch envelope modulation.
 // Assembly lines 2626-2638: modulates the DMA period based on envelope value
 // and the instrument's pitch_scale parameter ($1B4/file 0x1D4).
@@ -1875,7 +1815,6 @@ static void snx_synth_pitch_modulate(SonixSong* song, int ch) {
     song->snx_sample_hz[ch] = NUADE_PAULA_CLOCK_PAL / (f64)hw_period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Synttech per-tick waveform rendering.
 // Assembly lines 2699-2808: three modes based on $1C2/$1C4.
 // Regenerates the 128-byte output waveform from the base wave each tick.
@@ -2071,7 +2010,6 @@ static void snx_synth_render_tick(SonixSong* song, int ch) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AIFF tech volume envelope: per-tick processing.
 // Assembly: AIFFTech at lbC01FA6A (lines 3814-3853).
 // Attack: ramp 2(A2) from 0 toward 0xFF00 using attack speed.
@@ -2139,7 +2077,6 @@ static void snx_aiff_tech_tick(SonixSong* song, int ch) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // SS portamento envelope: per-tick processing.
 // Assembly: 4-stage envelope (phases 0,2,4,6) that modulates volume.
 // Speed decode: bits 0-4 = base, bits 5-7 = shift.
@@ -2188,7 +2125,6 @@ static void snx_ss_portamento_tick(SonixSong* song, int ch) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // SMUS per-channel tick processing (port of lbC000874-lbC000934).
 // Returns true if this channel has ended (0xFFFF encountered).
 static bool smus_process_channel_tick(SonixSong* song, int ch) {
@@ -2356,7 +2292,6 @@ static bool smus_process_channel_tick(SonixSong* song, int ch) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // SMUS top-level tick handler (port of lbC000846, assembly lines 6883-7004).
 // Called once per CIA tick. The prescaler divides ticks into beats.
 static void smus_process_tick(SonixSong* song) {
@@ -2430,7 +2365,6 @@ instrument_ticks:
     song->debug_total_ticks++;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // TINY per-channel tick processing (port of assembly lines 4688-4757).
 // Structurally identical to SMUS but uses raw durations (no duration table)
 // and has no 0x82xx/0x84xx commands.
@@ -2562,7 +2496,6 @@ static bool tiny_process_channel_tick(SonixSong* song, int ch) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // TINY top-level tick handler (port of assembly lines 4644-4782).
 // Identical structure to smus_process_tick: prescaler, tempo, channel ticks.
 static void tiny_process_tick(SonixSong* song) {
@@ -2633,8 +2566,6 @@ instrument_ticks:
     song->debug_total_ticks++;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void snx_process_tick(SonixSong* song) {
     song->tick_count++;
 
@@ -2692,8 +2623,6 @@ static void snx_process_tick(SonixSong* song) {
     }
     song->debug_total_ticks++;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Value the asm hands to Paula (ChangeVolume: `and.w #$7F`), clamped by Paula to its 0..64 range, normalised to
 // 0..0.5 (the mixer sums four channels).
@@ -2827,8 +2756,6 @@ static u32 snx_channel_paula_vol(const SonixSong* song, int ch) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // SMUS IFF tech (asm lbC001990): Paula's first block is only the one-shot head [0, ls) and the loop is installed one
 // tick later. SS and AIFF start on the whole sample.
 static bool snx_voice_head_only(const SonixSong* song, int ch) {
@@ -2838,8 +2765,6 @@ static bool snx_voice_head_only(const SonixSong* song, int ch) {
     return ll > 1 && ls < len && ls + ll <= len && sonix_uses_score_engine(song)
            && song->instrument_is_iff[song->snx_inst_index[ch] & 63u];
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // What the voices did since the last tick, applied to the player's view of Paula.
 static void snx_poll_voice(SonixSong* song, int ch) {
@@ -2881,8 +2806,6 @@ static void snx_poll_voice(SonixSong* song, int ch) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The player's Paula registers for this channel, written to its voice.
 static void snx_sync_voice(SonixSong* song, int ch) {
     NuadeVoices* voices = song->voices;
@@ -2920,8 +2843,6 @@ static void snx_sync_voice(SonixSong* song, int ch) {
     nuade_voice_set_volume(voices, (u32)ch, snx_paula_volume(snx_channel_paula_vol(song, ch)));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 SonixSong* sonix_song_create(const u8* data, u32 size) {
     // Positions are u32: below 2 GiB, a position inside the file plus a few bytes cannot wrap.
     if (data == nullptr || size == 0 || size > SONIX_MAX_FILE_SIZE) {
@@ -2954,8 +2875,6 @@ SonixSong* sonix_song_create(const u8* data, u32 size) {
     return song;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void sonix_song_destroy(SonixSong* song) {
     if (song == nullptr) {
         return;
@@ -2975,8 +2894,6 @@ void sonix_song_destroy(SonixSong* song) {
     free(song);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sonix_set_dump_file(SonixSong* song, const char* path) {
     if (song->dump_file != nullptr && song->dump_file != stderr) {
         fclose(song->dump_file);
@@ -2988,8 +2905,6 @@ bool sonix_set_dump_file(SonixSong* song, const char* path) {
     song->dump_file = strcmp(path, "-") == 0 ? stderr : fopen(path, "w");
     return song->dump_file != nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void snx_dump_tick_state(SonixSong* song) {
     FILE* f = song->dump_file;
@@ -3039,8 +2954,6 @@ static void snx_dump_tick_state(SonixSong* song) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void sonix_song_start(SonixSong* song, NuadeVoices* voices) {
     if (song == nullptr) {
         return;
@@ -3061,8 +2974,6 @@ void sonix_song_start(SonixSong* song, NuadeVoices* voices) {
     }
     snx_set_pans(song);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 u32 sonix_song_tick(SonixSong* song, bool* looped) {
     *looped = false;
@@ -3093,14 +3004,10 @@ u32 sonix_song_tick(SonixSong* song, bool* looped) {
     return song->tick_length;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sonix_song_is_finished(const SonixSong* song) {
     (void)song;
     return false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const SonixSongMetadata* sonix_song_get_metadata(const SonixSong* song) {
     if (song == nullptr) {
@@ -3123,16 +3030,12 @@ const char* sonix_format_name(SonixFormat format) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const char* sonix_song_get_error(const SonixSong* song) {
     if (song == nullptr || song->error[0] == '\0') {
         return "";
     }
     return song->error;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const char* sonix_song_get_instrument_name(const SonixSong* song, u8 instrument_index) {
     if (song == nullptr || instrument_index >= 64) {
@@ -3141,18 +3044,12 @@ const char* sonix_song_get_instrument_name(const SonixSong* song, u8 instrument_
     return song->instrument_names[instrument_index];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 u32 sonix_song_get_debug_note_events(const SonixSong* song) {
     if (song == nullptr) {
         return 0;
     }
     return song->debug_total_note_events;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sonix_song_describe_event(const SonixSong* song, int ch, u32 pos, NuadeEvent* out) {
     if (song == nullptr || ch < 0 || ch >= SONIX_NUM_CHANNELS || pos < song->snx_track_start[ch]
@@ -3214,8 +3111,6 @@ u32 sonix_song_get_tick_count(const SonixSong* song) {
     return song->tick_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 u32 sonix_song_get_debug_wait_commands(const SonixSong* song) {
     if (song == nullptr)
         return 0;
@@ -3230,23 +3125,17 @@ u32 sonix_song_get_debug_loop_resets(const SonixSong* song) {
     return song->debug_loop_resets;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sonix_song_has_runtime_track_engine(const SonixSong* song) {
     if (song == nullptr)
         return false;
     return song->runtime_track_engine;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sonix_song_set_instrument_pcm8(SonixSong* song, u8 instrument_index, const i8* pcm_data, u32 num_samples,
                                     u32 loop_start, u32 loop_len, u8 base_note) {
     return sonix_song_set_instrument_pcm8_ex(song, instrument_index, pcm_data, num_samples, loop_start, loop_len,
                                              base_note, 0, 0);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sonix_song_set_instrument_pcm8_ex(SonixSong* song, u8 instrument_index, const i8* pcm_data, u32 num_samples,
                                        u32 loop_start, u32 loop_len, u8 base_note, u32 base_period,
@@ -3279,8 +3168,6 @@ bool sonix_song_set_instrument_pcm8_ex(SonixSong* song, u8 instrument_index, con
 
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sonix_song_add_instrument_zone(SonixSong* song, u8 instrument_index, const i8* pcm_data, u32 num_samples,
                                     u32 loop_start, u32 loop_len, u8 base_note, u8 low_key, u8 high_key,
@@ -3318,16 +3205,12 @@ bool sonix_song_add_instrument_zone(SonixSong* song, u8 instrument_index, const 
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void sonix_song_set_instrument_attack_decay(SonixSong* song, u8 instrument_index, u16 attack_time, u16 decay_time) {
     if (song == nullptr || instrument_index >= 64)
         return;
     song->inst_attack_time[instrument_index] = attack_time;
     song->inst_decay_time[instrument_index] = decay_time;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void sonix_song_set_zone_attack_decay(SonixSong* song, u8 instrument_index, u8 zone_index, u16 attack_time,
                                       u16 decay_time) {
@@ -3339,15 +3222,11 @@ void sonix_song_set_zone_attack_decay(SonixSong* song, u8 instrument_index, u8 z
     song->inst_zones[instrument_index][zone_index].decay_time = decay_time;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void sonix_song_set_instrument_ss(SonixSong* song, u8 instrument_index, bool is_ss) {
     if (song == nullptr || instrument_index >= 64)
         return;
     song->instrument_is_ss[instrument_index] = is_ss;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void sonix_song_set_instrument_iff(SonixSong* song, u8 instrument_index, bool is_iff, u32 vhdr_volume) {
     if (song == nullptr || instrument_index >= 64)
@@ -3356,16 +3235,12 @@ void sonix_song_set_instrument_iff(SonixSong* song, u8 instrument_index, bool is
     song->iff_vhdr_volume[instrument_index] = vhdr_volume;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void sonix_song_set_instrument_synth(SonixSong* song, u8 instrument_index, bool is_synth) {
     if (song == nullptr || instrument_index >= 64)
         return;
 
     song->instrument_is_synth[instrument_index] = is_synth;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void sonix_song_set_synth_vol_params(SonixSong* song, u8 instrument_index, u16 base_vol, u16 port_flag) {
     if (song == nullptr || instrument_index >= 64)
@@ -3374,8 +3249,6 @@ void sonix_song_set_synth_vol_params(SonixSong* song, u8 instrument_index, u16 b
     song->synth_base_vol[instrument_index] = base_vol;
     song->synth_port_flag[instrument_index] = port_flag;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void sonix_song_set_ss_envelope(SonixSong* song, u8 inst, u16 inst_vol, const u16 targets[4], const u16 speeds[4]) {
     if (song == nullptr || inst >= 64)
@@ -3389,8 +3262,6 @@ void sonix_song_set_ss_envelope(SonixSong* song, u8 inst, u16 inst_vol, const u1
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void sonix_song_set_synth_wave(SonixSong* song, u8 instrument_index, const i8* wave128) {
     if (song == nullptr || instrument_index >= 64 || wave128 == nullptr)
         return;
@@ -3402,8 +3273,6 @@ void sonix_song_set_synth_wave(SonixSong* song, u8 instrument_index, const i8* w
     snx_compute_filter_bank(song, instrument_index);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void sonix_song_set_synth_blend_params(SonixSong* song, u8 instrument_index, u16 c2, u16 c4) {
     if (song == nullptr || instrument_index >= 64)
         return;
@@ -3411,8 +3280,6 @@ void sonix_song_set_synth_blend_params(SonixSong* song, u8 instrument_index, u16
     song->synth_c2[instrument_index] = c2;
     song->synth_c4[instrument_index] = c4;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void sonix_song_set_synth_filter_params(SonixSong* song, u8 instrument_index, u16 filter_base, u16 filter_range,
                                         u16 filter_env_sens) {
@@ -3423,8 +3290,6 @@ void sonix_song_set_synth_filter_params(SonixSong* song, u8 instrument_index, u1
     song->synth_filter_range[instrument_index] = filter_range;
     song->synth_filter_env_sens[instrument_index] = filter_env_sens;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void sonix_song_set_synth_env_params(SonixSong* song, u8 instrument_index, u16 scan_rate, int16_t loop_mode,
                                      u16 delay_init, u16 vol_scale, u16 pitch_scale) {
@@ -3438,15 +3303,11 @@ void sonix_song_set_synth_env_params(SonixSong* song, u8 instrument_index, u16 s
     song->synth_env_pitch_scale[instrument_index] = pitch_scale;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void sonix_song_set_synth_slide_rate(SonixSong* song, u8 instrument_index, u16 slide_rate) {
     if (song == nullptr || instrument_index >= 64)
         return;
     song->synth_slide_rate[instrument_index] = slide_rate;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void sonix_song_set_synth_env_table(SonixSong* song, u8 instrument_index, const int8_t* table256) {
     if (song == nullptr || instrument_index >= 64 || table256 == nullptr)

@@ -26,14 +26,10 @@ typedef struct BankEntry {
     uint8_t volume;
 } BankEntry;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static BankEntry read_bank_entry(const uint8_t* bank, unsigned index) {
     const uint8_t* p = bank + BANK_TABLE + index * BANK_ENTRY_SIZE;
     return (BankEntry) { .length = nuade_read_be32(p), .loop_offset = nuade_read_be32(p + 4), .volume = p[9] };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ufo_bank_load(UfoSong* song, uint8_t* module, uint8_t* bank, uint32_t bank_size) {
     if (bank_size < BANK_SAMPLES || memcmp(bank, "FORM", 4) != 0 || memcmp(bank + 8, "ADAT", 4) != 0
@@ -67,7 +63,6 @@ bool ufo_bank_load(UfoSong* song, uint8_t* module, uint8_t* bank, uint32_t bank_
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // "name.mus" -> "name.BANK" when the last four characters are ".mus" in any case and something precedes them.
 
 static bool bank_name_for(const char* song_name, char* out, size_t cap) {
@@ -88,8 +83,6 @@ static bool bank_name_for(const char* song_name, char* out, size_t cap) {
     memcpy(out + stem, BANK_SUFFIX, sizeof(BANK_SUFFIX));
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint8_t* ufo_bank_read(const char* path, const NuadeIo* io, uint32_t* size) {
     if (path == nullptr) {

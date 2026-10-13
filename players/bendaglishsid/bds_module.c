@@ -31,33 +31,23 @@
 #define SEARCH_INIT 0x100
 #define SEARCH_IRQ 0x200
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t bds_u8(const BdsMemory* m, uint32_t offset) {
     return offset < m->size ? m->data[offset] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t bds_u16(const BdsMemory* m, uint32_t offset) {
     return (uint16_t)(bds_u8(m, offset) << 8 | bds_u8(m, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t bds_u32(const BdsMemory* m, uint32_t offset) {
     return (uint32_t)bds_u16(m, offset) << 16 | bds_u16(m, offset + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void bds_put_u8(BdsMemory* m, uint32_t offset, uint8_t value) {
     if (offset < m->size) {
         m->data[offset] = value;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BdsInstrument bds_read_instrument(const BdsMemory* m, uint32_t offset) {
     const uint8_t flags = bds_u8(m, offset + 2);
@@ -76,14 +66,11 @@ BdsInstrument bds_read_instrument(const BdsMemory* m, uint32_t offset) {
                              .volume_max = bds_u8(m, offset + 8) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 BdsSample bds_read_sample(const BdsMemory* m, uint32_t offset) {
     return (
         BdsSample) { .lc = bds_u32(m, offset), .len_words = bds_u16(m, offset + 4), .period = bds_u16(m, offset + 6) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The start of the executable: the hunk header of AmigaDOS, then the first hunk's type, size and data.
 
 typedef struct BdsHunkHeader {
@@ -97,8 +84,6 @@ typedef struct BdsHunkHeader {
     uint32_t data_longs; // in the file
 } BdsHunkHeader;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static BdsHunkHeader read_hunk_header(const uint8_t* data) {
     return (BdsHunkHeader) { .magic = nuade_read_be32(data),
                              .library_names = nuade_read_be32(data + 4),
@@ -110,7 +95,6 @@ static BdsHunkHeader read_hunk_header(const uint8_t* data) {
                              .data_longs = nuade_read_be32(data + 28) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The hunk of the executable, as AmigaDOS loads it. Relocation is not needed: the offsets in the hunk are the driver's
 // addresses, so the hunk is kept at base 0. The eagleplayer's check (Check2) also wants the memory flags of the hunk
 // to be set.
@@ -145,7 +129,6 @@ static bool load_hunk(BdsModule* module, const uint8_t* data, size_t size) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Pattern scan
 
 static int parse_pattern(const char* pattern, uint16_t* words, bool* any) {
@@ -164,7 +147,6 @@ static int parse_pattern(const char* pattern, uint16_t* words, bool* any) {
     return count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The offset of the first match of `pattern` in [from, to), or NOT_FOUND.
 
 static uint32_t find_pattern(const BdsMemory* m, uint32_t from, uint32_t to, const char* pattern) {
@@ -183,7 +165,6 @@ static uint32_t find_pattern(const BdsMemory* m, uint32_t from, uint32_t to, con
     return NOT_FOUND;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Locating. Each table is found by the instruction that addresses it, searched in the routine that uses it. An operand
 // is an absolute address or the address that a d16(pc) operand refers to; word `word` of the match holds it.
 
@@ -198,20 +179,15 @@ typedef struct BdsSpan {
     uint32_t end;
 } BdsSpan;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool pattern_at(const BdsMemory* m, uint32_t at, const char* pattern) {
     return find_pattern(m, at, at + 2, pattern) == at;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t operand_value(const BdsMemory* m, uint32_t match, BdsOperand kind, uint32_t word) {
     const uint32_t at = match + 2 * word;
     return kind == BdsOperand_Absolute ? bds_u32(m, at) : at + (uint32_t)(int32_t)(int16_t)bds_u16(m, at);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The operand of the first match of `pattern` in `span`. False if there is none.
 
 static bool find_operand(const BdsMemory* m, BdsSpan span, const char* pattern, BdsOperand kind, uint32_t word,
@@ -224,7 +200,6 @@ static bool find_operand(const BdsMemory* m, BdsSpan span, const char* pattern, 
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The same, for a table that a second instruction addresses as well: both must give the same address.
 
 static bool operand_agrees(const BdsMemory* m, BdsSpan span, const char* pattern, BdsOperand kind, uint32_t word,
@@ -233,13 +208,9 @@ static bool operand_agrees(const BdsMemory* m, BdsSpan span, const char* pattern
     return find_operand(m, span, pattern, kind, word, &value) && value == expected;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool has_magic(const BdsMemory* m) {
     return bds_u32(m, 0) == MAGIC_MOVEQ_RTS && bds_u32(m, 4) == MAGIC_DAGL && bds_u32(m, 8) == MAGIC_ISH;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static BdsHeader read_header(const BdsMemory* m) {
     uint32_t entry[HEADER_ENTRIES];
@@ -255,7 +226,6 @@ static BdsHeader read_header(const BdsMemory* m) {
                          .notice = entry[6] };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer wants the entry points and the subsong count non-zero (Check2); the tick, the interrupt and the
 // start routine must lie in the hunk.
 
@@ -264,7 +234,6 @@ static bool header_checked(const BdsHeader* h, uint32_t size) {
            && h->audio_irq < size && h->init < size;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The routines the patterns are searched in
 
 typedef struct BdsRoutines {
@@ -273,15 +242,12 @@ typedef struct BdsRoutines {
     BdsSpan irq;
 } BdsRoutines;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static BdsRoutines routines_of(const BdsHeader* h) {
     return (BdsRoutines) { .play = { h->play, h->play + SEARCH_PLAY },
                            .init = { h->init, h->init + SEARCH_INIT },
                            .irq = { h->audio_irq, h->audio_irq + SEARCH_IRQ } };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tables both revisions have: the wave forms and the instruments, with the tick's reads of them.
 
 static bool locate_tables(const BdsMemory* m, const BdsRoutines* r, BdsTables* t) {
@@ -321,7 +287,6 @@ static bool locate_tables(const BdsMemory* m, const BdsRoutines* r, BdsTables* t
                            &t->instrument_map_default);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The early driver (Terramex): fixed order lists, the volume set by the interrupt from the envelope alone. The first
 // instruction of the tick and the init set it apart.
 
@@ -341,7 +306,6 @@ static bool locate_early(const BdsMemory* m, const BdsRoutines* r, BdsTables* t)
            && find_operand(m, irq, "4a79 xxxx xxxx 6602 4241", BdsOperand_Absolute, 1, &t->volume_enable);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The late driver (Chubby Gristle, The Flintstones): order lists per subsong, sample instruments, a volume cap.
 
 static bool locate_late(const BdsMemory* m, const BdsRoutines* r, BdsTables* t) {
@@ -371,7 +335,6 @@ static bool locate_late(const BdsMemory* m, const BdsRoutines* r, BdsTables* t) 
            && operand_agrees(m, irq, "4a39 xxxx xxxx xxxx 4241", BdsOperand_Absolute, 1, t->volume_enable);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The revision is the one whose patterns all exist.
 
 static bool locate(BdsModule* module) {
@@ -394,7 +357,6 @@ static bool locate(BdsModule* module) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Every table the revision uses must lie inside the hunk. The subsong count is a byte for the driver's init.
 
 static bool tables_inside(const BdsModule* module) {
@@ -418,8 +380,6 @@ static bool tables_inside(const BdsModule* module) {
     return t->silence_lc < size && t->order_lists[0] < size && t->order_lists[1] < size && t->order_lists[2] < size;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool bds_module_load(BdsModule* module, const uint8_t* data, size_t size) {
     memset(module, 0, sizeof(*module));
     if (load_hunk(module, data, size)) {
@@ -433,7 +393,6 @@ bool bds_module_load(BdsModule* module, const uint8_t* data, size_t size) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's check (Check2), and that the tables can be found
 
 bool bds_probe(const uint8_t* data, size_t size) {
@@ -444,8 +403,6 @@ bool bds_probe(const uint8_t* data, size_t size) {
     }
     return loaded;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void bds_module_free(BdsModule* module) {
     free(module->memory.data);

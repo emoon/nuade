@@ -29,8 +29,6 @@ typedef enum ExtendedCommand {
 // Ticks per step of the commands 0x80 - 0x8F. The original reads past the table (the bytes 8, 0, 0, 0) for 12 - 15.
 static const uint8_t step_counts[16] = { 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 8, 0, 0, 0 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void envelope_start(IgEnvelope* e) {
     e->offset = 0;
     e->level = 0;
@@ -41,8 +39,6 @@ static void envelope_start(IgEnvelope* e) {
     e->done = false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void envelope_select(IgEnvelope* e, IgEnvelopeRecord record) {
     e->segments = record.segments;
     e->loops = record.loops;
@@ -50,7 +46,6 @@ static void envelope_select(IgEnvelope* e, IgEnvelopeRecord record) {
     envelope_start(e);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One tick of an envelope: `value` plus the level reached, minus the offset; below zero it is 0. A segment adds its
 // delta once per repeat and lasts a number of ticks; the loop restarts at the second segment.
 
@@ -92,8 +87,6 @@ static uint16_t envelope_step(IgEnvelope* e, const IgFile* song, uint16_t value)
     return value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void start_note(IgVoice* v, uint8_t note) {
     unsigned index = note;
     if (note != 0) {
@@ -105,7 +98,6 @@ static void start_note(IgVoice* v, uint8_t note) {
     envelope_start(&v->pitch);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A command byte of a pattern. False when the voice stops: commands 0xE4 - 0xE7 jump into data of the original.
 
 static bool run_command(IgPlayer* p, IgVoice* v, uint8_t command) {
@@ -143,7 +135,6 @@ static bool run_command(IgPlayer* p, IgVoice* v, uint8_t command) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Read the pattern up to the next note, running the commands on the way; at the end of a pattern the next one of the
 // track list. A track list that ends stops the voice (the song loops only when the original's loop flag is set, and
 // nothing sets it). `from_track_list` starts at the track list. False when no note starts.
@@ -174,7 +165,6 @@ static bool fetch_note(IgPlayer* p, IgVoice* v, bool from_track_list) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A sample change a voice asked for: the sample starts, then the repeat registers follow.
 
 static void change_sample(IgPlayer* p, int voice, unsigned number) {
@@ -195,7 +185,6 @@ static void change_sample(IgPlayer* p, int voice, unsigned number) {
     p->song.voices[voice].display_instrument = (int)number;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One voice of one tick. The voice reads its pattern when it is due, then both envelopes run; a stopped voice plays
 // volume 0 at period 0.
 
@@ -235,8 +224,6 @@ static void step_voice(IgPlayer* p, int voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void start_song(IgPlayer* p) {
     IgSong* song = &p->song;
     memset(song, 0, sizeof(*song));
@@ -255,8 +242,6 @@ static void start_song(IgPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool ig_start(IgPlayer* player, NuadeVoices* voices) {
     if (player == nullptr || voices == nullptr) {
         return false;
@@ -267,8 +252,6 @@ bool ig_start(IgPlayer* player, NuadeVoices* voices) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 IgTickResult ig_tick(IgPlayer* player, NuadeVoices* voices) {
     IgSong* song = &player->song;
@@ -286,8 +269,6 @@ IgTickResult ig_tick(IgPlayer* player, NuadeVoices* voices) {
     }
     return (IgTickResult) { .ended = ended };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 IgVoiceState ig_voice_state(const IgPlayer* player, int voice) {
     if (voice < 0 || voice >= IG_VOICES) {

@@ -31,7 +31,6 @@ typedef enum MdFlow {
     MdFlow_Fault,   // the module led out of what the port models
 } MdFlow;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample at a load address as an AUDxLC. Paula ignores bit 0; one that starts outside the module leaves the
 // model.
 
@@ -44,7 +43,6 @@ static const int8_t* sample_address(MdPlayer* player, uint32_t address) {
     return (const int8_t*)player->chip + (offset & ~1u);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The routine that switches everything off: the voices lose their tracks and the notes waiting, the volumes go to
 // 0 and the DMA stops. The state of the voices that the routine does not touch stays.
 
@@ -65,7 +63,6 @@ static void clear_voices(MdPlayer* player) {
     player->enabled = false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The init routine: everything off, then the voices get the tracks of the subsong and their first note is due.
 
 static void init_song(MdPlayer* player, uint32_t subsong) {
@@ -84,7 +81,6 @@ static void init_song(MdPlayer* player, uint32_t subsong) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An instrument number, taken to instrument 0 when its record lies past the table, loads the voice's sample,
 // period, volume, note transposition and repeat, and marks the voice for the hardware pass.
 
@@ -109,21 +105,18 @@ static bool load_instrument(MdPlayer* player, MdVoice* voice, uint16_t command) 
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The second track is the one that plays while it has a pointer.
 
 static MdTrack* active_track(MdVoice* voice) {
     return voice->called.pointer != 0 ? &voice->called : &voice->main;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The position of a track in the module. The code adds the 16-bit position sign-extended.
 
 static uint32_t track_address(const MdTrack* track) {
     return track->pointer + (uint32_t)(int32_t)(int16_t)track->position;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The end of a track: it starts again, and a call counts one play down; the last play ends the track.
 
 static void command_end(MdVoice* voice, MdTrack* track) {
@@ -134,7 +127,6 @@ static void command_end(MdVoice* voice, MdTrack* track) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Runs the commands of the voice's track up to its next note. The two commands that leave the track end the
 // fetch: the caller restarts the tick.
 
@@ -217,7 +209,6 @@ static MdFlow fetch_note(MdPlayer* player, MdVoice* voice, MdTrack** track_out, 
     return MdFlow_Fault;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period of a note: the table entry of the note plus the transpositions (the index is a 16-bit signed byte
 // offset). The later versions interpolate towards the next entry by the instrument's fraction.
 
@@ -241,7 +232,6 @@ static bool note_period(MdPlayer* player, const MdVoice* voice, uint16_t index, 
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note: its index into the period table is the note plus the track's transposition (a note 0 is a rest and gets none)
 // plus the instrument's; the voice then waits for the hardware pass.
 
@@ -264,7 +254,6 @@ static bool play_note(MdPlayer* player, MdVoice* voice, const MdTrack* track, co
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sequencer pass: every voice whose note has run out takes its next note.
 
 static MdFlow step_voices(MdPlayer* player) {
@@ -293,7 +282,6 @@ static MdFlow step_voices(MdPlayer* player) {
     return MdFlow_Continue;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The registers of a voice that starts: the DMA stops, the sample, period and volume are written. A period below the
 // version's minimum is raised to it, or drops the voice from the pass.
 
@@ -314,7 +302,6 @@ static bool write_registers(MdPlayer* player, MdVoice* voice) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The repeat registers, written once the DMA has started: the sample from its repeat offset on, or without one the
 // first two words.
 
@@ -331,7 +318,6 @@ static void write_repeat(MdPlayer* player, MdVoice* voice) {
     voice->paula.len_words = (uint16_t)(bytes >> 1);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The hardware pass. Three sweeps over the voices with a note waiting: registers (DMA off first), DMA on, repeat.
 // Between them the code waits for the DMA to take the registers. A rest keeps its DMA off in the versions that mark it.
 
@@ -360,7 +346,6 @@ static void hardware(MdPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The interrupt routine: the passes of sequencer and hardware. A restart or stop command leaves the routine through
 // its beginning, after the init or the clearing it asked for.
 
@@ -394,8 +379,6 @@ static void run_tick(MdPlayer* player) {
     player->fault = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void sync_voices(MdPlayer* player, NuadeVoices* voices) {
     if (voices == nullptr) {
         return;
@@ -404,8 +387,6 @@ static void sync_voices(MdPlayer* player, NuadeVoices* voices) {
         nuade_paula_channel_sync(&player->voices[v].paula, v, voices);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool md_start(MdPlayer* player, uint32_t subsong, NuadeVoices* voices) {
     if (subsong >= player->module.subsong_count) {
@@ -425,8 +406,6 @@ bool md_start(MdPlayer* player, uint32_t subsong, NuadeVoices* voices) {
     return !player->fault;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 MdTickResult md_tick(MdPlayer* player, NuadeVoices* voices) {
     run_tick(player);
     sync_voices(player, voices);
@@ -434,7 +413,6 @@ MdTickResult md_tick(MdPlayer* player, NuadeVoices* voices) {
     return (MdTickResult) { .looped = player->looped, .ended = player->ended || player->fault };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Plays the subsongs without a mixer until each has looped twice, ended, or run for a long time: everything they
 // reach must stay inside what the port models.
 
@@ -462,8 +440,6 @@ static bool dry_run(MdPlayer* player) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 MdPlayer* md_create(const uint8_t* data, size_t size) {
     if (size > UINT32_MAX / 2) {
         return nullptr;
@@ -481,8 +457,6 @@ MdPlayer* md_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void md_destroy(MdPlayer* player) {
     if (player != nullptr) {
         free(player->chip);
@@ -490,13 +464,9 @@ void md_destroy(MdPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t md_subsong_count(const MdPlayer* player) {
     return player->module.subsong_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MdVoiceState md_voice_state(const MdPlayer* player, uint32_t voice) {
     if (voice >= MD_VOICES) {

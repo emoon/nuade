@@ -10,13 +10,10 @@
 #define BEND_DOWN_MAX 0x1000
 #define FX_SCALE_SHIFT 7
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int32_t clamp(int32_t value, int32_t low, int32_t high) {
     return value < low ? low : (value > high ? high : value);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A new sample: the note's table (if any) starts from its beginning.
 
 static void start_sample(MmCore* c, MmVoice* t, const MmStep* step) {
@@ -32,7 +29,6 @@ static void start_sample(MmCore* c, MmVoice* t, const MmStep* step) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pitch bends. With 4 voices they keep the scale between 0x100 and 0x1000 going down and up to 0x2000 going up for
 // as long as the voice's bend lasts; with 8 voices a bend ends when the scale reaches its limit.
 
@@ -57,7 +53,6 @@ static void bend_pitch(const MmCore* c, MmVoice* t) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume register: the twice-volume with its glide and slide, then the note table's tremolo, the note and bend
 // dependent divisions.
 
@@ -90,7 +85,6 @@ static uint8_t update_volume(MmVoice* t, int8_t table_tremolo) {
     return (uint8_t)clamp(volume, 0, VOLUME_MAX);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period register: the glide or the slides on the period, then the note table's vibrato, which also advances the
 // table's phase.
 
@@ -130,8 +124,6 @@ static uint16_t update_period(const MmCore* c, MmVoice* t, int8_t table_vibrato)
     fx->counter++;
     return (uint16_t)period;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void mm_core_update(MmCore* c, uint32_t voice, const MmStep* step) {
     MmVoice* t = &c->voice[voice];

@@ -53,7 +53,6 @@
 #define FORM_MASK 3 // the two low bits of a note event: its form
 #define EFFECT_PARAM_MASK 0x3F
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $2E2: every voice's event stream is the pattern the order list names at the current position.
 
 static void load_voices(AhNewSong* s, const AhMemory* m) {
@@ -67,7 +66,6 @@ static void load_voices(AhNewSong* s, const AhMemory* m) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $7AA: the next event byte. While a loop counts, every byte read counts; when it is used up the stream continues
 // after the loop event.
 
@@ -84,7 +82,6 @@ static uint8_t fetch(const AhMemory* m, AhNewVoice* v, uint32_t* at) {
     return value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period of a note in a row of the period table.
 
 static uint16_t period_of(const AhNewTables* t, const AhMemory* m, const AhNewVoice* v, int note_index) {
@@ -92,14 +89,12 @@ static uint16_t period_of(const AhNewTables* t, const AhMemory* m, const AhNewVo
     return ah_u16(m, row + (uint32_t)(int32_t)(int16_t)(note_index * 2));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The transposition of the song, in notes.
 
 static int song_transposition(const AhNewTables* t, const AhNewSong* s, const AhMemory* m) {
     return ah_s16(m, t->transpose + (uint32_t)s->subsong * 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $7C6: a note with an instrument: the sample's record is copied into the voice, the note starts at the next phase 2.
 
 static void note_on(AhNew* modern, const AhMemory* m, AhNewVoice* v) {
@@ -115,7 +110,6 @@ static void note_on(AhNew* modern, const AhMemory* m, AhNewVoice* v) {
     v->display_note = nuade_period_to_note(period_of(t, m, v, v->note + song_transposition(t, &modern->song, m)));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $962: a changing effect parameter moves by its step until its ticks are used up.
 
 static void run_effect_parameter(AhNewVoice* v) {
@@ -131,7 +125,6 @@ static void run_effect_parameter(AhNewVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note's second byte (and the effect it carries): duration and the effect's length.
 
 static void read_long_duration(const AhMemory* m, AhNewVoice* v, uint32_t* at) {
@@ -143,7 +136,6 @@ static void read_long_duration(const AhMemory* m, AhNewVoice* v, uint32_t* at) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $5DE: one event. Returns true when the voice's stream has been replaced and has to be read from its start.
 
 static bool read_event(AhNew* modern, const AhMemory* m, AhNewVoice* v) {
@@ -223,7 +215,6 @@ static bool read_event(AhNew* modern, const AhMemory* m, AhNewVoice* v) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $5C2: a voice's sequencer step. A stream that keeps replacing itself without reaching a note is cut off.
 
 static void run_sequencer(AhNew* modern, const AhMemory* m, int index) {
@@ -236,7 +227,6 @@ static void run_sequencer(AhNew* modern, const AhMemory* m, int index) {
     for (int restarts = 0; restarts < MAX_STREAM_RESTARTS && read_event(modern, m, v); restarts++) {}
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $A4E: the parameter's high nibble raises the volume, else its low nibble lowers it.
 
 static void slide_volume(AhNewVoice* v) {
@@ -252,7 +242,6 @@ static void slide_volume(AhNewVoice* v) {
     v->volume_locked = false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $920: the voice's effect, except on the tick after it was defined.
 
 static void run_effect(AhNewVoice* v) {
@@ -284,7 +273,6 @@ static void run_effect(AhNewVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $82E: effect, volume and period of a voice.
 
 static void update_voice(AhNew* modern, const AhMemory* m, int index) {
@@ -297,7 +285,6 @@ static void update_voice(AhNew* modern, const AhMemory* m, int index) {
                      + v->period_offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $4A4: the volume a note starts with is the sample's, unless a volume command has set it.
 
 static bool loads_sample_volume(AhNewVoice* v) {
@@ -314,7 +301,6 @@ static bool loads_sample_volume(AhNewVoice* v) {
     return v->effect != AhNewEffect_SetVolume;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $47E: the voices with a new note stop their DMA; their attack registers are written, the DMA starts, and then the
 // loop registers (the driver's two interrupts, with a wait for the DMA in front of each).
 
@@ -350,7 +336,6 @@ static void start_notes(AhNew* modern) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $1E0: start a song (1-based number): all DMA off, the voices cleared, the first pattern loaded.
 
 static void start_song(AhNew* modern, const AhMemory* m, int number) {
@@ -371,7 +356,6 @@ static void start_song(AhNew* modern, const AhMemory* m, int number) {
     load_voices(s, m);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // $378: the tick.
 
 void ah_new_tick(AhNew* modern, const AhMemory* module) {
@@ -401,7 +385,6 @@ void ah_new_tick(AhNew* modern, const AhMemory* module) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The init and "play song" entries, then the tick that the eagleplayer's InitSound runs, which starts the song.
 
 void ah_new_start(AhNew* modern, const AhMemory* module, int subsong) {

@@ -56,37 +56,25 @@
 #define EXT_D1_W 0x1000
 #define EXT_D2_W 0x2000
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t dsr_u8(const DsrMemory* m, int64_t offset) {
     return offset >= 0 && offset < (int64_t)m->size ? m->data[offset] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t dsr_u16(const DsrMemory* m, int64_t offset) {
     return (uint16_t)(dsr_u8(m, offset) << 8 | dsr_u8(m, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int16_t dsr_s16(const DsrMemory* m, int64_t offset) {
     return (int16_t)dsr_u16(m, offset);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t dsr_u32(const DsrMemory* m, int64_t offset) {
     return (uint32_t)dsr_u16(m, offset) << 16 | dsr_u16(m, offset + 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int dsr_record_count(const DsrVersion* version) {
     return version->has_effect ? DSR_MAX_RECORDS : DSR_VOICES;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DsrMode dsr_decode_mode(uint8_t state) {
     if (state == 0x80) {
@@ -101,8 +89,6 @@ DsrMode dsr_decode_mode(uint8_t state) {
     return state == 0x40 ? DsrMode_Fade : DsrMode_Start;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 DsrRequest dsr_decode_request(uint8_t request) {
     const bool from_song_list = (request & 0x40) != 0;
     return (DsrRequest) { .pending = request != 0,
@@ -110,38 +96,27 @@ DsrRequest dsr_decode_request(uint8_t request) {
                           .index = from_song_list ? request & 0x3F : request };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The index registers of the replayer are words that the 68000 sign extends when it adds them to an address.
 
 static uint32_t indexed(uint32_t table, uint16_t index) {
     return table + (uint32_t)(int32_t)(int16_t)index;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t dsr_read_song_list(const DsrModule* module, uint16_t index) {
     return dsr_u8(&module->memory, indexed(module->tables.song_lists, index));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t dsr_read_order(const DsrModule* module, uint16_t at) {
     return dsr_u16(&module->memory, indexed(module->tables.orders, at));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int8_t dsr_read_modulation(const DsrModule* module, uint16_t index) {
     return (int8_t)dsr_u8(&module->memory, indexed(module->tables.modulation, index));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t dsr_read_period(const DsrModule* module, uint16_t index) {
     return dsr_u16(&module->memory, module->tables.periods + 2 * (uint32_t)index);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DsrInstrument dsr_read_instrument(const DsrModule* module, uint8_t number) {
     const DsrMemory* m = &module->memory;
@@ -155,8 +130,6 @@ DsrInstrument dsr_read_instrument(const DsrModule* module, uint8_t number) {
     };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 DsrCommandArgs dsr_read_command_args(const DsrModule* module, uint16_t at) {
     DsrCommandArgs args;
     for (uint32_t i = 0; i < DSR_COMMAND_ARGS; i++) {
@@ -165,7 +138,6 @@ DsrCommandArgs dsr_read_command_args(const DsrModule* module, uint16_t at) {
     return args;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The data block. The fields of the voice records sit in groups, each group RECORD_SIZE * records bytes long and
 // holding one RECORD_SIZE slice per voice; a field is at voice * RECORD_SIZE + group start + its place in the slice.
 // The places are named once here, for the record reader and for the code patterns.
@@ -221,7 +193,6 @@ typedef enum DsrPlace {
     DsrPlace_SavedLength = 4,
 } DsrPlace;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The offset of a field of voice 0.
 
 static uint32_t field(const DsrVersion* version, DsrGroup group, DsrPlace place) {
@@ -229,14 +200,11 @@ static uint32_t field(const DsrVersion* version, DsrGroup group, DsrPlace place)
     return group * group_size + (uint32_t)place;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The Paula channel whose DMA a voice's record switches: its own, and the sound effect voice's is voice 3's.
 
 static int dma_channel_of(int voice) {
     return voice < DSR_VOICES ? voice : DSR_VOICES - 1;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 typedef struct RecordReader {
     const DsrMemory* m;
@@ -244,39 +212,28 @@ typedef struct RecordReader {
     uint32_t at; // the voice's record
 } RecordReader;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t record_field(const RecordReader* r, DsrGroup group, DsrPlace place) {
     return r->at + field(r->version, group, place);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t record_u8(const RecordReader* r, DsrGroup group, DsrPlace place) {
     return dsr_u8(r->m, record_field(r, group, place));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t record_u16(const RecordReader* r, DsrGroup group, DsrPlace place) {
     return dsr_u16(r->m, record_field(r, group, place));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static int16_t record_s16(const RecordReader* r, DsrGroup group, DsrPlace place) {
     return dsr_s16(r->m, record_field(r, group, place));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A voice's DMACON bit: its channel's, or 0 for a voice that does not start DMA (the module is checked for both).
 
 static uint16_t read_dma_mask(const DsrModule* module, int voice) {
     const RecordReader r = { &module->memory, &module->version, RECORD_SIZE * (uint32_t)voice };
     return record_u16(&r, DsrGroup_Modulation, DsrPlace_DmaMask);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DsrVoice dsr_read_voice(const DsrModule* module, int voice) {
     const RecordReader r = { &module->memory, &module->version, RECORD_SIZE * (uint32_t)voice };
@@ -326,7 +283,6 @@ DsrVoice dsr_read_voice(const DsrModule* module, int voice) {
     };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Code scan. A pattern is a list of instruction words, ANY for a word that does not matter.
 
 // The address that the pc relative operand of the instruction at `at` (`lea d16(pc),an`, `bsr.w`, `bra.w`) names.
@@ -334,8 +290,6 @@ DsrVoice dsr_read_voice(const DsrModule* module, int voice) {
 static uint32_t pc_target(const DsrMemory* m, uint32_t at) {
     return at + 2 + (uint32_t)(int32_t)dsr_s16(m, at + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool words_match(const DsrMemory* m, uint32_t at, const uint32_t* words, uint32_t count) {
     for (uint32_t i = 0; i < count; i++) {
@@ -346,7 +300,6 @@ static bool words_match(const DsrMemory* m, uint32_t at, const uint32_t* words, 
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The offset of the first match of the pattern in [from, to), or NOT_FOUND.
 
 static uint32_t find_code(const DsrMemory* m, uint32_t from, uint32_t to, const uint32_t* words, uint32_t count) {
@@ -358,7 +311,6 @@ static uint32_t find_code(const DsrMemory* m, uint32_t from, uint32_t to, const 
     return NOT_FOUND;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The address that the `lea d16(pc),a3` at the start of a match names, or NOT_FOUND.
 
 static uint32_t find_table(const DsrMemory* m, uint32_t from, uint32_t to, const uint32_t* words, uint32_t count) {
@@ -366,7 +318,6 @@ static uint32_t find_table(const DsrMemory* m, uint32_t from, uint32_t to, const
     return at == NOT_FOUND ? NOT_FOUND : pc_target(m, at);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2: four records marked in the data block, then the replayer's first instructions within CHECK_SCAN_SIZE bytes:
 // `lea d16(pc),a4; lea $dff000,a2; move.w #$ff,$9e(a2); lea module(pc),a0`. Returns the offset of the first one.
 
@@ -390,7 +341,6 @@ static uint32_t check_entry(const DsrMemory* m) {
     return NOT_FOUND;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer's entry: the first `lea d16(pc),a4` from INIT_SCAN_START on.
 
 static uint32_t init_entry(const DsrMemory* m) {
@@ -398,7 +348,6 @@ static uint32_t init_entry(const DsrMemory* m) {
     return find_code(m, INIT_SCAN_START, m->size, lea, nuade_sizeof_array(lea));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The entry routine sets up the voices: `lea voice(pc),a0; lea $dff0n0,a1; bsr step` for voices 0 to 2, then voice 3,
 // either the same with a `bra` (four records), or with a sound effect (five records) that wraps the step in its own
 // code. Returns the `step` routine's offset, or NOT_FOUND.
@@ -443,7 +392,6 @@ static uint32_t parse_entry(const DsrMemory* m, uint32_t entry, DsrVersion* vers
     return NOT_FOUND;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The step routine of a voice starts `cmpi.b #$80,(a0); beq rts; move.w pending(a0),d1`: the field is the pending DMA
 // word, which confirms the layout of the data block.
 
@@ -458,7 +406,6 @@ static bool check_step(const DsrMemory* m, uint32_t step, const DsrVersion* vers
     return words_match(m, step, words, nuade_sizeof_array(words));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The instrument's sample start: `lea offsets(pc),a3; move.w (a3,d1.w),d2; lea module(pc),a3; asl.l #n,d2;
 // add.l a3,d2`, optionally `addi.l #skip,d2`, then `move.l d2,AUDxLC`. Returns the offset table.
 
@@ -486,7 +433,6 @@ static uint32_t parse_sample_start(const DsrMemory* m, uint32_t from, uint32_t t
     return dsr_u16(m, store) == OP_MOVE_L_D2_D16_A1 ? pc_target(m, at) : NOT_FOUND;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The instrument length table: `move.w (a3,d1.w),d3; subi.w #trim,d3` (trim words off the length), or the length
 // stored straight to AUDxLEN.
 
@@ -506,7 +452,6 @@ static uint32_t find_length_table(const DsrMemory* m, uint32_t from, uint32_t to
     return pc_target(m, at_trimmed);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sound effect's end clears voice 3's pending DMA and sets its mute counter: `clr.w mask(a0)`, in the later
 // replayer `clr.w` of the envelope state and level, then `move.b #n,mute(a0)`.
 
@@ -529,7 +474,6 @@ static bool parse_effect_end(const DsrMemory* m, uint32_t from, uint32_t to, Dsr
     return version->effect_resets_envelope;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The fade: each voice's volume stage drops the counter by the immediate of `subi.w #step,fade(a4)`.
 
 static uint16_t find_fade_step(const DsrMemory* m, uint32_t from, uint32_t to) {
@@ -538,7 +482,6 @@ static uint16_t find_fade_step(const DsrMemory* m, uint32_t from, uint32_t to) {
     return at == NOT_FOUND ? 0 : dsr_u16(m, at + 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The number of subsongs: InitPlayer counts the bytes of the first voice's list after its first entry, up to a zero
 // or a repeat.
 
@@ -557,14 +500,12 @@ static uint32_t count_subsongs(const DsrMemory* m, uint32_t list) {
     return count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A sample can start up to 0xFFFF << shift (+ skip) bytes into the module, past its end in a short module.
 
 static uint32_t sample_start_reach(const DsrVersion* v) {
     return ((uint32_t)MAX_SAMPLE_OFFSET << v->sample_shift) + v->sample_skip;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Each voice's DMA bit is its own channel's, or 0 for a voice that does not start DMA.
 
 static bool check_dma_masks(const DsrModule* module) {
@@ -576,8 +517,6 @@ static bool check_dma_masks(const DsrModule* module) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool dsr_module_locate(DsrModule* module, const uint8_t* data, size_t size) {
     *module = (DsrModule) { .memory = { .data = data, .size = (uint32_t)size, .capacity = (uint32_t)size } };
@@ -634,8 +573,6 @@ bool dsr_module_locate(DsrModule* module, const uint8_t* data, size_t size) {
     return module->subsongs > 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 DsrStatus dsr_module_load(DsrModule* module, const uint8_t* data, size_t size) {
     if (!dsr_module_locate(module, data, size)) {
         return DsrStatus_InvalidData;
@@ -652,8 +589,6 @@ DsrStatus dsr_module_load(DsrModule* module, const uint8_t* data, size_t size) {
     module->memory.capacity = capacity;
     return DsrStatus_Ok;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void dsr_module_free(DsrModule* module) {
     free(module->owned);

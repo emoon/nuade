@@ -19,19 +19,14 @@
 #define WAVE_BYTES 2
 #define WAVE_KIND_RESTARTING 2 // instruments of this kind keep their wave list across notes of the same instrument
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool manages_envelope_flag(const MonPlayer* p) {
     return p->module.layout->version != MonVersion_Gyroscope;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t length_ticks(const MonPlayer* p, uint8_t length) {
     return (uint16_t)((uint32_t)length * p->tempo);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Note-on: the voice starts a note, stops the DMA and leaves the sample start to the next tick.
 
 static void note_on(MonPlayer* p, int voice, uint8_t note, uint8_t length, const MonInstrument* ins) {
@@ -44,8 +39,6 @@ static void note_on(MonPlayer* p, int voice, uint8_t note, uint8_t length, const
     }
     nuade_paula_channel_dma_off(&p->paula[voice]);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool mon_old_read_pattern(MonPlayer* p, int voice) {
     const MonModule* m = &p->module;
@@ -113,7 +106,6 @@ bool mon_old_read_pattern(MonPlayer* p, int voice) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The byte of a list at the voice's position: a byte with bit 7 set jumps to the position in its low bits.
 
 static uint8_t bit_list_byte(const MonModule* m, uint32_t list, uint8_t* pos) {
@@ -130,7 +122,6 @@ static uint8_t bit_list_byte(const MonModule* m, uint32_t list, uint8_t* pos) {
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The envelope list: any byte but a jump is the next level.
 
 static void run_envelope(MonPlayer* p, int voice, const MonInstrument* ins) {
@@ -143,7 +134,6 @@ static void run_envelope(MonPlayer* p, int voice, const MonInstrument* ins) {
     v->env_volume = mon_envelope_level(p, v, bit_list_byte(m, mon_song_address(m, ins->envelope), &v->envelope_pos));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // MonVersion_Gyroscope: the slide moves the period by an equal step in each tick; the rest of the division is
 // taken off in the last one.
 
@@ -169,7 +159,6 @@ static void run_linear_slide(MonVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The arpeggio list of the instrument adds a period offset from notes relative to the voice's note.
 
 static void run_arpeggio(MonPlayer* p, int voice, const MonInstrument* ins) {
@@ -184,7 +173,6 @@ static void run_arpeggio(MonPlayer* p, int voice, const MonInstrument* ins) {
     v->arpeggio_offset = (uint16_t)(mon_scaled_period_word(m, note, ins->tuning) - v->note_period);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Instruments of the other kinds: a list of waves, each played for a number of ticks. The list sets the wave length
 // and the period too. A note-on restarts the list unless the instrument is of the kind that goes on and no instrument
 // command came since. The position in the list is a signed word.
@@ -228,7 +216,6 @@ static void run_waves(MonPlayer* p, int voice, const MonInstrument* ins) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A voice that goes on with its note: the envelope, slide, arpeggio, vibrato and sample start, then the registers.
 
 void mon_old_sustain(MonPlayer* p, int voice) {

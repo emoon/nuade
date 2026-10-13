@@ -60,8 +60,6 @@ typedef struct Cursor {
     Instruction* insn;
 } Cursor;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Takes the next word of the instruction.
 static bool take_word(Cursor* c, WordKind kind) {
     Instruction* in = c->insn;
@@ -75,14 +73,10 @@ static bool take_word(Cursor* c, WordKind kind) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The brief extension word of an indexed address; the 68020 formats are not part of the replayers.
 static bool take_index_extension(Cursor* c) {
     return take_word(c, WordKind_Plain) && (c->insn->word[c->insn->word_count - 1] & BRIEF_EXTENSION_FULL_FORMAT) == 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // An absolute long address. One in the chip register pages is part of the replayer, any other one belongs to the
 // module.
@@ -97,8 +91,6 @@ static bool take_absolute_long(Cursor* c) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The extension words of an effective address for an operand of `size` bytes.
 static bool take_address_extension(Cursor* c, int mode, int reg, int size) {
@@ -127,25 +119,17 @@ static bool take_address_extension(Cursor* c, int mode, int reg, int size) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int ea_mode(uint16_t op) {
     return (op >> 3) & 7;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static int ea_reg(uint16_t op) {
     return op & 7;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool take_ea(Cursor* c, uint16_t op, int size) {
     return take_address_extension(c, ea_mode(op), ea_reg(op), size);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The operand size in bits 6..7 of the opcode; 0 for the encoding that selects another instruction.
 static int size_of_field(uint16_t op) {
@@ -160,8 +144,6 @@ static int size_of_field(uint16_t op) {
             return 0;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool decode_immediate_and_bit_operations(Cursor* c, uint16_t op) {
     if ((op & 0x0100) != 0) {
@@ -179,8 +161,6 @@ static bool decode_immediate_and_bit_operations(Cursor* c, uint16_t op) {
     }
     return take_word(c, WordKind_Plain) && (size != SIZE_LONG || take_word(c, WordKind_Plain)) && take_ea(c, op, size);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool decode_move(Cursor* c, uint16_t op) {
     int size = 0;
@@ -203,8 +183,6 @@ static bool decode_move(Cursor* c, uint16_t op) {
     return take_address_extension(c, destination_mode, destination_reg, size);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool decode_miscellaneous(Cursor* c, uint16_t op) {
     if ((op & 0xF1C0) == 0x41C0) {
         return take_ea(c, op, SIZE_LONG); // lea
@@ -225,8 +203,6 @@ static bool decode_miscellaneous(Cursor* c, uint16_t op) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool decode_quick_and_conditions(Cursor* c, uint16_t op) {
     if ((op & 0x00C0) == 0x00C0) {
         if (ea_mode(op) == MODE_ADDRESS_REG) {
@@ -238,8 +214,6 @@ static bool decode_quick_and_conditions(Cursor* c, uint16_t op) {
     return take_ea(c, op, size); // addq, subq
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool decode_branch(Cursor* c, uint16_t op) {
     const int displacement = op & 0xFF;
     if (displacement == 0xFF) {
@@ -247,8 +221,6 @@ static bool decode_branch(Cursor* c, uint16_t op) {
     }
     return displacement != 0 || take_word(c, WordKind_Plain);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The or, and, add, sub, cmp and eor group with its address register, multiply and divide forms.
 static bool decode_arithmetic(Cursor* c, uint16_t op) {
@@ -266,8 +238,6 @@ static bool decode_arithmetic(Cursor* c, uint16_t op) {
     }
     return take_ea(c, op, size_of_field(op));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool decode_instruction(Cursor* c) {
     if (!take_word(c, WordKind_Plain)) {
@@ -302,13 +272,9 @@ static bool decode_instruction(Cursor* c) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint64_t hash_byte(uint64_t hash, uint8_t value) {
     return (hash ^ value) * 0x100000001B3ull;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint64_t hash_token(uint64_t hash, WordKind kind, uint16_t value) {
     hash = hash_byte(hash, (uint8_t)kind);
@@ -316,16 +282,12 @@ static uint64_t hash_token(uint64_t hash, WordKind kind, uint16_t value) {
     return hash_byte(hash, (uint8_t)value);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint64_t hash_instruction(uint64_t hash, const Instruction* in) {
     for (int w = 0; w < in->word_count; w++) {
         hash = hash_token(hash, in->kind[w], in->kind[w] == WordKind_Address ? 0 : in->word[w]);
     }
     return hash;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The offset of the scratch byte a `lea` names for `move.b (a0)+,(a1)+`; 0 when the instruction is not that.
 static uint32_t scratch_target(const Instruction* in, const uint8_t* data, size_t size) {
@@ -336,8 +298,6 @@ static uint32_t scratch_target(const Instruction* in, const uint8_t* data, size_
     }
     return in->word[0] == OP_LEA_PC_A1 ? in->at + 2u + (uint32_t)(int32_t)(int16_t)in->word[1] : in->word[1];
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Hashes the words of a table jump: the bytes the instruction skips over and the `bra.w` entries behind it. Returns
 // the offset behind the table, 0 when the layout is not the replayer's.
@@ -361,8 +321,6 @@ static uint32_t hash_jump_table(const uint8_t* data, size_t size, const Instruct
     }
     return entries > 0 ? at : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool scr_scan_code(const uint8_t* data, size_t size, uint32_t start, ScrCodeScan* scan) {
     Cursor cursor = { .data = data, .size = size };

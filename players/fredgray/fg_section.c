@@ -16,7 +16,6 @@
 // The immediate of the `andi.b #$f,d0` and `eori.w #$f,d0` in the cap decoders
 #define NIBBLE_MASK 0x000f
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What a routine the sections call is
 
 typedef enum Role {
@@ -31,7 +30,6 @@ typedef enum Role {
     Role_TailAdvance,
 } Role;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What a routine starts with decides what it is (the engine signature checks the rest). For a track routine, `voice` is
 // the voice whose offset it loads into d6.
 static Role classify_callee(const FgModule* m, uint32_t stride, uint32_t target, uint32_t* voice) {
@@ -77,7 +75,6 @@ static Role classify_callee(const FgModule* m, uint32_t stride, uint32_t target,
     return Role_Unknown;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Decoder state
 
 // The register a track routine adds the note offset from: the load of an offset says which one it fills
@@ -142,18 +139,15 @@ typedef enum DecodeResult {
     Decode_Failed,
 } DecodeResult;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static DecodeResult result_of(bool ok) {
     return ok ? Decode_Ok : Decode_Failed;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The low byte of a big-endian word variable
 static uint32_t low_byte_of(uint32_t word_var) {
     return word_var + 1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static FgOp* emit(SectionDecoder* d, FgOpKind kind) {
     if (d->op_count >= MAX_SECTION_OPS) {
         return nullptr;
@@ -165,7 +159,6 @@ static FgOp* emit(SectionDecoder* d, FgOpKind kind) {
     return op;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static FgOp* emit_value(SectionDecoder* d, FgOpKind kind, uint16_t value) {
     FgOp* op = emit(d, kind);
     if (op != nullptr) {
@@ -174,7 +167,6 @@ static FgOp* emit_value(SectionDecoder* d, FgOpKind kind, uint16_t value) {
     return op;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static FgOp* emit_voice(SectionDecoder* d, FgOpKind kind, uint16_t value, uint8_t voice) {
     FgOp* op = emit_value(d, kind, value);
     if (op != nullptr) {
@@ -183,7 +175,6 @@ static FgOp* emit_voice(SectionDecoder* d, FgOpKind kind, uint16_t value, uint8_
     return op;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An operation on the voice whose record field `field` the displacement `displacement(a6)` addresses
 static FgOp* emit_record(SectionDecoder* d, FgOpKind kind, uint16_t value, uint32_t displacement, FgRecordField field) {
     uint8_t voice = 0;
@@ -191,7 +182,6 @@ static FgOp* emit_record(SectionDecoder* d, FgOpKind kind, uint16_t value, uint3
                                                                            : nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Makes the last emitted operation jump to the code at `target`. Branches go forward and stay inside the section.
 static bool add_fixup(SectionDecoder* d, uint32_t from, uint32_t target) {
     if (d->fixup_count >= MAX_SECTION_OPS || target <= from || target >= d->ctx->engine_start) {
@@ -202,7 +192,6 @@ static bool add_fixup(SectionDecoder* d, uint32_t from, uint32_t target) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static bool is_fixup_target(const SectionDecoder* d, uint32_t at) {
     for (uint32_t i = 0; i < d->fixup_count; i++) {
         if (d->fixups[i].target == at) {
@@ -212,7 +201,6 @@ static bool is_fixup_target(const SectionDecoder* d, uint32_t at) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Remembers an engine routine the sections call, for the signature
 static bool note_engine_call(SectionDecoder* d, uint32_t target) {
     FgEngineCalls* calls = d->calls;
@@ -228,7 +216,6 @@ static bool note_engine_call(SectionDecoder* d, uint32_t target) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Sets a role's routine, or checks that every section calls the same one
 static bool bind_role(uint32_t* slot, uint32_t target) {
     if (*slot != FG_NOT_FOUND && *slot != target) {
@@ -238,7 +225,6 @@ static bool bind_role(uint32_t* slot, uint32_t target) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The register the track routine at `target` adds the note offset from: its note start holds `add.w a1,d4` (Eco, Star
 // Goose, Victory Road) or `add.w d2,d4` (Black Lamp)
 static OffsetRegister track_offset_register(SectionDecoder* d, uint32_t target) {
@@ -263,7 +249,6 @@ static OffsetRegister track_offset_register(SectionDecoder* d, uint32_t target) 
     return found;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The conditional branch that follows an instruction that set the flags: the test it makes of the step for each
 // condition code (FgTest_None: not one this instruction is decoded with)
 
@@ -283,7 +268,6 @@ typedef enum BranchResult {
     BranchResult_Taken,
 } BranchResult;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static BranchResult take_branch(SectionDecoder* d, FgCursor* c, const BranchTests* tests) {
     const uint16_t w = fg_cursor_peek(c);
     const unsigned condition = (w >> OP_COND_SHIFT) & OP_COND_MASK;
@@ -321,7 +305,6 @@ static BranchResult take_branch(SectionDecoder* d, FgCursor* c, const BranchTest
     return BranchResult_Taken;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The call of a routine: the operation it is, from the arguments collected before it
 static bool decode_call(SectionDecoder* d, Pending* p, uint32_t target) {
     uint32_t voice = 0;
@@ -380,7 +363,6 @@ static bool decode_call(SectionDecoder* d, Pending* p, uint32_t target) {
     return op != nullptr && note_engine_call(d, target);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A jump into the engine: how the section ends
 static bool decode_tail(SectionDecoder* d, const Pending* p, uint32_t target) {
     uint32_t voice = 0;
@@ -415,7 +397,6 @@ static bool decode_tail(SectionDecoder* d, const Pending* p, uint32_t target) {
     return note_engine_call(d, target);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // move.w #n,abs.l (or move.w d0,abs.l after move.w #n,d0): the transpose, or AUDxLEN of a voice
 static bool decode_store_word(SectionDecoder* d, uint16_t value, uint32_t address) {
     uint8_t voice = 0;
@@ -426,7 +407,6 @@ static bool decode_store_word(SectionDecoder* d, uint16_t value, uint32_t addres
            && emit_value(d, FgOp_SetTranspose, value) != nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // move.w transpose,d0; eori.w #n,d0 (or addi.w); move.w d0,transpose
 static bool decode_update_transpose(SectionDecoder* d, Pending* p, FgCursor* c) {
     const uint32_t transpose = d->ctx->transpose_var;
@@ -443,14 +423,12 @@ static bool decode_update_transpose(SectionDecoder* d, Pending* p, FgCursor* c) 
     return emit_value(d, arithmetic == OP_EORI_W_D0 ? FgOp_XorTranspose : FgOp_AddTranspose, value) != nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The store of the cap in d0 into the cap variable: move.b d0,cap
 static bool store_cap(const SectionDecoder* d, FgCursor* c) {
     return fg_cursor_u16(c) == OP_MOVE_B_D0_ABS && d->ctx->cap_var != FG_NOT_FOUND
            && fg_cursor_u32(c) == d->ctx->cap_var;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // move.b d7,d0; lsr.b #4,d0; addi.b #n,d0; andi.b #$f,d0; move.b d0,cap: the cap is the step's high nibble plus n
 static bool decode_cap_from_step(SectionDecoder* d, Pending* p, FgCursor* c) {
     if (fg_cursor_u16(c) != OP_LSR_B_D0_4 || fg_cursor_u16(c) != OP_ADDI_B_D0) {
@@ -464,7 +442,6 @@ static bool decode_cap_from_step(SectionDecoder* d, Pending* p, FgCursor* c) {
     return emit_value(d, FgOp_CapFromStep, add) != nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // move.b position (low byte),d0; lsr.b #4,d0; andi.b #$f,d0; eori.w #$f,d0; move.b d0,cap
 static bool decode_cap_from_position(SectionDecoder* d, Pending* p, FgCursor* c) {
     if (fg_cursor_u32(c) != low_byte_of(d->ctx->position_var) || fg_cursor_u16(c) != OP_LSR_B_D0_4
@@ -476,7 +453,6 @@ static bool decode_cap_from_position(SectionDecoder* d, Pending* p, FgCursor* c)
     return emit(d, FgOp_CapFromPosition) != nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // lsr.w #n,d7: with a bcs after it the branch tests the bit that was shifted out
 static bool decode_shift(SectionDecoder* d, FgCursor* c, uint16_t w) {
     const uint16_t field = (w >> OP_LSR_COUNT_SHIFT) & OP_LSR_COUNT_MASK;
@@ -488,7 +464,6 @@ static bool decode_shift(SectionDecoder* d, FgCursor* c, uint16_t w) {
            || (result == BranchResult_None && emit_value(d, FgOp_StepShift, count) != nullptr);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An instruction that loads an argument of a call
 static DecodeResult decode_load(SectionDecoder* d, FgCursor* c, Pending* p, uint16_t w) {
     (void)d;
@@ -539,7 +514,6 @@ static DecodeResult decode_load(SectionDecoder* d, FgCursor* c, Pending* p, uint
     return Decode_NotMine;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An instruction that stores into the record of a voice: the command, the slide step
 static DecodeResult decode_record_store(SectionDecoder* d, FgCursor* c, Pending* p, uint16_t w) {
     switch (w) {
@@ -569,7 +543,6 @@ static DecodeResult decode_record_store(SectionDecoder* d, FgCursor* c, Pending*
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An instruction that stores into a variable of the module or a custom register
 static DecodeResult decode_variable_store(SectionDecoder* d, FgCursor* c, Pending* p, uint16_t w) {
     const FgSectionContext* ctx = d->ctx;
@@ -622,7 +595,6 @@ static DecodeResult decode_variable_store(SectionDecoder* d, FgCursor* c, Pendin
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An instruction that works on the step (d7)
 static DecodeResult decode_step(SectionDecoder* d, FgCursor* c, Pending* p, uint16_t w) {
     (void)p;
@@ -664,7 +636,6 @@ typedef DecodeResult (*DecodeFn)(SectionDecoder* d, FgCursor* c, Pending* p, uin
 
 static const DecodeFn s_decoders[] = { decode_load, decode_record_store, decode_variable_store, decode_step };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Decodes the instruction (or the fixed run of instructions that make one operation) at c->at. Sets *terminal when
 // it ends the section's flow.
 static bool decode_one(SectionDecoder* d, FgCursor* c, Pending* p, bool* terminal) {
@@ -704,7 +675,6 @@ static bool decode_one(SectionDecoder* d, FgCursor* c, Pending* p, bool* termina
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Decodes the section routine at `entry` into d->ops. The flow ends at a return or a jump out of the section once no
 // branch jumps to the code after it or further on.
 static bool decode_section(SectionDecoder* d, uint32_t entry) {
@@ -748,7 +718,6 @@ static bool decode_section(SectionDecoder* d, uint32_t entry) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static void init_callees(FgCallees* callees) {
     callees->tempo = callees->setup = callees->track_nibble = callees->mask = callees->reset = FG_NOT_FOUND;
     callees->tail_next = callees->tail_advance = FG_NOT_FOUND;
@@ -756,8 +725,6 @@ static void init_callees(FgCallees* callees) {
         callees->track[i] = FG_NOT_FOUND;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool fg_decode_sections(const FgSectionContext* ctx, const uint32_t* entries, uint32_t count, FgLayout* layout,
                         FgCallees* callees, FgEngineCalls* calls) {

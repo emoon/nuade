@@ -27,7 +27,6 @@
 // UADE's harness runs it.
 #define SCO_V3_TOD 59u
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tables a replayer's code names. A role is a table as one piece of code uses it: two roles can address the same
 // bytes (a module may lay its wave forms and its pitch sequences out in one block).
 
@@ -76,14 +75,11 @@ ScoSampleBounds sco_sample_bounds(const ScoModule* module, uint32_t entry_offset
 // AUDxLC for an address of the module's space: bit 0 dropped as Paula does, inside the padded image.
 const int8_t* sco_chip(const ScoModule* module, uint32_t at);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The generator's seed words.
 static inline uint32_t sco_seed_address(const ScoModule* module) {
     return (uint32_t)((int32_t)module->entry + module->version->seed_at);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The noise buffer.
 static inline uint32_t sco_noise_address(const ScoModule* module) {
     return (uint32_t)((int32_t)module->entry + module->version->noise_at);

@@ -9,14 +9,10 @@
 
 #define MODULE_PREFIX "ash"
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe ashleyhogg_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return ah_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult ashleyhogg_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -40,20 +36,14 @@ static NuadePlayerOpenResult ashleyhogg_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void ashleyhogg_close(void* user_data) {
     ah_destroy((AhPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool ashleyhogg_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return ah_start((AhPlayer*)user_data, (int)subsong, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult ashleyhogg_tick(void* user_data, NuadeVoices* voices) {
     const AhTickResult tick = ah_tick((AhPlayer*)user_data, voices);
@@ -67,14 +57,10 @@ static NuadeTickResult ashleyhogg_tick(void* user_data, NuadeVoices* voices) {
     return (NuadeTickResult) { .length = AH_TICK_LENGTH, .flags = flags };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void ashleyhogg_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Ashley Hogg");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t ashleyhogg_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const AhPlayer* player = (const AhPlayer*)user_data;
@@ -86,13 +72,9 @@ static uint32_t ashleyhogg_voice_info(void* user_data, NuadeVoiceInfo* out, uint
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t ashleyhogg_grid_ticks(void* user_data, uint32_t subsong) {
     return ah_grid_ticks((const AhPlayer*)user_data, (int)subsong);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_ashleyhogg = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -109,8 +91,6 @@ const NuadePlayer nuade_player_ashleyhogg = {
     .voice_info = ashleyhogg_voice_info,
     .grid_ticks = ashleyhogg_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 AhPlayer* ah_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_ashleyhogg) {

@@ -20,7 +20,6 @@
 // The replayer's silent word, the first word of the sample arena.
 #define SILENT_WORDS 1
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Paula
 
 // Paula ignores bit 0 of AUDxLC; the arena starts on an even address.
@@ -28,14 +27,11 @@ static const int8_t* arena_pointer(const SjPlayer* player, uint32_t offset) {
     return (const int8_t*)(player->samples.arena + (offset & ~1u));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void poke_repeat(const SjPlayer* player, SjVoice* voice, uint32_t start, uint16_t length_words) {
     voice->paula.lc = arena_pointer(player, start);
     voice->paula.len_words = length_words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Every tick: the repeat registers, the voice's own sample or the silent word.
 
 static void write_repeat(const SjPlayer* player, SjVoice* voice) {
@@ -48,8 +44,6 @@ static void write_repeat(const SjPlayer* player, SjVoice* voice) {
         poke_repeat(player, voice, 0, SILENT_WORDS);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void step_fade(SjVoice* voice) {
     if (voice->fade_speed == 0) {
@@ -76,7 +70,6 @@ static void step_fade(SjVoice* voice) {
     voice->paula.volume = (uint8_t)voice->volume;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note the last row asked for starts one tick later: address, length, volume, period, DMA on.
 
 static void start_note(const SjPlayer* player, SjVoice* voice) {
@@ -91,7 +84,6 @@ static void start_note(const SjPlayer* player, SjVoice* voice) {
     voice->sample_length_words = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The row's note: DMA off, the period, and the instrument's record copied into the voice.
 
 static void trigger_note(SjPlayer* player, SjVoice* voice) {
@@ -111,15 +103,12 @@ static void trigger_note(SjPlayer* player, SjVoice* voice) {
     voice->cell.note = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The voice a "stop channel" command switches off. In the ScottJohnston replayer voice 0 hits the DMA bit of voice 1
 // (it passes $12 for it, where the others pass their own bit).
 
 static uint32_t stop_target(const SjPlayer* player, uint32_t voice_index) {
     return voice_index == 0 && !player->module.variant->stop_hits_own_voice ? 1 : voice_index;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void run_command(SjPlayer* player, uint32_t voice_index, SjCommand command) {
     SjVoice* voice = &player->voices[voice_index];
@@ -153,7 +142,6 @@ static void run_command(SjPlayer* player, uint32_t voice_index, SjCommand comman
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tick that moves the tracks: the walk of every track, the notes, the commands.
 
 static void run_row(SjPlayer* player) {
@@ -184,8 +172,6 @@ static void run_row(SjPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 SjTickResult sj_tick(SjPlayer* player, NuadeVoices* voices) {
     player->looped = false;
     if (!player->broken) {
@@ -211,7 +197,6 @@ SjTickResult sj_tick(SjPlayer* player, NuadeVoices* voices) {
     return (SjTickResult) { .length = player->tick_length, .looped = player->looped, .ended = player->broken };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The state InitPlayer and InitSound leave: every voice has the silent word as its repeat sample (and, in the
 // ScottJohnston replayer, DMA on), the tracks stand before the first row, and the countdown of the row stands where the
 // init leaves it.
@@ -238,8 +223,6 @@ bool sj_start(SjPlayer* player, NuadeVoices* voices) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SjCreateResult sj_create(const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
     SjCreateResult result = { .status = SjStatus_InvalidData };
@@ -274,8 +257,6 @@ SjCreateResult sj_create(const uint8_t* data, size_t size, const char* path, con
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void sj_destroy(SjPlayer* player) {
     if (player == nullptr) {
         return;
@@ -285,19 +266,13 @@ void sj_destroy(SjPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const char* sj_format_name(const SjPlayer* player) {
     return player->module.variant->name;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t sj_ticks_per_row(void) {
     return TICKS_PER_ROW;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SjVoiceState sj_voice_state(const SjPlayer* player, uint32_t voice) {
     if (voice >= SJ_VOICES) {

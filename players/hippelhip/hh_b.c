@@ -11,8 +11,6 @@ enum {
     Command_SampleIfNew = HhCommand_E7,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // E5: record `index` of a sample made of records that are each as long as its loop
 static void load_sample_bank(const HhModule* m, HhVoice* v, uint8_t number, uint8_t index) {
     const HhSample sample = hh_sample(m, number);
@@ -20,8 +18,6 @@ static void load_sample_bank(const HhModule* m, HhVoice* v, uint8_t number, uint
     hh_write_registers(&v->paula, hh_registers(m, start, sample.loop_length));
     v->repeat = hh_registers(m, start + sample.loop_offset, sample.loop_length);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // E9: one sample of a sample pack. A block without the magic is left alone.
 static void load_packed_sample(const HhModule* m, HhVoice* v, uint8_t number, uint8_t record) {
@@ -34,8 +30,6 @@ static void load_packed_sample(const HhModule* m, HhVoice* v, uint8_t number, ui
     v->repeat = hh_registers(m, pack.data + entry.start, 1);
     hh_restart_volume(v);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The commands that are not common to the engines: after any of them the next byte of the sequence is the value
 static HhNext run_command(const HhModule* m, const HhVersion* version, HhVoice* v, uint8_t command, uint32_t at) {
@@ -70,19 +64,13 @@ static HhNext run_command(const HhModule* m, const HhVersion* version, HhVoice* 
     return HhNext_Value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_frequency(const HhModule* m, const HhVersion* version, HhVoice* v) {
     hh_run_fseq_chain(m, version, v, run_command);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void init_voice(HhVoice* v) {
     v->current_sample = 0xff;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The repeat registers of every channel
 static void write_repeat(HhSong* song, const HhModule* m, const HhVersion* version) {
@@ -91,8 +79,6 @@ static void write_repeat(HhSong* song, const HhModule* m, const HhVersion* versi
         hh_write_registers(&song->voices[i].paula, song->voices[i].repeat);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const HhEngine k_hh_engine_b = {
     .name = "engine B",

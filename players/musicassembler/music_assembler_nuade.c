@@ -9,15 +9,11 @@
 
 #define MUSICASSEMBLER_VOICES 4
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The file is 68k code: the probe matches the init and play function layout, which is specific enough to be sure.
 static NuadeProbe musicassembler_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return ma_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult musicassembler_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -35,20 +31,14 @@ static NuadePlayerOpenResult musicassembler_open(const NuadeSongSource* source) 
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void musicassembler_close(void* user_data) {
     ma_destroy((MaModule*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool musicassembler_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return ma_start((MaModule*)user_data, (int)subsong, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult musicassembler_tick(void* user_data, NuadeVoices* voices) {
     (void)voices;
@@ -63,13 +53,9 @@ static NuadeTickResult musicassembler_tick(void* user_data, NuadeVoices* voices)
     return (NuadeTickResult) { .length = 1, .flags = flags };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t musicassembler_grid_ticks(void* user_data, uint32_t subsong) {
     return (uint32_t)ma_start_speed((const MaModule*)user_data, (int)subsong);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t musicassembler_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const MaModule* module = (const MaModule*)user_data;
@@ -86,8 +72,6 @@ static uint32_t musicassembler_voice_info(void* user_data, NuadeVoiceInfo* out, 
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void musicassembler_metadata(void* user_data, const NuadeMetadataSink* sink) {
     const MaModule* module = (const MaModule*)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Music Assembler");
@@ -98,8 +82,6 @@ static void musicassembler_metadata(void* user_data, const NuadeMetadataSink* si
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_musicassembler = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -116,8 +98,6 @@ const NuadePlayer nuade_player_musicassembler = {
     .voice_info = musicassembler_voice_info,
     .grid_ticks = musicassembler_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MaModule* ma_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_musicassembler) {

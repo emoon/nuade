@@ -45,14 +45,11 @@
 #define SCM_TELEPORT_CYCLE 4
 #define SCM_TELEPORT_PERIOD_SHIFT 4
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void scm_set_sample(NuadePaulaChannel* paula, const int8_t* lc, uint16_t len_words) {
     paula->lc = lc;
     paula->len_words = len_words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // DMACON with all four audio bits set.
 
 static void scm_dma_on_all(ScummPlayer* player) {
@@ -61,7 +58,6 @@ static void scm_dma_on_all(ScummPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The alarm's init routine: all four voices start (DMACON with every bit), the periods fall by 10 from voice to voice
 // and the waveform alternates between its two halves.
 
@@ -83,7 +79,6 @@ static void scm_alarm_init(ScummPlayer* player) {
     memcpy(player->alarm, start, sizeof(start));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The word array of the alarm as the tick reads it: period, step, period, step, ...
 
 static uint16_t scm_alarm_word(const ScummPlayer* player, uint32_t index) {
@@ -91,7 +86,6 @@ static uint16_t scm_alarm_word(const ScummPlayer* player, uint32_t index) {
     return index % 2 == 0 ? pair->period : pair->step;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A period moves by its step and turns around at a limit.
 
 static void scm_alarm_bounce(ScmBounce* pair, int16_t low, int16_t high) {
@@ -109,7 +103,6 @@ static void scm_alarm_bounce(ScmBounce* pair, int16_t low, int16_t high) {
     pair->step = (uint16_t)step;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The alarm's tick. The channel periods come from the first four words of the array: voice 1 plays the step of the
 // first pair, voice 3 the step of the second (the original steps its pointer by one word per voice).
 
@@ -130,7 +123,6 @@ static void scm_alarm_tick(ScummPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The voice a teleport tick plays: the sample base again with the period of the step and a volume that follows it.
 
 static void scm_teleport_play(ScummPlayer* player, uint16_t period, int16_t volume) {
@@ -139,8 +131,6 @@ static void scm_teleport_play(ScummPlayer* player, uint16_t period, int16_t volu
     paula->period = period;
     paula->volume = (uint8_t)volume;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void scm_teleport_tick(ScummPlayer* player) {
     const bool down = player->module.version->driver == ScmDriver_TeleportDown;
@@ -179,20 +169,16 @@ static void scm_teleport_tick(ScummPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The Paula voice of a driver channel.
 
 static uint32_t scm_voice(const ScummPlayer* player, uint32_t channel) {
     return player->module.engine->first_voice + channel;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t scm_channel_count(const ScummPlayer* player) {
     return player->module.engine->channels;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The channel's instrument stops: the two-channel driver switches the DMA off, the four-channel one only frees the
 // channel (its note start restarts the DMA). The channel number is masked as the original does.
 
@@ -209,7 +195,6 @@ static void scm_stop_channel(ScummPlayer* player, uint16_t channel) {
     player->playing[c] = SCM_CHANNEL_FREE;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note starts: the instrument's record takes the event's duration and pitch offset, the channel gets the sample
 // and the first period and volume of the envelopes, and its DMA starts.
 
@@ -240,7 +225,6 @@ static void scm_start_note(ScummPlayer* player, const ScmEvent* event) {
     nuade_paula_channel_dma_on(paula);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An envelope position moves on and stops at 0xFE.
 
 static uint16_t scm_next_position(uint16_t position) {
@@ -248,7 +232,6 @@ static uint16_t scm_next_position(uint16_t position) {
                                                                       : (uint16_t)(SCM_ENVELOPE_POSITIONS - 1u);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The two-channel driver writes 0xFF to byte 0x10 + instrument of its work area when a faded-out note's volume is not
 // above 0: instead of the channel's byte it clears the byte of the instrument number, so the channel keeps updating
 // the note when the instrument number is the other channel's (0 or 1 only; the load-time check keeps the others in
@@ -260,7 +243,6 @@ static void scm_release_ends(ScummPlayer* player, uint32_t instrument) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One tick of a playing note: the loop registers, then period and volume from the envelopes.
 
 static void scm_update_note(ScummPlayer* player, uint32_t index) {
@@ -309,7 +291,6 @@ static void scm_update_note(ScummPlayer* player, uint32_t index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tracker drivers' init routine: the tracks start at 0, no channel plays; the four-channel driver silences the
 // volume registers and switches all DMA on, the two-channel one switches it all off.
 
@@ -326,7 +307,6 @@ static void scm_tracker_init(ScummPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The events of one track that are due. Returns false when the driver ends the tick.
 
 static bool scm_run_track(ScummPlayer* player, uint32_t t) {
@@ -354,8 +334,6 @@ static bool scm_run_track(ScummPlayer* player, uint32_t t) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void scm_tracker_tick(ScummPlayer* player) {
     if (player->first_tick) {
         scm_tracker_init(player);
@@ -374,8 +352,6 @@ static void scm_tracker_tick(ScummPlayer* player) {
         player->tracks[t].timer++;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void scumm_tick(ScummPlayer* player, NuadeVoices* voices) {
     switch (player->module.version->driver) {
@@ -396,8 +372,6 @@ void scumm_tick(ScummPlayer* player, NuadeVoices* voices) {
         nuade_paula_channel_sync(&player->paula[v], v, voices);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool scumm_start(ScummPlayer* player) {
     if (player == nullptr) {
@@ -421,8 +395,6 @@ bool scumm_start(ScummPlayer* player) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 ScummPlayer* scumm_create(const uint8_t* data, size_t size) {
     ScummPlayer* player = calloc(1, sizeof(*player));
     if (player == nullptr) {
@@ -441,8 +413,6 @@ ScummPlayer* scumm_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void scumm_destroy(ScummPlayer* player) {
     if (player != nullptr) {
         scm_module_free(&player->module);
@@ -451,16 +421,12 @@ void scumm_destroy(ScummPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool scumm_probe(const uint8_t* data, size_t size) {
     ScummPlayer* player = scumm_create(data, size);
     const bool known = player != nullptr;
     scumm_destroy(player);
     return known;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ScummVoiceState scumm_voice_state(const ScummPlayer* player, uint32_t voice) {
     const NuadePaulaChannel* paula = &player->paula[voice];

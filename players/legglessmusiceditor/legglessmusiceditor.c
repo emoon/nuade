@@ -18,14 +18,10 @@
 #define VOLUME_MASK 0x7Fu
 #define SLIDE_DELAY_NONE ((int16_t)-1)
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool lme_probe(const uint8_t* data, size_t size) {
     LmeModule module;
     return lme_module_parse(&module, data, size) && lme_module_validate(&module);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 LmePlayer* lme_create(const uint8_t* data, size_t size) {
     LmePlayer* player = calloc(1, sizeof(*player));
@@ -43,8 +39,6 @@ LmePlayer* lme_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void lme_destroy(LmePlayer* player) {
     if (player != nullptr) {
         free(player->bytes);
@@ -52,13 +46,10 @@ void lme_destroy(LmePlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t lme_subsong_count(const LmePlayer* player) {
     return player->module.subsong_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitSound: every voice reads its first event in the first tick.
 
 bool lme_start(LmePlayer* player, uint32_t subsong, NuadeVoices* voices) {
@@ -76,14 +67,12 @@ bool lme_start(LmePlayer* player, uint32_t subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume register: the master volume and balance scaling of the eagleplayer is the identity at full volume.
 
 static void write_volume(LmeVoice* voice, uint16_t volume) {
     voice->paula.volume = (uint8_t)(volume & VOLUME_MASK);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The deferred writes of the notes started in the tick before: the repeat of the sample.
 
 static void write_repeats(LmePlayer* player) {
@@ -97,7 +86,6 @@ static void write_repeats(LmePlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pitch slides: a delay, then a period change per tick until the target.
 
 static void run_slides(LmePlayer* player) {
@@ -124,7 +112,6 @@ static void run_slides(LmePlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The vibrato offset runs between its limits (it turns round on equality only); the arpeggio writes the period itself.
 
 static void run_vibratos(LmePlayer* player) {
@@ -157,7 +144,6 @@ static void run_vibratos(LmePlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The arpeggio steps to its next slot every `reload` ticks and adds the vibrato offset.
 
 static void run_arpeggios(LmePlayer* player) {
@@ -181,7 +167,6 @@ static void run_arpeggios(LmePlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume envelope: attack to its maximum, hold, decay to its minimum. The volume register is written every tick.
 
 static void run_envelopes(LmePlayer* player) {
@@ -212,7 +197,6 @@ static void run_envelopes(LmePlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample restarts every `period` ticks: DMA off, the sample registers again, DMA on at the end of the tick.
 
 static void start_sample(LmeVoice* voice) {
@@ -224,8 +208,6 @@ static void start_sample(LmeVoice* voice) {
     voice->loop_len_words = voice->sound.loop_words;
     voice->dma_start = true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void run_retriggers(LmePlayer* player) {
     for (uint32_t ch = 0; ch < LME_VOICES; ch++) {
@@ -242,7 +224,6 @@ static void run_retriggers(LmePlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume, vibrato, envelope, wave and retrigger of an instrument record.
 
 static void copy_state(LmeVoice* voice, const LmeInstrument* instrument) {
@@ -253,7 +234,6 @@ static void copy_state(LmeVoice* voice, const LmeInstrument* instrument) {
     voice->sound.retrigger = instrument->retrigger;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The instrument command copies the whole record. A synth wave plays from the voice's buffer, looping over all of it.
 
 static void select_instrument(LmePlayer* player, LmeVoice* voice, uint16_t index) {
@@ -273,7 +253,6 @@ static void select_instrument(LmePlayer* player, LmeVoice* voice, uint16_t index
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note that is not legato resets the volume, vibrato, envelope, wave and retrigger from the selected instrument.
 
 static void reset_sound(LmePlayer* player, LmeVoice* voice) {
@@ -281,7 +260,6 @@ static void reset_sound(LmePlayer* player, LmeVoice* voice) {
     copy_state(voice, &instrument);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The arpeggio command: the note's own period (kept up to date every tick) and the periods of its notes.
 
 static void set_arpeggio(LmeVoice* voice, const LmeArpeggio* command) {
@@ -297,7 +275,6 @@ static void set_arpeggio(LmeVoice* voice, const LmeArpeggio* command) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The slide command: the target period, the number of ticks and the delay. The change per tick is worked out from the
 // period the note starts at.
 
@@ -310,7 +287,6 @@ static void set_slide(LmeVoice* voice, const LmeSlide* command, uint16_t start_p
                                      .delay = (int16_t)command->delay };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note: the new period; unless legato the sample starts again, DMA off now and on at the end of the tick.
 
 static void start_note(LmeVoice* voice, uint32_t ch, uint16_t period, bool legato) {
@@ -324,8 +300,6 @@ static void start_note(LmeVoice* voice, uint32_t ch, uint16_t period, bool legat
     start_sample(voice);
     write_volume(voice, (uint16_t)(ch * VOLUME_QUIRK_PER_VOICE));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void apply_event(LmePlayer* player, uint32_t ch, const LmeEvent* event) {
     LmeVoice* voice = &player->voices[ch];
@@ -351,7 +325,6 @@ static void apply_event(LmePlayer* player, uint32_t ch, const LmeEvent* event) {
     start_note(voice, ch, period, event->legato);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The voice's position list reached its end mark. When all four have, the eagleplayer calls SongEnd.
 
 static void list_ended(LmePlayer* player, uint32_t ch, bool* looped) {
@@ -367,7 +340,6 @@ static void list_ended(LmePlayer* player, uint32_t ch, bool* looped) {
     *looped = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The next pattern of the voice's position list; the list starts again after its end. False when it cannot be followed.
 
 static bool fetch_pattern(LmePlayer* player, uint32_t ch, bool* looped) {
@@ -389,7 +361,6 @@ static bool fetch_pattern(LmePlayer* player, uint32_t ch, bool* looped) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The next event of a voice whose duration ran out. Every event clears the arpeggio first.
 
 static bool next_event(LmePlayer* player, uint32_t ch, bool* looped) {
@@ -413,7 +384,6 @@ static bool next_event(LmePlayer* player, uint32_t ch, bool* looped) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A synth wave is two runs of bytes in the voice's buffer: `width - 1` of one value, then the rest of the other.
 
 static void fill_wave(LmeVoice* voice) {
@@ -432,8 +402,6 @@ static void fill_wave(LmeVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_waves(LmePlayer* player) {
     for (uint32_t ch = 0; ch < LME_VOICES; ch++) {
         LmeVoice* voice = &player->voices[ch];
@@ -444,8 +412,6 @@ static void run_waves(LmePlayer* player) {
         fill_wave(voice);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 LmeTickResult lme_tick(LmePlayer* player, NuadeVoices* voices) {
     LmeTickResult result = { 0 };
@@ -481,13 +447,9 @@ LmeTickResult lme_tick(LmePlayer* player, NuadeVoices* voices) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t lme_grid_ticks(const LmePlayer* player) {
     return player->module.grid_ticks;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 LmeVoiceState lme_voice_state(const LmePlayer* player, int voice) {
     const LmeVoice* v = &player->voices[voice];

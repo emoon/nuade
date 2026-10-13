@@ -7,13 +7,9 @@ typedef struct GridView {
     u32 ticks_per_row;
 } GridView;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static u32 grid_rows(const NuadeScan* scan, u32 ticks_per_row) {
     return (scan->ticks + ticks_per_row - 1) / ticks_per_row;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 NuadeTrackerInfoResult nuade_grid_info(const NuadeScan* scan, u32 channels, u32 ticks_per_row) {
     NuadeTrackerInfoResult result = { 0 };
@@ -29,8 +25,6 @@ NuadeTrackerInfoResult nuade_grid_info(const NuadeScan* scan, u32 channels, u32 
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The first event whose tick is >= `tick`; events are in tick order.
 static u32 first_at_or_after(const NuadeScan* scan, u64 tick) {
     u32 lo = 0;
@@ -45,8 +39,6 @@ static u32 first_at_or_after(const NuadeScan* scan, u64 tick) {
     }
     return lo;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePatternCell grid_cell(const void* ctx, u32 order, u32 channel, u32 row) {
     (void)order;
@@ -64,8 +56,6 @@ static NuadePatternCell grid_cell(const void* ctx, u32 order, u32 channel, u32 r
     }
     return cell;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 u32 nuade_grid_cells(const NuadeScan* scan, u32 channels, u32 ticks_per_row, const NuadePosition* at, u32 channel,
                      i32 row_lo, i32 row_hi, NuadePatternCell* out, u32 cap) {

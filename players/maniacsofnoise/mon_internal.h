@@ -37,7 +37,6 @@
 #define MON_COMMAND_GUARD 4096
 #define MON_LIST_GUARD 1024
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The five versions of the replayer, in the order the formats grew: the game of the first module known with it.
 
 uint8_t mon_u8(const MonModule* m, uint32_t address);
@@ -100,7 +99,6 @@ typedef struct MonWave {
 
 MonWave mon_read_wave(const MonModule* m, uint8_t index);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The commands of the sequences and patterns (mon_commands.c)
 
 typedef enum MonSequenceCommand {
@@ -140,7 +138,6 @@ MonPatternCommand mon_pattern_command(MonVersion version, uint8_t byte);
 // The bytes that follow the command byte.
 unsigned mon_pattern_arguments(MonPatternCommand command);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sequencer shared by the versions (maniacsofnoise.c)
 
 // Reads sequence words of a voice until one selects a pattern, which becomes the voice's pattern: true. False when a
@@ -151,7 +148,6 @@ bool mon_sequence_next(MonPlayer* p, int voice, bool repeating);
 // One voice of an interrupt (mon_voice.c): false when a sequence command ended the interrupt.
 bool mon_step_voice(MonPlayer* p, int voice);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the two versions' replayers implement (mon_old.c, mon_new.c): a voice whose note has run out reads its pattern,
 // every other voice runs its sustain.
 
@@ -160,7 +156,6 @@ void mon_old_sustain(MonPlayer* p, int voice);
 bool mon_new_read_pattern(MonPlayer* p, int voice);
 void mon_new_sustain(MonPlayer* p, int voice);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The parts of a voice's tick the versions share (mon_voice.c)
 
 // The older versions (the first two) keep lists as absolute positions and play other kinds of instrument as wave lists.

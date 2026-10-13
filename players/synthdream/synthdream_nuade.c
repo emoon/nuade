@@ -9,16 +9,12 @@
 
 #define GRID_TICKS 6
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe synthdream_probe(const uint8_t* data, size_t size, const char* filename) {
     if (!sdr_name_matches(filename)) {
         return NuadeProbe_Unsupported;
     }
     return sdr_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult synthdream_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -53,13 +49,9 @@ static NuadePlayerOpenResult synthdream_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void synthdream_close(void* user_data) {
     sdr_destroy((SdrPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool synthdream_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
@@ -67,21 +59,15 @@ static bool synthdream_start(void* user_data, uint32_t subsong, uint32_t sample_
     return sdr_start((SdrPlayer*)user_data, (int)subsong);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult synthdream_tick(void* user_data, NuadeVoices* voices) {
     const SdrTickResult tick = sdr_tick((SdrPlayer*)user_data, voices);
     return (NuadeTickResult) { .length = SDR_TICK_LENGTH, .flags = tick.looped ? NuadeTick_Looped : NuadeTick_None };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void synthdream_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Synth Dream");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t synthdream_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const SdrPlayer* player = (const SdrPlayer*)user_data;
@@ -93,15 +79,11 @@ static uint32_t synthdream_voice_info(void* user_data, NuadeVoiceInfo* out, uint
     return count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t synthdream_grid_ticks(void* user_data, uint32_t subsong) {
     (void)user_data;
     (void)subsong;
     return GRID_TICKS;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_synthdream = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -118,8 +100,6 @@ const NuadePlayer nuade_player_synthdream = {
     .voice_info = synthdream_voice_info,
     .grid_ticks = synthdream_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SdrPlayer* sdr_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_synthdream) {

@@ -23,7 +23,6 @@
 // The song with the subsongs of one game starts them at these positions.
 static const uint8_t sp_word_subsong_positions[SP_WORD_MAX_SUBSONGS] = { 0, 1, 2, 3, 5, 9, 12 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Instruments
 
 typedef struct SpWordInstrument {
@@ -44,14 +43,12 @@ typedef struct SpWordEvent {
     uint8_t param;
 } SpWordEvent;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The instruments the table holds: it ends where the first instrument starts.
 
 static unsigned sp_word_instrument_count(const SpMemory* set) {
     return sp_u16(set, 0) / 2u;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The header of instrument `index`; false if the table has no such entry or the header lies outside the set.
 
 static bool sp_word_instrument(const SpMemory* set, unsigned index, SpWordInstrument* instrument) {
@@ -75,8 +72,6 @@ static bool sp_word_instrument(const SpMemory* set, unsigned index, SpWordInstru
     return listed && sp_memory_has(set, offset, SP_WORD_HEADER_SIZE);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static SpWordEvent sp_word_event(const SpMemory* song, uint32_t at) {
     return (SpWordEvent) { .note = sp_u8(song, at),
                            .volume = sp_u8(song, at + 1),
@@ -84,13 +79,10 @@ static SpWordEvent sp_word_event(const SpMemory* song, uint32_t at) {
                            .param = sp_u8(song, at + 5) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t sp_word_event_offset(uint8_t block, unsigned row) {
     return SP_NOTES_OFFSET + (uint32_t)SP_WORD_BLOCK_SIZE * block + (uint32_t)SP_EVENT_SIZE * row;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The LFO tables. The volume LFO's wave numbers run on past its three tables, into three empty ones and then the pitch
 // tables (as words, the value in the low byte).
 
@@ -108,13 +100,9 @@ static uint16_t sp_word_volume_lfo_value(const SpWordLfo* lfo) {
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int8_t sp_word_pitch_lfo_value(const SpWordLfo* lfo) {
     return lfo->table && lfo->wave < SP_WORD_PITCH_LFO_TABLES ? sp_word_pitch_lfo_tables[lfo->wave][lfo->phase / 2] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static SpWordLfo sp_word_lfo_start(const SpLfoSettings* settings) {
     return (SpWordLfo) { .delay = (uint16_t)(settings->delay << 8),
@@ -124,7 +112,6 @@ static SpWordLfo sp_word_lfo_start(const SpLfoSettings* settings) {
                          .table = true };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An LFO runs once its delay has passed (a delay of d counts d * 4 ticks), and with `after_release` only after the
 // key was released. Its phase moves on whenever the counter runs out. Returns whether the LFO's value is to be used
 // this tick.
@@ -148,7 +135,6 @@ static bool sp_word_lfo_advance(SpWordLfo* lfo, const SpLfoSettings* settings, b
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Validation
 
 // The ticks per row of a pattern line: the low nibble of its first cell, 6 for 0.
@@ -157,7 +143,6 @@ static unsigned sp_word_speed(const SpMemory* song, unsigned pattern) {
     return speed != 0 ? speed : SP_DEFAULT_SPEED;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One event that selects an instrument; a volume starts a note on it.
 
 static bool sp_word_check_event(SpCheck* check, const SpWordEvent* event, const SpCell* cell) {
@@ -183,7 +168,6 @@ static bool sp_word_check_event(SpCheck* check, const SpWordEvent* event, const 
     return note >= 0 && (unsigned)note + reach < SP_PERIOD_COUNT;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The reads a column makes over the rows of one position.
 
 static bool sp_word_check_column(SpCheck* check, const SpPosition* entry, unsigned column) {
@@ -205,8 +189,6 @@ static bool sp_word_check_column(SpCheck* check, const SpPosition* entry, unsign
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool sp_word_check_position(SpCheck* check, const SpPosition* entry) {
     if (sp_word_speed(check->song, entry->pattern) > SP_WORD_MAX_SPEED) {
         return false;
@@ -219,7 +201,6 @@ static bool sp_word_check_position(SpCheck* check, const SpPosition* entry) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An instrument a voice can run on: its header and the LFO tables it reads, its waveform, and every address the sweep
 // can put in AUDxLC for the longest repeat any instrument can have left in AUDxLEN. Instrument 0 that no event selects
 // only has its header, LFO waves and sweep checked: no note starts on it, so its waveform is never played.
@@ -234,7 +215,6 @@ static bool sp_word_check_instrument(const SpMemory* set, unsigned index, bool n
            || sp_wave_scan_in_set(set, &instrument.wave, SP_MORPH_POSITIONS - 1, longest_repeat);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The instruments the events selected, plus instrument 0 that the voices start on. A voice keeps its AUDxLEN when an
 // event only switches its instrument, so the sweep of one instrument can run with the repeat length of another.
 
@@ -256,14 +236,10 @@ static bool sp_word_check_instruments(const SpCheck* check) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static unsigned sp_word_start_position(const SpMemory* song, int subsong) {
     (void)song;
     return sp_word_subsong_positions[subsong % SP_WORD_MAX_SUBSONGS];
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const SpRules sp_word_rules = { .max_subsongs = SP_WORD_MAX_SUBSONGS,
                                 .loop_point = 0,
@@ -271,7 +247,6 @@ const SpRules sp_word_rules = { .max_subsongs = SP_WORD_MAX_SUBSONGS,
                                 .check_position = sp_word_check_position,
                                 .check_instruments = sp_word_check_instruments };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The arpeggio: after the row's tick, the ticks of a row cycle through the note, the parameter's high nibble and its
 // low nibble.
 
@@ -295,7 +270,6 @@ static void sp_word_arpeggio(SpWordState* state, SpWordVoice* voice) {
     voice->base.base_period = sp_period(voice->base.arp_note + add, instrument.tuning);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note starts: the LFOs, the sweep and the slide start over.
 
 static void sp_word_note_on(SpWordVoice* voice, const SpWordInstrument* instrument, unsigned note) {
@@ -307,7 +281,6 @@ static void sp_word_note_on(SpWordVoice* voice, const SpWordInstrument* instrume
     voice->sweep_down = false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One column of a row.
 
 static void sp_word_column_row(SpWordState* state, unsigned column) {
@@ -339,8 +312,6 @@ static void sp_word_column_row(SpWordState* state, unsigned column) {
     sp_word_note_on(voice, &instrument, (unsigned)sp_event_note(event.note, instrument.note_offset, cell.note_shift));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void sp_word_row(SpWordState* state) {
     SpSequencer* sequencer = &state->sequencer;
     sequencer->entry = sp_position(state->song, sequencer->position);
@@ -356,8 +327,6 @@ static void sp_word_row(SpWordState* state) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void sp_word_sequencer_tick(SpWordState* state) {
     if (!state->sequencer.running) {
         return;
@@ -371,7 +340,6 @@ static void sp_word_sequencer_tick(SpWordState* state) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The voice step
 
 static void sp_word_update_level(SpWordVoice* voice, const SpWordInstrument* instrument) {
@@ -385,8 +353,6 @@ static void sp_word_update_level(SpWordVoice* voice, const SpWordInstrument* ins
     voice->base.level = lowered < 0 ? 0 : lowered;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void sp_word_update_period(SpWordVoice* voice, const SpWordInstrument* instrument) {
     int16_t bend = 0;
     if (sp_word_lfo_advance(&voice->pitch_lfo, &instrument->pitch_lfo, voice->base.released)) {
@@ -395,7 +361,6 @@ static void sp_word_update_period(SpWordVoice* voice, const SpWordInstrument* in
     voice->base.period = (uint16_t)(voice->base.base_period + bend);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A short waveform is swept: AUDxLC moves through the waveform's memory, and a sweep that goes down also raises the
 // pitch.
 
@@ -425,14 +390,10 @@ static void sp_word_sweep(SpWordState* state, SpWordVoice* voice, const SpWordIn
     sp_channel_set_lc(channel, state->set, sp_wave_scan_offset(&instrument->wave, voice->sweep_position));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t sp_word_volume(const SpVoice* voice) {
     const uint32_t product = (uint32_t)(uint16_t)voice->level * voice->volume;
     return sp_paula_volume((product & 0xFFFF) >> 6);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void sp_word_voice_tick(SpWordState* state, SpHardware* hardware, unsigned channel_index) {
     SpWordVoice* voice = &state->voice[channel_index];
@@ -450,8 +411,6 @@ static void sp_word_voice_tick(SpWordState* state, SpHardware* hardware, unsigne
     sp_voice_restart(&voice->base, &instrument.wave, channel, state->set);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void sp_word_start(SpWordState* state, const SpMemory* song, const SpMemory* set, SpHardware* hardware, int subsong) {
     *state = (SpWordState) { .song = song, .set = set };
     sp_sequencer_start(&state->sequencer, sp_word_start_position(song, subsong), sp_word_rules.loop_point);
@@ -460,8 +419,6 @@ void sp_word_start(SpWordState* state, const SpMemory* song, const SpMemory* set
     }
     sp_hardware_reset(hardware);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void sp_word_tick(SpWordState* state, SpHardware* hardware) {
     state->events = (SpSongEvents) { 0 };
@@ -473,8 +430,6 @@ void sp_word_tick(SpWordState* state, SpHardware* hardware) {
     sp_hardware_end_tick(hardware);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sp_word_silent(const SpWordState* state) {
     for (int i = 0; i < SP_VOICES; i++) {
         if (!sp_voice_silent(&state->voice[i].base)) {
@@ -483,8 +438,6 @@ bool sp_word_silent(const SpWordState* state) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const SpVoice* sp_word_channel_voice(const SpWordState* state, unsigned channel) {
     return &state->voice[channel % SP_VOICES].base;

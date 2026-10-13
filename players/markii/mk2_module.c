@@ -119,8 +119,6 @@ static const Mk2Layout mk2_layouts[] = {
     },
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool read_word(const Mk2Module* module, uint32_t offset, uint16_t* out) {
     if (module->size < 2 || offset > module->size - 2) {
         return false;
@@ -128,8 +126,6 @@ static bool read_word(const Mk2Module* module, uint32_t offset, uint16_t* out) {
     *out = nuade_read_be16(module->data + offset);
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool read_long(const Mk2Module* module, uint32_t offset, uint32_t* out) {
     if (module->size < 4 || offset > module->size - 4) {
@@ -139,7 +135,6 @@ static bool read_long(const Mk2Module* module, uint32_t offset, uint32_t* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2 of the eagleplayer: the code starts with "lea d16(pc),a0" at 4, an "asl.w #3,d2" is followed by a "lea
 // d16(pc),a0" (the instrument table), and an "adda.l d16(pc),a0" after that (or the instrument move) is preceded by
 // another lea within 16 words. The scans are bounded by the module.
@@ -218,8 +213,6 @@ static bool check2(const Mk2Module* module) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint64_t hash_code(const Mk2Module* module, const Mk2Layout* layout) {
     uint64_t hash = 0xCBF29CE484222325ull;
     for (uint32_t i = 0; i < layout->code_size; i++) {
@@ -230,8 +223,6 @@ static uint64_t hash_code(const Mk2Module* module, const Mk2Layout* layout) {
     }
     return hash;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool mk2_module_parse(Mk2Module* module, const uint8_t* data, size_t size) {
     *module = (Mk2Module) { .data = data, .size = size };
@@ -250,8 +241,6 @@ bool mk2_module_parse(Mk2Module* module, const uint8_t* data, size_t size) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool read_words(const Mk2Module* module, uint32_t offset, uint16_t* out) {
     for (uint32_t i = 0; i < MK2_VOICES; i++) {
         if (!read_word(module, offset + 2 * i, &out[i])) {
@@ -260,8 +249,6 @@ static bool read_words(const Mk2Module* module, uint32_t offset, uint16_t* out) 
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool mk2_read_initial(const Mk2Module* module, Mk2Initial* out) {
     const Mk2Layout* layout = module->layout;
@@ -287,8 +274,6 @@ bool mk2_read_initial(const Mk2Module* module, Mk2Initial* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool mk2_read_song(const Mk2Module* module, Mk2Song* out) {
     const Mk2Layout* layout = module->layout;
     uint32_t sequence_offset = 0;
@@ -305,8 +290,6 @@ bool mk2_read_song(const Mk2Module* module, Mk2Song* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool mk2_row_cell(const Mk2Module* module, uint32_t offset, Mk2RowCell* out) {
     if (module->size < 2 || offset > module->size - 2) {
         return false;
@@ -321,8 +304,6 @@ bool mk2_row_cell(const Mk2Module* module, uint32_t offset, Mk2RowCell* out) {
     };
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool mk2_step(const Mk2Module* module, uint32_t offset, Mk2Step* out) {
     if (module->size < 4 || offset > module->size - 4) {
@@ -345,8 +326,6 @@ bool mk2_step(const Mk2Module* module, uint32_t offset, Mk2Step* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool mk2_instrument(const Mk2Module* module, uint32_t sample, Mk2Instrument* out) {
     const uint32_t base = module->layout->instruments + sample * 8u;
     uint16_t length = 0;
@@ -356,8 +335,6 @@ bool mk2_instrument(const Mk2Module* module, uint32_t sample, Mk2Instrument* out
     out->length_words = length;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool mk2_period(const Mk2Module* module, int16_t byte_offset, uint16_t* out) {
     const int64_t at = (int64_t)module->layout->periods + byte_offset;

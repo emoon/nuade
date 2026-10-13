@@ -22,13 +22,10 @@
 #define JMF_VOLUME 0x38u
 #define JMF_IDLE_VOLUME 0x40u
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const int8_t* wave(const JmfPlayer* player, uint32_t offset) {
     return (const int8_t*)(player->module.bytes + offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The start-over routine: counters, mode and stream of the voices, the waveforms and volumes of the four channels, DMA
 // off.
 
@@ -55,8 +52,6 @@ static void start_over(JmfPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool jmf_start(JmfPlayer* player, uint32_t subsong, NuadeVoices* voices) {
     if (player == nullptr || subsong >= player->module.subsong_count) {
         return false;
@@ -74,7 +69,6 @@ bool jmf_start(JmfPlayer* player, uint32_t subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period of the note byte the stream holds, written with the volume; then DMA on. The second waveform of a version
 // plays at a multiple of the period.
 
@@ -92,8 +86,6 @@ static void play_note(JmfPlayer* player, JmfVoice* voice) {
     nuade_paula_channel_dma_on(&voice->paula);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void load_wave(JmfPlayer* player, JmfVoice* voice, uint32_t offset, uint16_t words) {
     voice->paula.lc = wave(player, offset);
     if (words != 0) {
@@ -101,7 +93,6 @@ static void load_wave(JmfPlayer* player, JmfVoice* voice, uint32_t offset, uint1
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The event after the duration, as the mode of the voice says.
 
 static void run_action(JmfPlayer* player, JmfVoice* voice) {
@@ -127,7 +118,6 @@ static void run_action(JmfPlayer* player, JmfVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The next event of a voice: mode bytes are taken on the way. False at the end of the stream (and, for crafted data,
 // where the stream leaves the song data).
 
@@ -150,7 +140,6 @@ static bool next_event(JmfPlayer* player, JmfVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The play routine's step: the three voices in turn. A stream that ends starts the whole song over and ends the step.
 
 static bool step(JmfPlayer* player) {
@@ -166,8 +155,6 @@ static bool step(JmfPlayer* player) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 JmfTickResult jmf_tick(JmfPlayer* player, NuadeVoices* voices) {
     JmfTickResult result = { 0 };
     player->divider--;
@@ -179,8 +166,6 @@ JmfTickResult jmf_tick(JmfPlayer* player, NuadeVoices* voices) {
     }
     return result;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 JmfPlayer* jmf_create(const uint8_t* data, size_t size) {
     JmfPlayer* player = calloc(1, sizeof(*player));
@@ -195,8 +180,6 @@ JmfPlayer* jmf_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void jmf_destroy(JmfPlayer* player) {
     if (player != nullptr) {
         jmf_module_free(&player->module);
@@ -205,21 +188,15 @@ void jmf_destroy(JmfPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool jmf_probe(const uint8_t* data, size_t size) {
     JmfPlayer* player = jmf_create(data, size);
     jmf_destroy(player);
     return player != nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t jmf_subsong_count(const JmfPlayer* player) {
     return player->module.subsong_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void jmf_text(const JmfPlayer* player, JmfText which, char* out, size_t cap) {
     if (cap == 0) {
@@ -238,13 +215,9 @@ void jmf_text(const JmfPlayer* player, JmfText which, char* out, size_t cap) {
     out[length] = '\0';
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t jmf_grid_ticks(const JmfPlayer* player) {
     return player->module.driver->tick_divisor;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t jmf_voice_period(const JmfPlayer* player, uint32_t voice) {
     return player->voices[voice].paula.period;

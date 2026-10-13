@@ -8,8 +8,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 #define BENDAGLISH_TICK_HZ 50 // PAL VBlank
 #define BENDAGLISH_TICKS_PER_ROW 1
 
@@ -17,15 +15,11 @@ typedef struct BendaglishNuade {
     BdModule* module;
 } BendaglishNuade;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The check walks the player code the module starts with, so a match is certain.
 static NuadeProbe bendaglish_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return bd_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void bendaglish_close(void* user_data) {
     BendaglishNuade* player = (BendaglishNuade*)user_data;
@@ -35,8 +29,6 @@ static void bendaglish_close(void* user_data) {
     bd_destroy(player->module);
     free(player);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult bendaglish_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -62,14 +54,10 @@ static NuadePlayerOpenResult bendaglish_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool bendaglish_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return bd_start(((BendaglishNuade*)user_data)->module, (int)subsong, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult bendaglish_tick(void* user_data, NuadeVoices* voices) {
     (void)voices;
@@ -77,14 +65,10 @@ static NuadeTickResult bendaglish_tick(void* user_data, NuadeVoices* voices) {
     return (NuadeTickResult) { .length = 1, .flags = looped ? NuadeTick_Looped : NuadeTick_None };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void bendaglish_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Ben Daglish");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A track note lasts any number of ticks (1 to 52 seen), so no larger row would show every start: a row is one tick.
 static uint32_t bendaglish_grid_ticks(void* user_data, uint32_t subsong) {
@@ -92,8 +76,6 @@ static uint32_t bendaglish_grid_ticks(void* user_data, uint32_t subsong) {
     (void)subsong;
     return BENDAGLISH_TICKS_PER_ROW;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t bendaglish_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const BdModule* module = ((BendaglishNuade*)user_data)->module;
@@ -104,8 +86,6 @@ static uint32_t bendaglish_voice_info(void* user_data, NuadeVoiceInfo* out, uint
     }
     return count < cap ? count : cap;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_bendaglish = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -122,8 +102,6 @@ const NuadePlayer nuade_player_bendaglish = {
     .voice_info = bendaglish_voice_info,
     .grid_ticks = bendaglish_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BdModule* bd_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_bendaglish) {

@@ -19,12 +19,8 @@
 #define SIL_STREAM_SIGNATURE_OFFSET 2
 #define SIL_ROW_UNITS 25 // wait units of one row of the pattern view: the usual wait of a note
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static SilCreateResult create_player(const uint8_t* data, size_t size, const char* path, const NuadeIo* io,
                                      bool check_only);
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SilProbe sil_probe(const uint8_t* data, size_t size) {
     const SilCreateResult created = create_player(data, size, nullptr, nullptr, true);
@@ -35,7 +31,6 @@ SilProbe sil_probe(const uint8_t* data, size_t size) {
     return created.status == SilStatus_MissingMain ? SilProbe_NeedsMain : SilProbe_No;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ExtLoad: the main file is the song's file name up to its first '_', in the song's directory.
 
 static bool load_main(const char* path, const NuadeIo* io, uint8_t** data, uint32_t* size) {
@@ -76,7 +71,6 @@ static bool load_main(const char* path, const NuadeIo* io, uint8_t** data, uint3
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitSound for one subsong, from the memory InitPlayer left. False when the script fails or chooses no music.
 
 static bool start_subsong(SilPlayer* p, uint32_t subsong) {
@@ -109,7 +103,6 @@ static bool start_subsong(SilPlayer* p, uint32_t subsong) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer's first run of the script: the samples of a module that has its own. A script that starts with a sample
 // statement (looked for that far from the start of the file, prefix or not), or that names no sample, runs again with
 // the flag set.
@@ -132,8 +125,6 @@ static bool run_first_script(SilPlayer* p) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool lay_out(SilPlayer* p, const uint8_t* data, uint32_t size, const uint8_t* main, uint32_t main_size) {
     const uint32_t main_start = (size + 1) & ~1u;
     if (!sil_memory_init(&p->memory, main_start + (p->has_main ? main_size : 0))) {
@@ -149,8 +140,6 @@ static bool lay_out(SilPlayer* p, const uint8_t* data, uint32_t size, const uint
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // With `check_only` the main file is not looked for: a module that needs one gets as far as everything that is
 // checked without it and then ends with SilStatus_MissingMain and no player.
@@ -222,13 +211,9 @@ static SilCreateResult create_player(const uint8_t* data, size_t size, const cha
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 SilCreateResult sil_create(const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
     return create_player(data, size, path, io, false);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void sil_destroy(SilPlayer* player) {
     if (player == nullptr) {
@@ -240,13 +225,9 @@ void sil_destroy(SilPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t sil_subsong_count(const SilPlayer* player) {
     return player->song.container.music_blocks;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t sil_grid_ticks(const SilPlayer* player, uint32_t subsong) {
     if (subsong >= player->song.container.music_blocks || player->rates[subsong] == 0) {
@@ -257,8 +238,6 @@ uint32_t sil_grid_ticks(const SilPlayer* player, uint32_t subsong) {
     const uint32_t ticks = (SIL_ROW_UNITS * 256 + rate - 1) / rate - 1;
     return ticks != 0 ? ticks : 1;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sil_start(SilPlayer* player, uint32_t subsong, NuadeVoices* voices) {
     player->budget = SIL_BUDGET;
@@ -271,8 +250,6 @@ bool sil_start(SilPlayer* player, uint32_t subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 SilTickResult sil_tick(SilPlayer* player, NuadeVoices* voices) {
     SilTickResult result = { 0 };
     if (!sil_music_tick(&player->music, voices, &result.looped)) {
@@ -282,8 +259,6 @@ SilTickResult sil_tick(SilPlayer* player, NuadeVoices* voices) {
     sil_music_sync(&player->music, voices);
     return result;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SilVoiceState sil_voice_state(const SilPlayer* player, int voice) {
     if (voice < 0 || voice >= SIL_USED_VOICES) {

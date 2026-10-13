@@ -23,7 +23,6 @@
 // Virocop's hold phase lets the volume fall to the hold volume; this value never falls (the volume is at most 0xFC00).
 #define JP_HOLD_VOLUME_NONE 0xFFFFu
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Memory: the module, the sample file, and the two small buffers the replayer keeps for itself, in one image whose
 // offsets play the part of the 68000 addresses. A read outside it gives 0, a write outside it is refused.
 
@@ -35,7 +34,6 @@ bool jp_store_u8(JpMemory* mem, uint32_t address, uint8_t value);
 bool jp_store_u16(JpMemory* mem, uint32_t address, uint16_t value);
 bool jp_store_u32(JpMemory* mem, uint32_t address, uint32_t value);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The player.
 
 // jp_module.c

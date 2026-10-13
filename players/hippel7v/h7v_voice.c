@@ -50,14 +50,10 @@ static const uint8_t k_start_sequence[] = { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 
 // AUDxLC before a voice plays anything: one silent word.
 static const _Alignas(2) int8_t k_silence[2] = { 0, 0 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static H7vSequence module_sequence(const H7vModule* m, uint32_t offset) {
     return offset < m->size ? (H7vSequence) { m->data + offset, m->size - offset, offset }
                             : (H7vSequence) { nullptr, 0, 0 };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t seq_byte(H7vSequence s, int32_t pos) {
     if (pos < 0) {
@@ -66,13 +62,9 @@ static uint8_t seq_byte(H7vSequence s, int32_t pos) {
     return (uint32_t)pos < s.size ? s.data[pos] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t seq_word(H7vSequence s, int32_t pos) {
     return (uint16_t)(seq_byte(s, pos) << 8 | seq_byte(s, pos + 1));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void h7v_voices_init(H7vSong* song, const H7vModule* module, const H7vSubsong* subsong) {
     song->speed = subsong->speed;
@@ -102,7 +94,6 @@ void h7v_voices_init(H7vSong* song, const H7vModule* module, const H7vSubsong* s
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The next word of the random generator
 
 static uint16_t random_next(H7vSong* s) {
@@ -112,7 +103,6 @@ static uint16_t random_next(H7vSong* s) {
     return s->random_state;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Sequencer: the track list and the pattern rows
 
 static void read_track_entry(const H7vModule* m, H7vSong* s, H7vVoice* v, H7vSequencerOutput* out) {
@@ -147,7 +137,6 @@ static void read_track_entry(const H7vModule* m, H7vSong* s, H7vVoice* v, H7vSeq
     v->track_pos = (uint16_t)(v->track_pos + H7V_TRACK_ROW_SIZE);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The row's note starts an instrument: its volume sequence, vibrato and frequency sequence.
 
 static void start_instrument(const H7vModule* m, H7vVoice* v) {
@@ -174,8 +163,6 @@ static void start_instrument(const H7vModule* m, H7vVoice* v) {
     v->fseq_wait = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 H7vSequencerOutput h7v_sequencer_step(const H7vModule* m, H7vSong* s, H7vVoice* v) {
     H7vSequencerOutput out = { 0 };
     uint32_t row = v->pattern + (uint32_t)(int32_t)(int16_t)v->pattern_pos;
@@ -200,7 +187,6 @@ H7vSequencerOutput h7v_sequencer_step(const H7vModule* m, H7vSong* s, H7vVoice* 
     return out;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Write AUDxLC / AUDxLEN. Paula ignores bit 0 of an address; the mixer's registers are plain memory.
 
 static void set_sample_registers(H7vVoice* v, const int8_t* lc, uint16_t len_words) {
@@ -208,7 +194,6 @@ static void set_sample_registers(H7vVoice* v, const int8_t* lc, uint16_t len_wor
     v->paula.len_words = len_words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The repeat of a track: AUDxLC / AUDxLEN take the loop. A Paula channel gets it after the DMA of the channels that
 // started a sample went on, which latched the start of the sample.
 
@@ -216,7 +201,6 @@ void h7v_write_repeat(H7vVoice* v) {
     set_sample_registers(v, v->loop, v->loop_length);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The channel or mixer voice stops (the sample is about to change). A Paula channel is switched on again at the end of
 // the tick; a mixed voice at the mixer's next update.
 
@@ -230,7 +214,6 @@ static void voice_off(H7vVoice* v) {
     v->restart_dma = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Point the registers at a sample and set up its repeat.
 
 static void load_sample(const H7vModule* m, H7vVoice* v, uint8_t number) {
@@ -243,14 +226,11 @@ static void load_sample(const H7vModule* m, H7vVoice* v, uint8_t number) {
     v->loop_length = loop.len_words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void restart_volume(H7vVoice* v) {
     v->vseq_pos = 0;
     v->vseq_counter = 1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One sample of a sample pack: a block with a record count, an extra size (longs), records of start/end offsets, then
 // the data. The first byte of the sample is copied over the second.
 
@@ -272,7 +252,6 @@ static void load_packed_sample(H7vModule* m, H7vVoice* v, uint8_t number, uint8_
     v->loop_length = 1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Start a sample from the beginning: the channel stops, takes the sample and its repeat, the volume sequence starts
 // over.
 
@@ -282,7 +261,6 @@ static void start_sample(const H7vModule* m, H7vVoice* v, uint8_t number) {
     v->paula.period = PLACEHOLDER_PERIOD;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Read the frequency sequence until it yields a value or holds.
 
 static void run_fseq(H7vModule* m, H7vVoice* v) {
@@ -392,7 +370,6 @@ static void run_fseq(H7vModule* m, H7vVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Move the sample window: AUDxLC/AUDxLEN become the repeat, no restart.
 
 static void run_sweep(const H7vModule* m, H7vVoice* v) {
@@ -424,8 +401,6 @@ static void run_sweep(const H7vModule* m, H7vVoice* v) {
     v->loop = window.lc;
     set_sample_registers(v, window.lc, window.len_words);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void run_vseq(H7vVoice* v) {
     if (v->vseq_wait != 0) {
@@ -468,8 +443,6 @@ static void run_vseq(H7vVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t note_period(const H7vVoice* v) {
     uint8_t note = v->fseq_value;
     if (!(note & 0x80)) {
@@ -478,7 +451,6 @@ static uint16_t note_period(const H7vVoice* v) {
     return hip_note_period(note & NOTE_MASK);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume sequence's value in the voice's percentage, less the random reduction of the note (drawn when the first
 // tick after the command asks for it).
 
@@ -494,8 +466,6 @@ static uint8_t voice_volume(H7vSong* s, H7vVoice* v) {
     }
     return hip_scaled_volume(v->volume, percent < 0 ? 0 : (uint8_t)percent);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void h7v_voice_tick(H7vModule* m, H7vSong* s, H7vVoice* v) {
     run_fseq(m, v);

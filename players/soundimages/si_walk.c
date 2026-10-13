@@ -48,8 +48,6 @@ typedef struct Walk {
     size_t job_capacity;
 } Walk;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool push_job(Walk* walk, bool is_list, bool end_command, int64_t position) {
     if (walk->job_count == walk->job_capacity) {
         const size_t capacity = walk->job_capacity == 0 ? 256 : walk->job_capacity * 2;
@@ -63,8 +61,6 @@ static bool push_job(Walk* walk, bool is_list, bool end_command, int64_t positio
     walk->jobs[walk->job_count++] = (Job) { is_list, end_command, position };
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool push_trail(Walk* walk, int64_t position) {
     if (walk->trail_count == walk->trail_capacity) {
@@ -80,13 +76,10 @@ static bool push_trail(Walk* walk, int64_t position) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int64_t song_offset(const SiModule* module, uint16_t word) {
     return (int64_t)module->layout.song_table + (int16_t)word;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The bytes a command takes behind its own byte.
 
 static uint32_t command_arguments(SiCommand command) {
@@ -124,7 +117,6 @@ static uint32_t command_arguments(SiCommand command) {
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An arpeggio pattern is read byte by byte up to the one with the top bit set.
 
 static bool walk_arpeggio(const SiModule* module, uint32_t index) {
@@ -146,15 +138,12 @@ static bool walk_arpeggio(const SiModule* module, uint32_t index) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 typedef enum Step {
     Step_Failed,
     Step_Continue,
     Step_Left,
 } Step;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One command (or note) behind the byte just read; the cursor is behind the byte.
 
 static Step walk_command(Walk* walk, uint8_t byte, bool force_command, int64_t* cursor, StreamEnd* end) {
@@ -214,7 +203,6 @@ static Step walk_command(Walk* walk, uint8_t byte, bool force_command, int64_t* 
     return Step_Continue;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One stream, command by command, from its first byte (or from the end command, whose arguments follow the list). The
 // result of every boundary it passes is the result of the stream.
 
@@ -258,7 +246,6 @@ static StreamEnd walk_stream(Walk* walk, int64_t position, bool end_command) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A list: the entries from here, each only if the stream before it goes on with the list. The zero runs the end command
 // with the cursor behind it. Returns false for a stream that failed.
 
@@ -296,8 +283,6 @@ static bool walk_list(Walk* walk, int64_t position) {
         position += 2;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool si_module_walk(const SiModule* module) {
     Walk walk = { .module = module };

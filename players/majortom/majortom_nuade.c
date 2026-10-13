@@ -12,14 +12,10 @@
 #define MT_NOTE_FIRST 0x10
 #define MT_NOTE_OCTAVE_SHIFT (-1)
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe majortom_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return mt_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult majortom_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -36,20 +32,14 @@ static NuadePlayerOpenResult majortom_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void majortom_close(void* user_data) {
     mt_destroy((MtPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool majortom_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return subsong == 0 && mt_start((MtPlayer*)user_data, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult majortom_tick(void* user_data, NuadeVoices* voices) {
     const MtTickResult tick = mt_tick((MtPlayer*)user_data, voices);
@@ -63,14 +53,10 @@ static NuadeTickResult majortom_tick(void* user_data, NuadeVoices* voices) {
     return (NuadeTickResult) { .length = MT_TICK_LENGTH, .flags = flags };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void majortom_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Major Tom");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePositionResult majortom_position(void* user_data) {
     const MtPosition p = mt_position((const MtPlayer*)user_data);
@@ -82,16 +68,12 @@ static NuadePositionResult majortom_position(void* user_data) {
                                                  .speed = (uint32_t)p.speed } };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int32_t majortom_note(uint8_t note) {
     if (note == 0) {
         return NUADE_CELL_EMPTY;
     }
     return ((note - MT_NOTE_FIRST) / 16) * 12 + (note & 0xf);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t majortom_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const MtPlayer* player = (const MtPlayer*)user_data;
@@ -106,8 +88,6 @@ static uint32_t majortom_voice_info(void* user_data, NuadeVoiceInfo* out, uint32
     }
     return n;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTrackerInfoResult majortom_tracker_info(void* user_data, const NuadePosition* at) {
     const MtPlayer* player = (const MtPlayer*)user_data;
@@ -126,8 +106,6 @@ static NuadeTrackerInfoResult majortom_tracker_info(void* user_data, const Nuade
     };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadePatternCell majortom_cell(const void* ctx, uint32_t order, uint32_t channel, uint32_t row) {
     NuadePatternCell cell = nuade_cell_empty();
     const MtCell c = mt_pattern_cell((const MtPlayer*)ctx, (int)order, (int)channel, (int)row);
@@ -142,8 +120,6 @@ static NuadePatternCell majortom_cell(const void* ctx, uint32_t order, uint32_t 
     return cell;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t majortom_tracker_cells(void* user_data, const NuadePosition* at, uint32_t channel, int32_t row_lo,
                                        int32_t row_hi, NuadePatternCell* out, uint32_t cap) {
     const MtPlayer* player = (const MtPlayer*)user_data;
@@ -152,8 +128,6 @@ static uint32_t majortom_tracker_cells(void* user_data, const NuadePosition* at,
     }
     return nuade_tracker_fill(at, MT_VOICES, MT_ROWS, channel, row_lo, row_hi, out, cap, majortom_cell, user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_majortom = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -172,8 +146,6 @@ const NuadePlayer nuade_player_majortom = {
     .tracker_info = majortom_tracker_info,
     .tracker_cells = majortom_tracker_cells,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MtPlayer* mt_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_majortom) {

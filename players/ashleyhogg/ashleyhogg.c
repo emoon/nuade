@@ -4,7 +4,6 @@
 
 #include "ah_internal.h"
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxLC ignores its lowest bit, so a sample at an odd offset is fetched from the byte before it.
 
 void ah_set_sample(const AhMemory* m, NuadePaulaChannel* paula, uint32_t offset, uint16_t length_words) {
@@ -13,21 +12,15 @@ void ah_set_sample(const AhMemory* m, NuadePaulaChannel* paula, uint32_t offset,
     paula->len_words = length_words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t ah_paula_volume(unsigned volume) {
     return (uint8_t)(volume & AH_VOLUME_MASK);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void sync_channels(NuadePaulaChannel* channels, NuadeVoices* voices) {
     for (int i = 0; i < AH_VOICES; i++) {
         nuade_paula_channel_sync(&channels[i], (uint32_t)i, voices);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ah_start(AhPlayer* player, int subsong, NuadeVoices* voices) {
     if (player == nullptr || voices == nullptr || subsong < 0 || subsong >= ah_subsong_count(player)) {
@@ -47,8 +40,6 @@ bool ah_start(AhPlayer* player, int subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 AhTickResult ah_tick(AhPlayer* player, NuadeVoices* voices) {
     if (player->family == AhFamily_New) {
         AhNewSong* song = &player->new_family.song;
@@ -62,8 +53,6 @@ AhTickResult ah_tick(AhPlayer* player, NuadeVoices* voices) {
     return (AhTickResult) { .looped = song->looped, .ended = song->ended };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t ah_grid_ticks(const AhPlayer* player, int subsong) {
     if (subsong < 0 || subsong >= ah_subsong_count(player)) {
         return 0;
@@ -73,8 +62,6 @@ uint32_t ah_grid_ticks(const AhPlayer* player, int subsong) {
     }
     return ah_u8(&player->module, player->old_family.tables.speeds + (uint32_t)subsong);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 AhVoiceState ah_voice_state(const AhPlayer* player, int voice) {
     if (voice < 0 || voice >= AH_VOICES) {

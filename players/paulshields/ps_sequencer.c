@@ -5,7 +5,6 @@
 
 #include "ps_internal.h"
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period a note or slide byte stands for: the byte in 1/8 semitones, converted at once when the voice takes direct
 // periods.
 
@@ -14,14 +13,12 @@ static uint16_t period_of(const PshVoice* v, uint8_t note) {
     return v->direct_period ? psh_note_period(v, units, false) : units;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The envelope the byte selects from a table of offsets (the byte is the table position in bytes).
 
 static int64_t envelope_offset(const PshModule* m, int32_t table, uint8_t position) {
     return (int16_t)psh_u16(m, (int64_t)table + position);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A slide command: two note bytes and a duration, then the note starts.
 
 static void read_slide(PshPlayer* p, uint32_t channel) {
@@ -33,7 +30,6 @@ static void read_slide(PshPlayer* p, uint32_t channel) {
     psh_start_slide(v, start, target, v->duration);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pattern bytes up to the next note or rest. False when the voice stopped.
 
 static bool read_commands(PshPlayer* p, uint32_t channel) {
@@ -104,7 +100,6 @@ static bool read_commands(PshPlayer* p, uint32_t channel) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One tick of a voice. The volume slide runs first, then the pattern when the note has run out, then the level and the
 // period move on and the registers are written.
 

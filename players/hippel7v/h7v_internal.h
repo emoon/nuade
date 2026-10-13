@@ -22,7 +22,6 @@
 // Paula volume of the mixer's channel
 #define H7V_MIX_VOLUME 64
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module
 
 // Track entry effects (the high nibble of the fourth byte)
@@ -89,7 +88,6 @@ H7vSampleRange h7v_sample_range(const H7vModule* module, uint64_t offset, uint16
 // The first byte of a sample pack's sample is copied over the second (the player does it when it starts the sample)
 void h7v_patch_second_byte(H7vModule* module, uint32_t offset);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A track: its Paula channel or mixer voice, its sequencers and the state of the note it plays
 
 // Result of the song commands of a track entry that the mixer carries out
@@ -109,7 +107,6 @@ void h7v_write_repeat(H7vVoice* voice);
 // One tick of a voice: the sequences and effects. Leaves AUDxPER / AUDxVOL (and the sample registers) in voice->paula.
 void h7v_voice_tick(H7vModule* module, H7vSong* song, H7vVoice* voice);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The mixer
 
 void h7v_mixer_init(H7vMixer* mixer, bool hard_clip, int8_t tempo_offset);

@@ -9,9 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tables
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define FINE_TUNE_START_INDEX (4 * 12)
 #define BD_MAX_TABLE_ENTRIES 256 // sub-songs, tracks and samples are all numbered by a byte
@@ -36,29 +34,21 @@ static const int s_fine_tune[] = {
 
 static const int8_t s_empty_sample[] = { 0, 0, 0, 0 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Byte reading helpers
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static inline uint16_t read_be16(const uint8_t* p) {
     return (uint16_t)((p[0] << 8) | p[1]);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static inline int16_t read_be16s(const uint8_t* p) {
     return (int16_t)((p[0] << 8) | p[1]);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static inline uint32_t read_be32(const uint8_t* p) {
     return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | ((uint32_t)p[2] << 8) | p[3];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Period to frequency
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t bd_calc_period(int period_index, uint16_t fine_tune_period) {
     if (period_index < 0 || period_index >= (int)FINE_TUNE_COUNT) {
@@ -72,9 +62,7 @@ static uint16_t bd_calc_period(int period_index, uint16_t fine_tune_period) {
     return period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Format identification
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The identification follows offsets found in the data, so every read is range checked; bytes outside the module
 // read as zero.
@@ -125,8 +113,6 @@ static bool bd_extract_info_from_init(const BdScan* buf, size_t buf_len, int sta
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool bd_extract_info_from_play(const BdScan* buf, size_t buf_len, int start_of_play,
                                       int* out_track_offset_table_offset, int* out_tracks_offset) {
     int search_length = (int)buf_len;
@@ -161,8 +147,6 @@ static bool bd_extract_info_from_play(const BdScan* buf, size_t buf_len, int sta
     *out_tracks_offset = (((int8_t)SB(index + 2) * 256) | SB(index + 3)) + index + 2;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool bd_find_features_in_play(const BdScan* buf, size_t buf_len, int start_of_play, BdFeatures* f) {
     int search_length = (int)buf_len;
@@ -271,8 +255,6 @@ static bool bd_find_features_in_play(const BdScan* buf, size_t buf_len, int star
 
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool bd_find_features_in_handle_effects(const BdScan* buf, size_t buf_len, int start_of_play, BdFeatures* f) {
     int search_length = (int)buf_len;
@@ -383,8 +365,6 @@ static bool bd_find_features_in_handle_effects(const BdScan* buf, size_t buf_len
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool bd_find_features_in_parse_track_effect(const BdScan* buf, size_t buf_len, int start_of_method,
                                                    BdFeatures* f) {
     int search_length = (int)buf_len;
@@ -430,8 +410,6 @@ static bool bd_find_features_in_parse_track_effect(const BdScan* buf, size_t buf
 
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool bd_find_features_in_parse_track(const BdScan* buf, size_t buf_len, int start_of_play, BdFeatures* f) {
     int search_length = (int)buf_len;
@@ -496,8 +474,6 @@ static bool bd_find_features_in_parse_track(const BdScan* buf, size_t buf_len, i
     return bd_find_features_in_parse_track_effect(buf, buf_len, index, f);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool bd_find_features(const BdScan* buf, size_t buf_len, int start_of_play, BdFeatures* f) {
     memset(f, 0, sizeof(*f));
     f->master_volume_fade_version = -1;
@@ -514,8 +490,6 @@ static bool bd_find_features(const BdScan* buf, size_t buf_len, int start_of_pla
 
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool bd_test_module(const uint8_t* data, size_t size, int* out_sub_song_list_offset,
                            int* out_track_offset_table_offset, int* out_tracks_offset,
@@ -567,17 +541,13 @@ static bool bd_test_module(const uint8_t* data, size_t size, int* out_sub_song_l
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool bd_probe(const uint8_t* data, size_t size) {
     int offsets[4];
     BdFeatures features;
     return data != nullptr && bd_test_module(data, size, &offsets[0], &offsets[1], &offsets[2], &offsets[3], &features);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Position list command argument count
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static int bd_position_command_arg_count(uint8_t cmd, const BdFeatures* f) {
     if (cmd < f->max_track_value) {
@@ -613,9 +583,7 @@ static int bd_position_command_arg_count(uint8_t cmd, const BdFeatures* f) {
     return -1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Track command argument count
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static int bd_track_command_arg_count(uint8_t cmd, uint8_t next_byte, const BdFeatures* f) {
     if (cmd < 0x7f) {
@@ -688,9 +656,7 @@ static int bd_track_command_arg_count(uint8_t cmd, uint8_t next_byte, const BdFe
     return -1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Module loading
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool bd_load_sub_song_info(BdModule* mod) {
     const uint8_t* data = mod->file_data;
@@ -745,8 +711,6 @@ static bool bd_load_sub_song_info(BdModule* mod) {
 
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t* bd_load_single_position_list(const uint8_t* data, size_t size, int offset, const BdFeatures* f,
                                              size_t* out_len) {
@@ -816,8 +780,6 @@ static uint8_t* bd_load_single_position_list(const uint8_t* data, size_t size, i
     return list;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool bd_load_position_lists(BdModule* mod) {
     // Collect unique position list offsets
     size_t capacity = 16;
@@ -871,8 +833,6 @@ static bool bd_load_position_lists(BdModule* mod) {
 
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t* bd_load_single_track(const uint8_t* data, size_t size, int offset, const BdFeatures* f,
                                      size_t* out_len) {
@@ -966,8 +926,6 @@ static uint8_t* bd_load_single_track(const uint8_t* data, size_t size, int offse
     return track;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool bd_load_tracks(BdModule* mod) {
     int number_of_tracks = (mod->sub_song_list_offset - mod->track_offset_table_offset) / 2;
     if (number_of_tracks <= 0) {
@@ -1009,8 +967,6 @@ static bool bd_load_tracks(BdModule* mod) {
 
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool bd_load_sample_info(BdModule* mod) {
     const uint8_t* data = mod->file_data;
@@ -1157,9 +1113,7 @@ static bool bd_load_sample_info(BdModule* mod) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Position list lookup
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t* bd_find_position_list(BdModule* mod, uint16_t offset_key, size_t* out_len) {
     for (size_t i = 0; i < mod->position_list_count; i++) {
@@ -1173,9 +1127,7 @@ static uint8_t* bd_find_position_list(BdModule* mod, uint16_t offset_key, size_t
     return nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Player state initialization
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void bd_init_sound(BdModule* mod, int sub_song) {
     BdPlayer* p = mod->player;
@@ -1221,16 +1173,12 @@ static void bd_init_sound(BdModule* mod, int sub_song) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Amiga hardware simulation
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeSample bd_looping_sample(const int8_t* data, uint32_t length) {
     // Paula always loops the buffer it was given
     return (NuadeSample) { .data = data, .format = NuadeSampleFormat_S8, .length = length, .loop_length = length };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Rewriting the loop registers takes effect when the current buffer ends. A voice that is not running ignores it:
 // enabling DMA reloads the registers.
@@ -1241,14 +1189,10 @@ static void bd_set_loop(BdVoicePlaybackInfo* pb, uint32_t offset, uint32_t lengt
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void bd_mute_channel(BdVoicePlaybackInfo* pb) {
     pb->active = false;
     nuade_voice_stop(pb->mixer, pb->voice);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void bd_enable_dma(BdVoicePlaybackInfo* pb) {
     if (!pb->dma_enabled) {
@@ -1264,9 +1208,7 @@ static void bd_enable_dma(BdVoicePlaybackInfo* pb) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Sample handler callbacks
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void bd_handle_sample_loop(BdVoicePlaybackInfo* pb, BdSample* sample, bool set_dma_in_handlers) {
     if (pb->loop_delay_counter < 0x8000) {
@@ -1294,14 +1236,10 @@ static void bd_handle_sample_loop(BdVoicePlaybackInfo* pb, BdSample* sample, boo
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void bd_handle_sample_volume_fade(BdVoicePlaybackInfo* pb, BdSample* sample) {
     pb->loop_delay_counter = 0x8000;
     pb->final_volume = (int16_t)(pb->final_volume + sample->volume_fade_speed);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void bd_handle_sample_play_once(BdVoicePlaybackInfo* pb, BdSample* sample, bool set_dma_in_handlers) {
     (void)sample;
@@ -1333,9 +1271,7 @@ static void bd_handle_sample_play_once(BdVoicePlaybackInfo* pb, BdSample* sample
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Effects
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void bd_do_sample_effects(BdVoicePlaybackInfo* pb, BdSample* sample) {
     if (pb->sample_portamento_duration != 0) {
@@ -1362,8 +1298,6 @@ static void bd_do_sample_effects(BdVoicePlaybackInfo* pb, BdSample* sample) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void bd_do_final_volume_slide(BdVoicePlaybackInfo* pb) {
     if (pb->final_volume_slide_speed != 0) {
         pb->final_volume_slide_speed_counter--;
@@ -1374,8 +1308,6 @@ static void bd_do_final_volume_slide(BdVoicePlaybackInfo* pb) {
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void bd_do_portamento(BdVoiceInfo* v, BdVoicePlaybackInfo* pb) {
     if (v->portamento_control_flag != 0) {
@@ -1397,8 +1329,6 @@ static void bd_do_portamento(BdVoiceInfo* v, BdVoicePlaybackInfo* pb) {
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void bd_setup_sample(BdPlayer* p, const BdFeatures* f, BdVoicePlaybackInfo* pb, BdSample* sample,
                             uint8_t transposed_note, uint8_t play_ticks, int16_t volume, uint16_t volume_slide_speed,
@@ -1457,8 +1387,6 @@ static void bd_setup_sample(BdPlayer* p, const BdFeatures* f, BdVoicePlaybackInf
     pb->loop_delay_counter = 2;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void bd_do_volume_fade(BdPlayer* p, const BdFeatures* f, BdVoiceInfo* v, BdVoicePlaybackInfo* pb) {
     if (v->volume_fade_running && v->volume_fade_duration_counter != 0 && v->sample_info2 != nullptr) {
         v->volume_fade_speed_counter--;
@@ -1485,8 +1413,6 @@ static void bd_do_volume_fade(BdPlayer* p, const BdFeatures* f, BdVoiceInfo* v, 
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void bd_do_master_volume_fade(BdPlayer* p, const BdFeatures* f) {
     if (p->playing_info.master_volume_fade_speed != 0) {
         p->playing_info.master_volume_fade_speed_counter--;
@@ -1511,9 +1437,7 @@ static void bd_do_master_volume_fade(BdPlayer* p, const BdFeatures* f) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Voice effects
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void bd_handle_voice_effects(BdPlayer* p, BdVoicePlaybackInfo* pb, const BdFeatures* f) {
     if (pb->loop_delay_counter != 0) {
@@ -1573,9 +1497,7 @@ static void bd_handle_voice_effects(BdPlayer* p, BdVoicePlaybackInfo* pb, const 
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Track parsing
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The next byte of the voice's track; past its end it reads as zero.
 static uint8_t bd_next_track_byte(const BdVoiceInfo* v, int* position) {
@@ -1641,8 +1563,6 @@ static void bd_parse_track_effect(BdModule* mod, BdVoiceInfo* v, int* position) 
         v->channel_volume = 0xffff;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool bd_take_next_position(BdModule* mod, BdVoiceInfo* v, BdVoicePlaybackInfo* pb) {
     const BdFeatures* f = &mod->features;
@@ -1723,8 +1643,6 @@ static bool bd_take_next_position(BdModule* mod, BdVoiceInfo* v, BdVoicePlayback
 
     return false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool bd_parse_track(BdModule* mod, BdVoiceInfo* v, BdVoicePlaybackInfo* pb) {
     const BdFeatures* f = &mod->features;
@@ -1878,8 +1796,6 @@ static bool bd_parse_track(BdModule* mod, BdVoiceInfo* v, BdVoicePlaybackInfo* p
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void bd_handle_voice(BdModule* mod, BdVoiceInfo* v, BdVoicePlaybackInfo* pb) {
     const BdFeatures* f = &mod->features;
     BdPlayer* p = mod->player;
@@ -1918,9 +1834,7 @@ static void bd_handle_voice(BdModule* mod, BdVoiceInfo* v, BdVoicePlaybackInfo* 
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Player tick
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // True when the song ran out and restarted: that is its loop point.
 static bool bd_player_tick(BdModule* mod) {
@@ -1964,9 +1878,7 @@ static bool bd_player_tick(BdModule* mod) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Voices
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Hand the pitch and volume registers the tick wrote to the voices.
 static void bd_sync_voices(BdPlayer* p) {
@@ -1986,9 +1898,7 @@ static void bd_sync_voices(BdPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Module cleanup
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void bd_module_cleanup(BdModule* mod) {
     if (mod->sub_songs != nullptr) {
@@ -2036,9 +1946,7 @@ static void bd_module_cleanup(BdModule* mod) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Public API
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BdModule* bd_create(const uint8_t* data, size_t size) {
     if (data == nullptr || size == 0) {
@@ -2102,8 +2010,6 @@ BdModule* bd_create(const uint8_t* data, size_t size) {
     return mod;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void bd_destroy(BdModule* module) {
     if (module == nullptr) {
         return;
@@ -2113,8 +2019,6 @@ void bd_destroy(BdModule* module) {
     free(module);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int bd_subsong_count(const BdModule* module) {
     if (module == nullptr) {
         return 0;
@@ -2122,8 +2026,6 @@ int bd_subsong_count(const BdModule* module) {
 
     return (int)module->sub_song_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool bd_start(BdModule* module, int subsong, NuadeVoices* voices) {
     if (module == nullptr || module->player == nullptr || voices == nullptr) {
@@ -2145,14 +2047,10 @@ bool bd_start(BdModule* module, int subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int bd_channel_count(const BdModule* module) {
     (void)module;
     return 4;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool bd_tick(BdModule* module) {
     BdPlayer* p = module->player;
@@ -2163,8 +2061,6 @@ bool bd_tick(BdModule* module) {
     bd_sync_voices(p);
     return looped;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool bd_voice_started(const BdModule* module, uint32_t voice, int32_t* note, int32_t* instrument) {
     if (module == nullptr || note == nullptr || instrument == nullptr || voice >= BD_VOICE_COUNT

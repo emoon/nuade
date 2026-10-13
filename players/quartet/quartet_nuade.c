@@ -7,14 +7,10 @@
 #include <nuade/players/quartet.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe quartet_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return qt_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult quartet_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -44,21 +40,15 @@ static NuadePlayerOpenResult quartet_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void quartet_close(void* user_data) {
     qt_destroy((QtPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool quartet_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)subsong;
     (void)sample_rate;
     return qt_start((QtPlayer*)user_data, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult quartet_tick(void* user_data, NuadeVoices* voices) {
     const QtTickResult tick = qt_tick((QtPlayer*)user_data, voices);
@@ -68,14 +58,10 @@ static NuadeTickResult quartet_tick(void* user_data, NuadeVoices* voices) {
     return (NuadeTickResult) { .length = QT_TICK_LENGTH, .flags = flags };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void quartet_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Quartet");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t quartet_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const QtPlayer* player = (const QtPlayer*)user_data;
@@ -87,14 +73,10 @@ static uint32_t quartet_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t quartet_grid_ticks(void* user_data, uint32_t subsong) {
     (void)subsong;
     return qt_tempo((const QtPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_quartet = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -111,8 +93,6 @@ const NuadePlayer nuade_player_quartet = {
     .voice_info = quartet_voice_info,
     .grid_ticks = quartet_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 QtPlayer* qt_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_quartet) {

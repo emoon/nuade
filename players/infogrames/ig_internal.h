@@ -22,7 +22,6 @@
 #define IG_SAMPLE_HEADER_SIZE 4
 #define IG_NO_OFFSET (-0x40000000) // an offset far outside the file: reads zeros
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A file of the song as the player keeps it: a read outside returns 0 (the original would read whatever is in memory
 // there). The allocation comes from nuade_paula_padded_copy, so a sample that starts inside the file can run past its
 // end.
@@ -32,7 +31,6 @@ uint16_t ig_u16(const IgFile* f, int32_t offset);
 int16_t ig_s16(const IgFile* f, int32_t offset);
 uint32_t ig_u32(const IgFile* f, int32_t offset);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The header of the song that is played: the words that follow the song's offset in the table at the file start.
 
 // The song the eagleplayer plays: the last one of the file's table.
@@ -68,7 +66,6 @@ typedef struct IgSample {
 // False when the entry does not lie inside the file.
 bool ig_read_sample(const IgFile* samples, unsigned index, IgSample* out);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer's state
 
 #define IG_NO_SAMPLE (-1)

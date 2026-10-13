@@ -102,7 +102,6 @@ LmeInstrument lme_instrument(const LmeModule* module, uint32_t index);
 // so an odd offset reads from the even address below it.
 const int8_t* lme_sample_at(const LmeModule* module, uint32_t offset);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The 68000 test `cmp.w limit, value; bpl` (the sign of the 16-bit difference).
 static inline bool lme_difference_not_negative(int16_t value, int16_t limit) {
     return (int16_t)(value - limit) >= 0;

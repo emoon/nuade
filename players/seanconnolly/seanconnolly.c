@@ -13,8 +13,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sco_probe(const uint8_t* data, size_t size) {
     ScoModule module;
     if (!sco_module_load(&module, data, size)) {
@@ -23,8 +21,6 @@ bool sco_probe(const uint8_t* data, size_t size) {
     sco_module_free(&module);
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ScoPlayer* sco_create(const uint8_t* data, size_t size) {
     ScoPlayer* player = calloc(1, sizeof(*player));
@@ -38,8 +34,6 @@ ScoPlayer* sco_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void sco_destroy(ScoPlayer* player) {
     if (player != nullptr) {
         sco_module_free(&player->module);
@@ -47,25 +41,17 @@ void sco_destroy(ScoPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t sco_subsong_count(const ScoPlayer* player) {
     return player->module.subsong_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const char* sco_version_name(const ScoPlayer* player) {
     return player->module.version->name;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool is_sampler(const ScoPlayer* player) {
     return player->module.version->family == ScoFamily_Sampler;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void replayer_init(ScoPlayer* player, bool first) {
     if (is_sampler(player)) {
@@ -74,8 +60,6 @@ static void replayer_init(ScoPlayer* player, bool first) {
         sc3_init(&player->sequencer, &player->module, player->subsong, player->paula);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sco_start(ScoPlayer* player, uint32_t subsong, NuadeVoices* voices) {
     if (player == nullptr || subsong >= player->module.subsong_count) {
@@ -93,8 +77,6 @@ bool sco_start(ScoPlayer* player, uint32_t subsong, NuadeVoices* voices) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ScoTickResult sco_tick(ScoPlayer* player, NuadeVoices* voices) {
     ScoTickResult result = { 0 };
@@ -117,8 +99,6 @@ ScoTickResult sco_tick(ScoPlayer* player, NuadeVoices* voices) {
     }
     return result;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ScoVoiceState sco_voice_state(const ScoPlayer* player, uint32_t voice) {
     if (is_sampler(player)) {

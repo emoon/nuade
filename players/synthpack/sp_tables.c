@@ -4,7 +4,6 @@
 #include "sp_longs.h"
 #include "sp_words.h"
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Periods of the 72 notes, the same in both layouts. Note 24 (856) is C-1.
 
 const uint16_t sp_periods[SP_PERIOD_COUNT] = {
@@ -14,7 +13,6 @@ const uint16_t sp_periods[SP_PERIOD_COUNT] = {
     151,  143,  135,  127,  120,  113,  107,  101,  95,   90,   85,   80,   75,   71,   67,   63,   60,   56,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Long layout: the LFO tables, signed bytes, one period of 128 steps each: rising ramp, falling ramp, triangle, sine,
 // square, noise.
 
@@ -77,7 +75,6 @@ const int8_t sp_long_lfo_tables[SP_LONG_LFO_TABLES][SP_LONG_LFO_LENGTH] = {
     },
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Word layout: the volume LFO tables (rising ramp, falling ramp, triangle) and the pitch LFO tables (rising ramp,
 // falling ramp, saw, sine, square, noise), 32 steps each.
 

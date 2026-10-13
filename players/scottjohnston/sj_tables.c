@@ -78,13 +78,9 @@ typedef enum SjHandler {
 
 #define SJ_HANDLER_STRIDE 4
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const char* sj_instrument_name(uint32_t file_index) {
     return file_index >= 1 && file_index <= SJ_NAME_COUNT ? sj_instrument_names[file_index - 1] : nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t sj_period_for_note(uint8_t note) {
     const uint32_t index = (uint32_t)note - 1u;
@@ -98,8 +94,6 @@ uint16_t sj_period_for_note(uint8_t note) {
     return (uint16_t)(sj_command_table[byte] << 8 | sj_command_table[byte + 1]);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sj_cell_is_modelled(const SjCell* cell) {
     if (cell->note == 0) {
         return true;
@@ -108,8 +102,6 @@ bool sj_cell_is_modelled(const SjCell* cell) {
     // the voice records.
     return cell->note <= SJ_MAX_NOTE && cell->instrument <= SJ_INSTRUMENT_SLOTS;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SjCommand sj_decode_command(uint8_t byte) {
     switch (sj_command_table[byte] / SJ_HANDLER_STRIDE) {

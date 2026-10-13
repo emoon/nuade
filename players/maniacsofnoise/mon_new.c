@@ -13,7 +13,6 @@
 #define WAVE_SPEED 0xFE    // a wave list byte: set the speed from the byte that follows
 #define WAVE_JUMP 0xFF     // a wave list byte: jump back by the byte that follows
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A length byte in ticks: the tempo times the byte, less the swing the voice owes.
 
 static uint16_t length_ticks(const MonPlayer* p, MonVoice* v, uint8_t length) {
@@ -22,7 +21,6 @@ static uint16_t length_ticks(const MonPlayer* p, MonVoice* v, uint8_t length) {
     return ticks;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // MonVersion_DragonWars: the voices the byte at the start of the image enables.
 
 static bool voice_audible(const MonPlayer* p, int voice) {
@@ -30,13 +28,10 @@ static bool voice_audible(const MonPlayer* p, int voice) {
            || (mon_u8(&p->module, MON_VOICE_MASK_ADDRESS) >> voice & 1) != 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool has_arpeggio(const MonPlayer* p) {
     return p->module.layout->version != MonVersion_DeathTrap;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Note-on: the voice starts a note, stops the DMA and leaves the sample start to the next tick.
 
 static void note_on(MonPlayer* p, int voice, uint8_t note, uint8_t length, const MonInstrument* ins) {
@@ -49,8 +44,6 @@ static void note_on(MonPlayer* p, int voice, uint8_t note, uint8_t length, const
         nuade_paula_channel_dma_off(&p->paula[voice]);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool mon_new_read_pattern(MonPlayer* p, int voice) {
     const MonModule* m = &p->module;
@@ -135,7 +128,6 @@ bool mon_new_read_pattern(MonPlayer* p, int voice) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The envelope list: 0x81 stays on the byte while the note is held and goes on behind it after the release. The index
 // into the list is a word that the hold moves, the position of the voice a byte.
 
@@ -165,7 +157,6 @@ static void run_envelope(MonPlayer* p, int voice, const MonInstrument* ins) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // MonVersion_DragonWars and later: the arpeggio list adds a period offset from notes relative to the voice's note.
 
 static void run_arpeggio(MonPlayer* p, int voice, const MonInstrument* ins) {
@@ -180,7 +171,6 @@ static void run_arpeggio(MonPlayer* p, int voice, const MonInstrument* ins) {
     v->arpeggio_offset = (uint16_t)(mon_scaled_period_word(m, note, ins->tuning) - v->note_period);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // MonVersion_MysteryWorldsEnd, instruments of kind 0: a list of waves, each played for a number of ticks. A note-on
 // without a new instrument restarts the list only when the instrument says so.
 
@@ -223,7 +213,6 @@ static void run_waves(MonPlayer* p, int voice, const MonInstrument* ins) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A voice that goes on with its note: the envelope, slide, arpeggio, vibrato and sample start, then the registers.
 
 void mon_new_sustain(MonPlayer* p, int voice) {

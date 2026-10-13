@@ -132,13 +132,9 @@ static const HdDriver k_drivers[] = {
     },
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const int8_t* hd_silence(void) {
     return (const int8_t*)k_silence;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool hd_byte(const HdModule* module, uint32_t at, uint8_t* out) {
     if (at >= module->size) {
@@ -148,13 +144,9 @@ bool hd_byte(const HdModule* module, uint32_t at, uint8_t* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool fits(const HdModule* module, uint64_t at, uint64_t bytes) {
     return module->size >= bytes && at <= module->size - bytes;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool is_relocated(const HdModule* module, uint32_t at) {
     size_t low = 0;
@@ -173,8 +165,6 @@ static bool is_relocated(const HdModule* module, uint32_t at) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool hd_pointer(const HdModule* module, uint32_t at, uint32_t* out) {
     if (!fits(module, at, 4) || !is_relocated(module, at)) {
         return false;
@@ -187,8 +177,6 @@ bool hd_pointer(const HdModule* module, uint32_t at, uint32_t* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool hd_period(const HdModule* module, uint32_t note, uint16_t* out) {
     const uint64_t at = (uint64_t)module->init + module->driver->period_table + (uint64_t)note * 2;
     if (note >= HD_PERIOD_COUNT || !fits(module, at, 2)) {
@@ -198,7 +186,6 @@ bool hd_period(const HdModule* module, uint32_t note, uint16_t* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The start of a sample: a relocated pointer. AUDxLC ignores its lowest bit, and the rip leaves samples at odd
 // addresses.
 
@@ -211,7 +198,6 @@ static bool sample_start(const HdModule* module, uint32_t at, const int8_t** out
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The repeat of a sample: a relocated pointer, or a plain 0 that the DMA routine's patch makes silence.
 
 static bool sample_loop(const HdModule* module, uint32_t at, const int8_t** out) {
@@ -222,7 +208,6 @@ static bool sample_loop(const HdModule* module, uint32_t at, const int8_t** out)
     return sample_start(module, at, out);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The block of `words` words at `start` lies inside the hunk (or is the silence).
 
 static bool block_usable(const HdModule* module, const int8_t* start, uint16_t words) {
@@ -235,8 +220,6 @@ static bool block_usable(const HdModule* module, const int8_t* start, uint16_t w
     const size_t offset = (size_t)((const uint8_t*)start - module->bytes);
     return (size_t)words * 2 <= module->size - offset;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool hd_sample(const HdModule* module, uint32_t index, HdSample* out) {
     if (index >= module->sample_count) {
@@ -265,19 +248,13 @@ bool hd_sample(const HdModule* module, uint32_t index, HdSample* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool hd_pattern(const HdModule* module, uint32_t index, uint32_t* out) {
     return index < module->pattern_count && hd_pointer(module, module->pattern_table + index * 4, out);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool hd_envelope(const HdModule* module, uint32_t index, uint32_t* out) {
     return index < module->envelope_count && hd_pointer(module, module->envelope_table + index * 4, out);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool hd_voice_list(const HdModule* module, uint32_t subsong, uint32_t voice, uint32_t* out) {
     if (subsong >= module->subsong_count || voice >= HD_VOICES) {
@@ -285,8 +262,6 @@ bool hd_voice_list(const HdModule* module, uint32_t subsong, uint32_t voice, uin
     }
     return hd_pointer(module, module->subsong_table + subsong * module->driver->subsong_stride + voice * 4, out);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool hd_handler(const HdModule* module, uint32_t table, uint8_t command, HdHandler* out) {
     uint32_t target;
@@ -303,7 +278,6 @@ bool hd_handler(const HdModule* module, uint32_t table, uint8_t command, HdHandl
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The relocation table: HUNK_RELOC32 groups of (count, hunk, offsets) up to HUNK_END. The file has one hunk, so every
 // group relocates against hunk 0.
 
@@ -353,7 +327,6 @@ static bool read_relocations(HdModule* module, const uint8_t* file, size_t size,
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The executable: HUNK_HEADER with one chip memory hunk, HUNK_CODE, the relocations, HUNK_END. Check2 also wants a
 // memory flag in the size word.
 
@@ -373,7 +346,6 @@ static bool load_hunks(HdModule* module, const uint8_t* file, size_t size) {
     return read_relocations(module, file, size, HD_CODE_FILE_OFFSET + module->size);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The header of the code: the prologue, the "H.DAVIES" mark and the pointers that the eagleplayer's Check2 requires
 // to be set.
 
@@ -391,7 +363,6 @@ static bool read_header(const HdModule* module, HdHeader* header) {
     return pointers_ok && header->play != 0 && header->dma_on != 0 && header->init != 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // FNV-1a over the replayer and its tables, from the init routine to the sample table. A relocated word that points
 // into that region counts as its target counted from the init routine, one that points into the song's data and the
 // variables that the init routine writes count as zero.
@@ -427,8 +398,6 @@ static bool replayer_signature(const HdModule* module, const HdDriver* driver, u
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const HdDriver* find_driver(const HdModule* module, const HdHeader* header) {
     uint64_t signature;
     for (size_t i = 0; i < nuade_sizeof_array(k_drivers); i++) {
@@ -443,7 +412,6 @@ static const HdDriver* find_driver(const HdModule* module, const HdHeader* heade
     return nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The number of entries of a table of pointers that ends where its first target starts (16 bytes or 4 per entry).
 
 static bool table_count(const HdModule* module, uint32_t table, uint32_t entry_bytes, uint32_t* count) {
@@ -454,8 +422,6 @@ static bool table_count(const HdModule* module, uint32_t table, uint32_t entry_b
     *count = (first - table) / entry_bytes;
     return *count <= HD_MAX_COUNT;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool hd_module_parse(HdModule* module, const uint8_t* bytes, size_t size) {
     *module = (HdModule) { 0 };
@@ -495,8 +461,6 @@ bool hd_module_parse(HdModule* module, const uint8_t* bytes, size_t size) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void hd_module_free(HdModule* module) {
     free(module->relocations);

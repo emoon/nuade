@@ -23,14 +23,12 @@
 #define RATIO_FROM_COUNT 4      // the 8.8 ratio is four times the bytes of a chunk
 #define UNIT_ROW_SHIFT 10       // the lone-voice ratio of the slow generator in 1/1024
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period the voice asks the channel for.
 
 static uint16_t mapped_period(const Mm8Block* b, int voice) {
     return mm_song_slow_period(b->e->core.song, b->ch->pair_period[voice]);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The smaller of the two mapped periods (the first voice when they are equal). The accumulated fraction of a block
 // length is rescaled with the voice's own period.
 
@@ -41,13 +39,10 @@ static uint16_t channel_period(const Mm8Block* b, uint16_t* raw_period) {
     return ma > mb ? mb : ma;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool defines_period(const Mm8Block* b, int voice) {
     return mapped_period(b, voice) == b->channel_period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The unsigned 16 bit division of the 68000: a quotient that does not fit leaves the dividend as it is, and the result
 // holds the quotient in its low word. A division by zero (which traps) gives the dividend too.
 
@@ -59,14 +54,12 @@ static uint32_t divide(uint32_t dividend, uint32_t divisor) {
     return (dividend % divisor) << 16 | dividend / divisor;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The quotient word of (a << shift) / b where the divisor is a word.
 
 static uint16_t quotient(uint32_t a, int shift, uint32_t b) {
     return (uint16_t)divide(a << shift, b);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The step of a voice that is stepped faster than one byte per sample is 2 * ((channel << 16) / (2 * own)): a ratio of
 // 1 to 2 in 16.16. A voice that comes from the table has its own mapped period in the quotient, scaled to the channel
 // period; the one that gives the channel period has not.
@@ -79,7 +72,6 @@ static uint32_t step_of(uint16_t channel, uint16_t mapped, uint16_t own) {
     return 2u * q;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A voice whose ratio is 1 or more: each sample moves it on by one byte, or by two when the error of the line goes
 // negative. Fills the voice's step and ratio; returns the fraction for the chunk accumulator (none).
 
@@ -102,7 +94,6 @@ static uint16_t generate_fast(Mm8Step68k* s, uint32_t step) {
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A voice whose ratio is below 1 (`frac`, 16 bit): it moves on by one byte when the error of the line goes negative.
 // The line runs a little slow (by 1/512); `aux` (the ratio in 1/1024, 0 for the voices that come from the table) lets
 // the generator work out what is missing from a chunk: the ratio is raised, and the end of the chunk adds a byte when
@@ -144,14 +135,12 @@ static uint16_t generate_slow(Mm8Step68k* s, uint32_t frac, uint16_t aux) {
     return missing;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A voice of the pair that is read at one byte per sample.
 
 static void plain(Mm8Step68k* s) {
     *s = (Mm8Step68k) { .ratio = MM8_UNIT_RATIO };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One voice of the pair as the generator sees it, sorted by the period it asks for.
 
 typedef struct Role {
@@ -160,7 +149,6 @@ typedef struct Role {
     uint16_t own;
 } Role;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // How the periods of the pair relate to the song's table.
 
 typedef enum Pairing {
@@ -169,8 +157,6 @@ typedef enum Pairing {
     Pairing_TableVoiceSlower, // one does, and its table period is not below the other voice's own period
     Pairing_NeitherFromTable, // none does: the voice with the larger period is stepped
 } Pairing;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static Pairing pairing_of(const Mm8Block* b, const uint16_t mapped[2], uint16_t limit) {
     const uint16_t raw_a = b->ch->pair_period[MM8_VOICE_A];
@@ -189,15 +175,12 @@ static Pairing pairing_of(const Mm8Block* b, const uint16_t mapped[2], uint16_t 
     return Pairing_NeitherFromTable;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void swap_roles(Role* a, Role* b) {
     const Role t = *a;
     *a = *b;
     *b = t;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A voice stepped by the ratio of the channel period to its own period, with the generator for ratios above or below 1.
 // Returns the fraction for the chunk accumulator.
 
@@ -205,7 +188,6 @@ static uint16_t generate_stepped(Mm8Step68k* s, uint32_t step) {
     return step < CHUNK_ROUND ? generate_slow(s, step, 0) : generate_fast(s, step);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Lays out the stepping of the two voices (the replayer's generator front). The voices are taken in the order of the
 // periods they ask for; the first one gives the channel period.
 
@@ -244,7 +226,6 @@ static void generate(const Mm8Block* b, Mm8Plan68k* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Whether the replayer writes a mixing routine for the pair at all. A voice that comes from the table needs one; so
 // does a voice that is slower than the other of the pair. The period (and volume) of a voice that has no data is the
 // one it had when its data ran out, if that happened during the block; before the block it is 0xFFFF.
@@ -264,7 +245,6 @@ static bool needs_generating(const Mm8Block* b, const uint16_t mapped[2]) {
     return mapped[voice] > mapped[1 - voice];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The routine for the pair: the quieter voice is scaled, a voice that comes from the table (or the slower of the two)
 // is stepped. Only the voices that have data are mixed.
 
@@ -288,14 +268,12 @@ static void select_routine(Mm8Block* b) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The bytes a voice takes from a block of n samples: the ratio of its pattern (a chunk's bytes), and one more.
 
 static uint16_t stepped_bytes(uint16_t n, uint16_t ratio) {
     return (uint16_t)(((uint32_t)n * ratio >> 8) + 1);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The bytes of each voice a block takes. The voice with the larger mapped period is counted by its ratio; the one with
 // the smaller (which gives the channel period) only when it comes from the table.
 
@@ -319,7 +297,6 @@ static void needs(Mm8Block* b, uint16_t n) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A ratio of 0 (a voice that is a 64th of the channel's speed) would divide by zero in the replayer.
 
 static uint16_t consumption(const Mm8Block* b, int voice) {
@@ -327,7 +304,6 @@ static uint16_t consumption(const Mm8Block* b, int voice) {
     return ratio != 0 ? ratio : 1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Mixes `m` samples: the rest of the chunk the block enters, then whole chunks. The accumulator starts at 0 in every
 // call.
 

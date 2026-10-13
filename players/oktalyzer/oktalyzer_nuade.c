@@ -8,15 +8,11 @@
 #include <nuade/players/oktalyzer.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The module mark is specific enough to be sure.
 static NuadeProbe oktalyzer_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return okt_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult oktalyzer_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -34,28 +30,20 @@ static NuadePlayerOpenResult oktalyzer_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void oktalyzer_close(void* user_data) {
     okt_destroy((OktModule*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool oktalyzer_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return okt_start((OktModule*)user_data, (int)subsong, voices);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult oktalyzer_tick(void* user_data, NuadeVoices* voices) {
     (void)voices;
     return (NuadeTickResult) { .length = OKT_TICK_LENGTH,
                                .flags = okt_tick((OktModule*)user_data) ? NuadeTick_Looped : NuadeTick_None };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void oktalyzer_metadata(void* user_data, const NuadeMetadataSink* sink) {
     const OktModule* module = (const OktModule*)user_data;
@@ -68,8 +56,6 @@ static void oktalyzer_metadata(void* user_data, const NuadeMetadataSink* sink) {
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The pattern notes count from C-1 = 1; NuadeColumn_Note counts semitones from C-0.
 #define OKTALYZER_NOTE_BASE 11
@@ -88,8 +74,6 @@ static NuadePositionResult oktalyzer_position(void* user_data) {
                                                  .speed = (uint32_t)p.speed } };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t oktalyzer_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const OktModule* module = (const OktModule*)user_data;
     const OktPosition p = okt_position(module);
@@ -104,8 +88,6 @@ static uint32_t oktalyzer_voice_info(void* user_data, NuadeVoiceInfo* out, uint3
     }
     return n;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTrackerInfoResult oktalyzer_tracker_info(void* user_data, const NuadePosition* at) {
     const OktModule* module = (const OktModule*)user_data;
@@ -123,8 +105,6 @@ static NuadeTrackerInfoResult oktalyzer_tracker_info(void* user_data, const Nuad
                                                              { "arg", NuadeColumn_Hex, 2 } } } };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadePatternCell oktalyzer_cell(const void* ctx, uint32_t order, uint32_t channel, uint32_t row) {
     const OktModule* module = (const OktModule*)ctx;
     NuadePatternCell cell = nuade_cell_empty();
@@ -141,8 +121,6 @@ static NuadePatternCell oktalyzer_cell(const void* ctx, uint32_t order, uint32_t
     return cell;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t oktalyzer_tracker_cells(void* user_data, const NuadePosition* at, uint32_t channel, int32_t row_lo,
                                         int32_t row_hi, NuadePatternCell* out, uint32_t cap) {
     const OktModule* module = (const OktModule*)user_data;
@@ -151,8 +129,6 @@ static uint32_t oktalyzer_tracker_cells(void* user_data, const NuadePosition* at
     return nuade_tracker_fill(at, (uint32_t)okt_channel_count(module), rows, channel, row_lo, row_hi, out, cap,
                               oktalyzer_cell, module);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_oktalyzer = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -171,8 +147,6 @@ const NuadePlayer nuade_player_oktalyzer = {
     .tracker_info = oktalyzer_tracker_info,
     .tracker_cells = oktalyzer_tracker_cells,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 OktModule* okt_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_oktalyzer) {

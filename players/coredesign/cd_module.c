@@ -29,31 +29,21 @@
 #define SEARCH_ROUTINE 0x180 // the routines the patterns are searched in are shorter than this
 #define SEARCH_CODE 0x1000   // the driver's code is shorter than this
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t cd_u8(const CdMemory* m, uint32_t offset) {
     return offset < m->size ? m->data[offset] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t cd_u16(const CdMemory* m, uint32_t offset) {
     return (uint16_t)(cd_u8(m, offset) << 8 | cd_u8(m, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int16_t cd_s16(const CdMemory* m, uint32_t offset) {
     return (int16_t)cd_u16(m, offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t cd_u32(const CdMemory* m, uint32_t offset) {
     return (uint32_t)cd_u16(m, offset) << 16 | cd_u16(m, offset + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CdSubsong cd_read_subsong(const CdMemory* m, const CdTables* tables, uint32_t index) {
     const uint32_t at = tables->subsongs + index * CD_SUBSONG_SIZE;
@@ -62,8 +52,6 @@ CdSubsong cd_read_subsong(const CdMemory* m, const CdTables* tables, uint32_t in
                          .period = cd_u16(m, at + 4),
                          .param = cd_u16(m, at + 6) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CdInstrument cd_read_instrument(const CdMemory* m, uint32_t offset) {
     const uint8_t flags = cd_u8(m, offset + 5);
@@ -79,8 +67,6 @@ CdInstrument cd_read_instrument(const CdMemory* m, uint32_t offset) {
                             .loop_words = cd_u16(m, offset + 0xC) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 CdVibrato cd_read_vibrato(const CdMemory* m, const CdTables* tables, uint8_t number) {
     const uint32_t at = tables->vibratos + CD_VIBRATO_SIZE * (uint32_t)number;
     const uint8_t control = cd_u8(m, at);
@@ -90,26 +76,19 @@ CdVibrato cd_read_vibrato(const CdMemory* m, const CdTables* tables, uint8_t num
                          .sequence = at + 1 };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t cd_read_song_track(const CdMemory* m, const CdTables* tables, uint8_t song, int track) {
     const uint32_t at = tables->songs + (uint32_t)song * CD_SONG_SIZE + 2 * (uint32_t)track;
     return tables->songs + (uint32_t)(int32_t)cd_s16(m, at);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t cd_read_pattern(const CdMemory* m, const CdTables* tables, uint8_t pattern) {
     return tables->pattern_base + (uint32_t)(int32_t)cd_s16(m, tables->pattern_offsets + 2 * (uint32_t)pattern);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t cd_read_period(const CdMemory* m, const CdTables* tables, uint8_t note) {
     return cd_u16(m, tables->periods + (uint32_t)(2 * (int32_t)(int8_t)note));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The start of the executable: the hunk header of AmigaDOS, then the first hunk's type, size and data.
 
 typedef struct CdHunkHeader {
@@ -123,8 +102,6 @@ typedef struct CdHunkHeader {
     uint32_t data_longs; // in the file
 } CdHunkHeader;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static CdHunkHeader read_hunk_header(const uint8_t* data) {
     return (CdHunkHeader) { .magic = nuade_read_be32(data),
                             .library_names = nuade_read_be32(data + 4),
@@ -136,7 +113,6 @@ static CdHunkHeader read_hunk_header(const uint8_t* data) {
                             .data_longs = nuade_read_be32(data + 28) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The hunk of the executable, as AmigaDOS loads it. Relocation is not needed: the offsets in the hunk are the driver's
 // addresses, so the hunk is kept at base 0. The eagleplayer's check (Check2) also wants the memory flags of the hunk
 // to be set.
@@ -168,7 +144,6 @@ static bool load_hunk(CdMemory* m, const uint8_t* data, size_t size) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Pattern scan
 
 static int parse_pattern(const char* pattern, uint16_t* words, bool* any) {
@@ -187,7 +162,6 @@ static int parse_pattern(const char* pattern, uint16_t* words, bool* any) {
     return count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The offset of the first match of `pattern` in [from, to), or NOT_FOUND.
 
 static uint32_t find_pattern(const CdMemory* m, uint32_t from, uint32_t to, const char* pattern) {
@@ -206,7 +180,6 @@ static uint32_t find_pattern(const CdMemory* m, uint32_t from, uint32_t to, cons
     return NOT_FOUND;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The address that the d16(pc) operand in word `operand` of the match refers to.
 
 static uint32_t pc_operand(const CdMemory* m, uint32_t match, uint32_t operand) {
@@ -214,19 +187,13 @@ static uint32_t pc_operand(const CdMemory* m, uint32_t match, uint32_t operand) 
     return extension + (uint32_t)(int32_t)cd_s16(m, extension);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t min_u32(uint32_t a, uint32_t b) {
     return a < b ? a : b;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool has_magic(const CdMemory* m) {
     return cd_u32(m, 0) == MAGIC_MOVEQ_RTS && cd_u32(m, 4) == MAGIC_S_PH && cd_u32(m, 8) == MAGIC_IPPS;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static CdHeader read_header(const CdMemory* m) {
     uint32_t entry[HEADER_ENTRIES];
@@ -245,7 +212,6 @@ static CdHeader read_header(const CdMemory* m) {
                         .notice = entry[9] };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tables and the version, from the operands of the routines that use them. False if a pattern is missing.
 
 static bool locate(CdModule* module) {
@@ -301,14 +267,12 @@ static bool locate(CdModule* module) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer wants the entry points and the subsong count non-zero.
 
 static bool header_checked(const CdHeader* h) {
     return h->tick != 0 && h->audio_irq != 0 && h->start != 0 && h->stop != 0 && h->subsongs != 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Every table must lie inside the hunk, and the entry points in the code.
 
 static bool tables_inside(const CdModule* module) {
@@ -331,8 +295,6 @@ static bool tables_inside(const CdModule* module) {
     return h->instruments <= h->instruments_end;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool cd_module_load(CdModule* module, const uint8_t* data, size_t size) {
     memset(module, 0, sizeof(*module));
     if (!load_hunk(&module->memory, data, size)) {
@@ -348,7 +310,6 @@ bool cd_module_load(CdModule* module, const uint8_t* data, size_t size) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's check (Check2), and that the tables can be found
 
 bool cd_probe(const uint8_t* data, size_t size) {
@@ -359,8 +320,6 @@ bool cd_probe(const uint8_t* data, size_t size) {
     }
     return loaded;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void cd_module_free(CdModule* module) {
     free(module->memory.data);

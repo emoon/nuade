@@ -25,7 +25,6 @@ static const uint32_t mt_table_offsets[MT_TABLE_COUNT] = {
     MtTable_Waveforms,   MtTable_Patterns, MtTable_End,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer checks the magic only; its InitSound adds the offset table to the song address, so the port accepts
 // the one table the songs use.
 
@@ -41,8 +40,6 @@ bool mt_module_check(const uint8_t* data, size_t size) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t mt_read_byte(const MtModule* module, int64_t offset, bool* unmapped) {
     const uint32_t address = (uint32_t)(MT_SONG_BASE + offset);
     if (address >= MT_SONG_BASE && address - MT_SONG_BASE < module->size) {
@@ -57,8 +54,6 @@ uint8_t mt_read_byte(const MtModule* module, int64_t offset, bool* unmapped) {
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t mt_read_long(const MtModule* module, int64_t offset, bool* unmapped) {
     uint32_t value = 0;
     for (int i = 0; i < 4; i++) {
@@ -67,25 +62,18 @@ uint32_t mt_read_long(const MtModule* module, int64_t offset, bool* unmapped) {
     return value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t mt_song_length(const MtModule* module) {
     return mt_read_byte(module, MtTable_SongLength, nullptr);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint8_t mt_restart(const MtModule* module) {
     return mt_read_byte(module, MtTable_Restart, nullptr);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t mt_speed(const MtModule* module) {
     return nuade_read_be16(module->bytes + MtTable_Speed);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The speed effect writes the word into the song.
 
 void mt_set_speed(MtModule* module, uint16_t speed) {
@@ -93,19 +81,13 @@ void mt_set_speed(MtModule* module, uint16_t speed) {
     module->bytes[MtTable_Speed + 1] = (uint8_t)speed;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t mt_order_pattern(const MtModule* module, uint8_t position) {
     return mt_read_byte(module, MtTable_Order + position, nullptr);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t mt_transpose(const MtModule* module, uint8_t position) {
     return mt_read_byte(module, MtTable_Transpose + position, nullptr);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MtInstrument mt_instrument(const MtModule* module, uint8_t number) {
     MtInstrument instrument;
@@ -115,26 +97,18 @@ MtInstrument mt_instrument(const MtModule* module, uint8_t number) {
     return instrument;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 MtBlock mt_block(MtSequence sequence, uint8_t number) {
     static const uint32_t tables[MT_SEQUENCES] = { MtTable_Volume, MtTable_Wave, MtTable_Note, MtTable_Period };
     return (MtBlock) { .zeros = false, .offset = (int64_t)tables[sequence] + (int64_t)number * MT_BLOCK_BYTES };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t mt_block_step(const MtModule* module, MtBlock block, int64_t index, bool* unmapped) {
     return block.zeros ? 0 : mt_read_byte(module, block.offset + index, unmapped);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t mt_waveform_offset(uint8_t number) {
     return MtTable_Waveforms + (uint32_t)number * MT_WAVE_BYTES;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MtCell mt_row(const MtModule* module, uint8_t pattern, uint32_t row, int voice, bool* unmapped) {
     const int16_t pattern_offset = (int16_t)(uint16_t)((uint32_t)pattern * MT_PATTERN_BYTES);

@@ -21,7 +21,6 @@
 #define SIL_SAMPLE_HEADER 0x10
 #define SIL_SCRIPT_START 0x18 // from a module's base: where its script starts
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Memory: a read past the end is 0, a write past the end is dropped. `data` is a nuade_paula_padded_copy, so any AUDxLC
 // inside `size` can play any length.
 
@@ -36,7 +35,6 @@ uint16_t sil_u16(const SilMemory* memory, uint32_t address);
 uint32_t sil_u32(const SilMemory* memory, uint32_t address);
 void sil_put8(SilMemory* memory, uint32_t address, uint8_t value);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Container
 
 // The 0x10 byte header of a block. A sample block's data follows it; a music block's stream starts at +6.
@@ -78,7 +76,6 @@ bool sil_image_unpack(SilMemory* memory, const SilImage* image);
 
 SilPatch sil_patch_find(const SilMemory* memory, const SilImage* song);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Script interpreter
 
 void sil_script_init(SilScript* script, SilMemory* memory, const SilImage* song, uint32_t* steps_left);
@@ -100,7 +97,6 @@ bool sil_script_slots_unset(const SilScript* script);
 bool sil_script_starts_with_sample(const SilScript* script);
 void sil_script_note_parameters(SilScript* script);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Music player
 
 typedef enum SilBatch {

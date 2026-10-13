@@ -16,9 +16,7 @@
 #define WAVEFORM_JUMP 0xFF
 #define SAMPLE_REPEAT_INITIAL_WORDS 4
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Module access
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The sample data at `at` for AUDxLC/AUDxLEN; a sample that does not lie inside the file sets the overrun flag.
 static const int8_t* sample_pointer(TronicModule* module, int64_t at, uint16_t words) {
@@ -30,13 +28,9 @@ static const int8_t* sample_pointer(TronicModule* module, int64_t at, uint16_t w
     return (const int8_t*)(module->data + at);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int64_t sample_start(TronicModule* module, uint8_t number) {
     return (int64_t)module->samples + tronic_long(module, (uint64_t)module->sample_table + 4u * number);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t tronic_effect_wave_table(const TronicModule* module, TronicCell row) {
     // The table address takes its upper bits from a register the row leaves over: after a note, the instrument offset's
@@ -45,9 +39,7 @@ uint32_t tronic_effect_wave_table(const TronicModule* module, TronicCell row) {
     return module->wave_tables + (((uint32_t)high_byte << 8 | row.effect_arg) << 4);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Voice
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void tronic_voice_reset(TronicModule* module, TronicVoice* voice, int index) {
     *voice = (TronicVoice) { 0 };
@@ -58,8 +50,6 @@ void tronic_voice_reset(TronicModule* module, TronicVoice* voice, int index) {
     voice->paula.lc = tronic_silence(module);
     voice->paula.len_words = SAMPLE_REPEAT_INITIAL_WORDS;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A note starts: the instrument's state and, for a sample, AUDxLC/AUDxLEN of its first part.
 void tronic_start_note(TronicModule* module, TronicVoice* voice, unsigned instrument_number) {
@@ -93,8 +83,6 @@ void tronic_start_note(TronicModule* module, TronicVoice* voice, unsigned instru
     voice->vibrato_hold = first_stage.hold;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The tick after a sample started: AUDxLC/AUDxLEN get the repeat, and the sample's first word is cleared so that a
 // repeat of the first word is silent.
 void tronic_sample_repeat(TronicModule* module, TronicVoice* voice, bool clear_first_word) {
@@ -113,8 +101,6 @@ void tronic_sample_repeat(TronicModule* module, TronicVoice* voice, bool clear_f
     }
     voice->paula.lc = sample_pointer(module, start + (int16_t)instrument->loop_offset, instrument->loop_words);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A waveform instrument: every `param` + 1 ticks AUDxLC moves to the next waveform of the list. 0xFF in the list jumps
 // to the position in the next byte; a jump onto another 0xFF ends the list for good.
@@ -140,8 +126,6 @@ void tronic_run_waveform_list(TronicModule* module, TronicVoice* voice) {
     voice->paula.len_words = instrument->length_words;
     voice->waveform_pos = (uint8_t)(pos + 1);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The vibrato: the pitch offset moves by `step` every tick, up and down in turns; the stages run one after the other.
 void tronic_run_vibrato(TronicModule* module, TronicVoice* voice) {
@@ -170,8 +154,6 @@ void tronic_run_vibrato(TronicModule* module, TronicVoice* voice) {
         voice->vibrato_stage = VIBRATO_LAST_STAGE;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The volume envelope: stages of (step, target, hold). The level moves to the target by `step` per tick, then the stage
 // holds. The last stage repeats; a falling stage does not wrap to it.
@@ -207,8 +189,6 @@ void tronic_run_envelope(TronicModule* module, TronicVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Effect 5: the period moves towards the note's by `slide_to_note` per tick.
 static void run_slide_to_note(TronicVoice* voice) {
     if (voice->slide_to_note == 0) {
@@ -228,8 +208,6 @@ static void run_slide_to_note(TronicVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The next note offset of the voice's wave table (an arpeggio); 0x80 restarts the table.
 static uint8_t next_wave_table_byte(TronicModule* module, TronicVoice* voice) {
     for (;;) {
@@ -246,8 +224,6 @@ static uint8_t next_wave_table_byte(TronicModule* module, TronicVoice* voice) {
         voice->wave_table_pos = 0;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // AUDxPER and AUDxVOL from the voice's state.
 static void write_registers(TronicModule* module, TronicSong* song, TronicVoice* voice) {
@@ -269,8 +245,6 @@ static void write_registers(TronicModule* module, TronicSong* song, TronicVoice*
     voice->paula.volume = volume & 0x7F;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_instrument(TronicModule* module, TronicSong* song, TronicVoice* voice) {
     if (!voice->instrument.is_sample) {
         tronic_run_waveform_list(module, voice);
@@ -280,8 +254,6 @@ static void run_instrument(TronicModule* module, TronicSong* song, TronicVoice* 
     run_slide_to_note(voice);
     write_registers(module, song, voice);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The pitch slides (3, 4) are not modelled; the open-time check refuses songs that use them.
 static void apply_effect(TronicModule* module, TronicSong* song, TronicVoice* voice, TronicCell row) {
@@ -309,8 +281,6 @@ static void apply_effect(TronicModule* module, TronicSong* song, TronicVoice* vo
             break;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A row tick: the next row of the pattern, and at the pattern's start the next step of the sequence.
 static void read_row(TronicModule* module, TronicSong* song, TronicVoice* voice) {
@@ -340,8 +310,6 @@ static void read_row(TronicModule* module, TronicSong* song, TronicVoice* voice)
     voice->row_offset = (uint16_t)((voice->row_offset + TRONIC_ROW_BYTES) & (TRONIC_PATTERN_BYTES - 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_voice(TronicModule* module, TronicSong* song, TronicVoice* voice, bool row_tick) {
     if (voice->sample_repeat_pending) {
         tronic_sample_repeat(module, voice, true);
@@ -356,9 +324,7 @@ static void run_voice(TronicModule* module, TronicSong* song, TronicVoice* voice
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Player
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TronicPlayer* tronic_create(const uint8_t* data, size_t size) {
     TronicPlayer* player = (TronicPlayer*)calloc(1, sizeof(TronicPlayer));
@@ -373,8 +339,6 @@ TronicPlayer* tronic_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void tronic_destroy(TronicPlayer* player) {
     if (player == nullptr) {
         return;
@@ -383,16 +347,12 @@ void tronic_destroy(TronicPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool tronic_probe(const uint8_t* data, size_t size) {
     TronicModule module;
     const bool ok = tronic_module_parse(&module, data, size) && tronic_module_prove(&module);
     tronic_module_free(&module);
     return ok;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool tronic_start(TronicPlayer* player, NuadeVoices* voices) {
     if (player == nullptr || voices == nullptr) {
@@ -409,8 +369,6 @@ bool tronic_start(TronicPlayer* player, NuadeVoices* voices) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TronicTickResult tronic_tick(TronicPlayer* player, NuadeVoices* voices) {
     TronicModule* module = &player->module;
@@ -432,28 +390,20 @@ TronicTickResult tronic_tick(TronicPlayer* player, NuadeVoices* voices) {
     return (TronicTickResult) { .looped = song->looped };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 TronicPosition tronic_position(const TronicPlayer* player) {
     const TronicVoice* voice = &player->song.voices[0];
     return (TronicPosition) { .order = voice->shown_order, .row = voice->shown_row, .speed = player->song.speed + 1 };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int tronic_order_count(const TronicPlayer* player) {
     return player->module.sequence[0].length / 2;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TronicVoiceState tronic_voice_state(const TronicPlayer* player, int voice) {
     const TronicVoice* v = &player->song.voices[voice];
     return (TronicVoiceState) { .period = v->has_instrument ? v->target_period : -1,
                                 .instrument = v->has_instrument ? v->instrument_number - 1 : -1 };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TronicCell tronic_pattern_cell(const TronicPlayer* player, int order, int voice, int row) {
     // The readers flag reads outside the file in the module they get; a copy keeps the player's own const.

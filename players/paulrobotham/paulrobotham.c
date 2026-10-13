@@ -34,7 +34,6 @@ static const uint16_t period_table[PR_PERIOD_COUNT] = {
     0x03F, 0x03C, 0x038, 0x035, 0x032, 0x02F, 0x02D, 0x02A, 0x028, 0x025, 0x023, 0x021, 0x01F, 0x01E, 0x01C,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitSound's per-voice part: the fields it writes. The others (periods, the repeat, the fade) keep their values when
 // the song starts again.
 
@@ -63,8 +62,6 @@ static void voice_init(const PrSong* song, PrVoice* v, uint32_t index) {
     v->loop_depth = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void song_restart(PrPlayer* player) {
     for (uint32_t i = 0; i < player->song.voice_count; i++) {
         voice_init(&player->song, &player->voices[i], i);
@@ -72,8 +69,6 @@ static void song_restart(PrPlayer* player) {
     player->master_volume = SONG_START_MASTER;
     player->master_target = SONG_START_MASTER;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void player_reset(PrPlayer* player) {
     memset(player->voices, 0, sizeof(player->voices));
@@ -84,15 +79,12 @@ static void player_reset(PrPlayer* player) {
     song_restart(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool pr_start(PrPlayer* player, NuadeVoices* voices) {
     (void)voices;
     player_reset(player);
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The silent loop stands in for an instrument with a loop length of 0.
 
 static void voice_set_repeat(const PrSong* song, PrVoice* v, const PrInstrument* in, uint16_t period) {
@@ -106,7 +98,6 @@ static void voice_set_repeat(const PrSong* song, PrVoice* v, const PrInstrument*
     v->loop_period = period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note on a voice that is not in legato mode: restart the channel with the attack of the instrument. DMA stays off
 // until the next tick, then the repeat is written one tick after that.
 
@@ -125,7 +116,6 @@ static void note_start(const PrSong* song, PrVoice* v, uint8_t note) {
     voice_set_repeat(song, v, &in, period);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A legato note after an instrument command: the new instrument starts at its repeat, with the volume at 0.
 
 static void note_start_at_repeat(const PrSong* song, PrVoice* v, uint8_t note) {
@@ -142,7 +132,6 @@ static void note_start_at_repeat(const PrSong* song, PrVoice* v, uint8_t note) {
     v->instrument_changed = false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A duration byte: length << shift in units of the tempo, as a number of ticks plus a remainder.
 
 static void duration_set(const PrPlayer* player, PrVoice* v, uint8_t byte) {
@@ -152,15 +141,11 @@ static void duration_set(const PrPlayer* player, PrVoice* v, uint8_t byte) {
     v->duration_rest = (uint16_t)(total % TEMPO_DIVISOR);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 typedef enum PrFlow {
     PrFlow_Ended,   // the stream ended: nothing else happens on this voice this tick
     PrFlow_Pitch,   // go on with portamento, vibrato and the volume
     PrFlow_Staging, // the note goes on: finish the DMA start of the earlier note first
 } PrFlow;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static PrFlow note_event(const PrPlayer* player, PrVoice* v, uint8_t note, uint32_t pos) {
     const PrSong* song = &player->song;
@@ -195,15 +180,12 @@ static PrFlow note_event(const PrPlayer* player, PrVoice* v, uint8_t note, uint3
     return PrFlow_Pitch;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void voice_end(PrVoice* v) {
     v->ended = true;
     nuade_paula_channel_dma_off(&v->paula);
     v->dma_running = false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The master fade command: a target volume and the ticks per step (0 jumps to the target).
 
 static void master_fade(PrPlayer* player, uint8_t target, uint8_t period) {
@@ -216,7 +198,6 @@ static void master_fade(PrPlayer* player, uint8_t target, uint8_t period) {
     player->master_period = period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Runs a command; `pos` is behind the command byte and ends up behind its arguments. False when the voice has to stop.
 
 static bool command_run(PrPlayer* player, PrVoice* v, uint32_t command, uint32_t* pos) {
@@ -298,7 +279,6 @@ static bool command_run(PrPlayer* player, PrVoice* v, uint32_t command, uint32_t
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Reads stream bytes until a note or the end of the stream.
 
 static PrFlow events_read(PrPlayer* player, PrVoice* v) {
@@ -324,7 +304,6 @@ static PrFlow events_read(PrPlayer* player, PrVoice* v) {
     return PrFlow_Ended;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tick after a note start switches the DMA on, the tick after that writes the repeat.
 
 static void dma_stage(PrVoice* v) {
@@ -341,7 +320,6 @@ static void dma_stage(PrVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Portamento towards the target period: a step of the voice's size, or the target itself when it is within one step.
 
 static uint16_t portamento_period(const PrVoice* v) {
@@ -361,7 +339,6 @@ static uint16_t portamento_period(const PrVoice* v) {
     return step >= distance ? v->target_period : moved;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period register: the portamento period plus the vibrato (a signed byte of the table as a fraction of the period).
 
 static void pitch_update(const PrSong* song, PrVoice* v) {
@@ -375,7 +352,6 @@ static void pitch_update(const PrSong* song, PrVoice* v) {
     v->duration--;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The envelope table holds levels (0..63); a negative byte jumps back by (-byte + 3) & ~3 positions.
 
 static bool envelope_level(const PrSong* song, PrVoice* v, uint8_t* level) {
@@ -390,7 +366,6 @@ static bool envelope_level(const PrSong* song, PrVoice* v, uint8_t* level) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume register of a voice whose DMA runs: the voice volume (or the fade-out volume) times the envelope level,
 // then the master fade.
 
@@ -416,8 +391,6 @@ static void volume_update(const PrPlayer* player, PrVoice* v) {
     v->paula.volume = (uint8_t)volume;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void voice_tick(PrPlayer* player, PrVoice* v) {
     if (v->ended) {
         return;
@@ -440,7 +413,6 @@ static void voice_tick(PrPlayer* player, PrVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Every master_period ticks the master volume takes one step towards its target.
 
 static void master_fade_tick(PrPlayer* player) {
@@ -460,8 +432,6 @@ static void master_fade_tick(PrPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 PrTickResult pr_tick(PrPlayer* player, NuadeVoices* voices) {
     for (uint32_t i = 0; i < player->song.voice_count; i++) {
         voice_tick(player, &player->voices[i]);
@@ -478,13 +448,9 @@ PrTickResult pr_tick(PrPlayer* player, NuadeVoices* voices) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t pr_voice_count(const PrPlayer* player) {
     return player->song.voice_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PrVoiceState pr_voice_state(const PrPlayer* player, uint32_t voice) {
     if (voice >= PR_VOICES) {

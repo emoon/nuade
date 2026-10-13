@@ -14,7 +14,6 @@
 #define NOTE_C0_BIAS 48 // the note byte of C-0: C-1 is byte 60, period 856
 #define NOTE_UNITS_PER_OCTAVE 96
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume slide moves the voice's volume one step towards its target every `slide_rate` ticks.
 
 void psh_volume_slide(PshVoice* v) {
@@ -26,7 +25,6 @@ void psh_volume_slide(PshVoice* v) {
     v->slide_counter = v->slide_rate;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The next step of an envelope: a signed byte for the value, or the end or restart mark. Returns false when the
 // envelope has no step now; otherwise `step` holds it and `after` is where the envelope goes on.
 
@@ -48,8 +46,6 @@ static bool next_envelope_step(const PshModule* m, int32_t restart, int32_t next
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void psh_volume_envelope(const PshModule* m, PshVoice* v) {
     int8_t step;
     int32_t after;
@@ -61,8 +57,6 @@ void psh_volume_envelope(const PshModule* m, PshVoice* v) {
     v->volume_counter = v->volume_interval;
     v->volume_next = after;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void psh_pitch_envelope(const PshModule* m, PshVoice* v) {
     int8_t step;
@@ -76,7 +70,6 @@ void psh_pitch_envelope(const PshModule* m, PshVoice* v) {
     v->pitch_next = after;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An envelope starts at its first byte, the number of ticks per step, and runs from the byte after it.
 
 void psh_select_volume_envelope(const PshModule* m, PshVoice* v, int64_t offset) {
@@ -86,16 +79,12 @@ void psh_select_volume_envelope(const PshModule* m, PshVoice* v, int64_t offset)
     v->volume_next = v->volume_restart;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void psh_select_pitch_envelope(const PshModule* m, PshVoice* v, int64_t offset) {
     v->pitch_interval = psh_u8(m, offset);
     v->pitch_counter = v->pitch_interval;
     v->pitch_restart = (int32_t)(offset + 1);
     v->pitch_next = v->pitch_restart;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void psh_select_sample(PshVoice* v, const PshSample* sample) {
     v->sample = sample->start;
@@ -106,7 +95,6 @@ void psh_select_sample(PshVoice* v, const PshSample* sample) {
     v->sample_volume = sample->volume;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A pattern duration: one byte, or a zero and a big-endian word.
 
 void psh_read_duration(const PshModule* m, PshVoice* v) {
@@ -119,7 +107,6 @@ void psh_read_duration(const PshModule* m, PshVoice* v) {
     v->duration = (uint16_t)(high << 8 | psh_u8(m, v->stream++));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period of a note byte * 8: the note and the voice's tunings pick an entry of the one-octave table, shifted down
 // by the octave, plus the voice's period offset. All sums are 16 bit. A negative sum is out of the table: the oldest
 // replayer returns the longest period for it (`negative_is_longest`).
@@ -139,8 +126,6 @@ static const uint16_t k_periods[PERIOD_COUNT] = {
     15357, 15247, 15137, 15028, 14920, 14813, 14706, 14601, 14496, 14391, 14288, 14185, 14083, 13982, 13881, 13781,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t psh_note_period(const PshVoice* v, uint16_t note_units, bool negative_is_longest) {
     uint16_t rest = (uint16_t)(note_units + v->pitch_tune + v->sample_tune);
     if (negative_is_longest && (int16_t)rest < 0) {
@@ -158,7 +143,6 @@ uint16_t psh_note_period(const PshVoice* v, uint16_t note_units, bool negative_i
     return (uint16_t)((shift < 16 ? base >> shift : 0) + v->note_offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A slide: the period runs from `start` to `target` in `duration` ticks. The step per tick is the difference divided by
 // the duration, in 16.16 fixed point.
 
@@ -175,15 +159,12 @@ void psh_start_slide(PshVoice* v, uint16_t start, uint16_t target, uint16_t dura
     v->period_slide = difference < 0 ? 0u - step : step;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void psh_add_period_slide(PshVoice* v) {
     const uint32_t sum = ((uint32_t)v->period << 16 | v->period_fraction) + v->period_slide;
     v->period = (uint16_t)(sum >> 16);
     v->period_fraction = (uint16_t)sum;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // While the note is released the level falls by two per tick, as long as it is not negative.
 
 void psh_release_level(PshVoice* v) {
@@ -192,7 +173,6 @@ void psh_release_level(PshVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note starts: the envelopes start over, the channel's DMA goes off and gets the sample; the DMA comes on at the
 // start of the next tick, and the loop pointer goes in after it.
 
@@ -212,8 +192,6 @@ void psh_start_note(PshPlayer* p, uint32_t channel) {
     v->releasing = false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void psh_write_registers(PshPlayer* p, uint32_t channel, uint16_t period) {
     PshVoice* v = &p->voices[channel];
     const int16_t sum = (int16_t)(v->volume_current + v->level - VOLUME_OFFSET);
@@ -222,7 +200,6 @@ void psh_write_registers(PshPlayer* p, uint32_t channel, uint16_t period) {
     p->paula[channel].volume = volume;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The order list starts over; the loop of the layout's loop channel is the eagleplayer's SongEnd.
 
 static void restart_order_list(PshPlayer* p, uint32_t channel) {
@@ -233,7 +210,6 @@ static void restart_order_list(PshPlayer* p, uint32_t channel) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The all-voice volume slide code sets the slide of every voice.
 
 static void slide_all_volumes(PshPlayer* p, uint16_t target, uint16_t rate) {
@@ -244,7 +220,6 @@ static void slide_all_volumes(PshPlayer* p, uint16_t target, uint16_t rate) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Order list entries up to the next pattern. The entries below 0xFFE8 are patterns (the top bit says that a repeat
 // count follows); the others change the voice or the song and the list goes on. False when the voice stopped.
 
@@ -298,14 +273,12 @@ static bool read_order_list(PshPlayer* p, uint32_t channel) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A voice that stopped is not stepped any more; its channel plays on.
 
 void psh_stop_voice(PshVoice* v) {
     v->active = false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pattern command "next pattern": the pattern plays again while it has repeats left, then the next entry of the
 // voice's order list is read. False when the voice stopped.
 
@@ -319,7 +292,6 @@ bool psh_next_pattern(PshPlayer* p, uint32_t channel) {
     return read_order_list(p, channel);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The order list code "loop" run as a pattern command: the list starts over and its next entry is read.
 
 bool psh_restart_order_list(PshPlayer* p, uint32_t channel) {
@@ -327,7 +299,6 @@ bool psh_restart_order_list(PshPlayer* p, uint32_t channel) {
     return read_order_list(p, channel);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The order list code "stop" run as a pattern command.
 
 bool psh_stop_song(PshPlayer* p, uint32_t channel) {
@@ -336,7 +307,6 @@ bool psh_stop_song(PshPlayer* p, uint32_t channel) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note byte as semitones from C-0; the bytes below it play lower than C-0.
 
 int psh_display_note(uint8_t note) {

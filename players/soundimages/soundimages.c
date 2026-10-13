@@ -52,7 +52,6 @@ typedef enum Flow {
     Flow_Return,     // the voice's routine returns without a store
 } Flow;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Reads of the sequences
 
 static bool fetch8(SiPlayer* player, int64_t* cursor, uint8_t* value) {
@@ -64,8 +63,6 @@ static bool fetch8(SiPlayer* player, int64_t* cursor, uint8_t* value) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool fetch16(SiPlayer* player, int64_t cursor, uint16_t* value) {
     if (!si_module_u16(&player->module, cursor, value)) {
         player->broken = true;
@@ -73,8 +70,6 @@ static bool fetch16(SiPlayer* player, int64_t cursor, uint16_t* value) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool read_bytes(SiPlayer* player, int64_t* cursor, uint8_t* out, uint32_t count) {
     for (uint32_t i = 0; i < count; i++) {
@@ -85,7 +80,6 @@ static bool read_bytes(SiPlayer* player, int64_t* cursor, uint8_t* out, uint32_t
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Paula
 
 // Paula ignores bit 0 of AUDxLC.
@@ -96,7 +90,6 @@ static const int8_t* sample_pointer(const SiPlayer* player, uint32_t offset) {
     return (const int8_t*)(player->module.memory + (offset & ~1u));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxLC and AUDxLEN with the voice's sample.
 
 static void write_sample(const SiPlayer* player, SiVoice* voice) {
@@ -104,7 +97,6 @@ static void write_sample(const SiPlayer* player, SiVoice* voice) {
     voice->paula.len_words = voice->length_words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxLC and AUDxLEN with the sample's repeat: what the audio interrupt writes.
 
 static void write_repeat(const SiPlayer* player, SiVoice* voice) {
@@ -112,7 +104,6 @@ static void write_repeat(const SiPlayer* player, SiVoice* voice) {
     voice->paula.len_words = voice->loop_length_words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period of a note
 
 static void set_period(SiPlayer* player, SiVoice* voice, uint8_t note) {
@@ -132,7 +123,6 @@ static void set_period(SiPlayer* player, SiVoice* voice, uint8_t note) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The stop command and the fade out reaching 0 end the song: all voices off, the header cleared.
 
 static void stop_song(SiPlayer* player) {
@@ -148,7 +138,6 @@ static void stop_song(SiPlayer* player) {
     player->state.master_volume = MASTER_VOLUME_FULL;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note: the period, and for a voice that is not holding its sample the registers; the DMA goes off now and on at the
 // next tick.
 
@@ -172,14 +161,11 @@ static void start_note(SiPlayer* player, SiVoice* voice, uint8_t note) {
     voice->vibrato_left = voice->vibrato_rate;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The offsets of the lists and sequences are signed words from the song table.
 
 static int64_t song_offset(const SiPlayer* player, uint16_t word) {
     return (int64_t)player->module.layout.song_table + (int16_t)word;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool any_list_alive(const SiPlayer* player) {
     for (uint32_t i = 0; i < SI_VOICES; i++) {
@@ -190,7 +176,6 @@ static bool any_list_alive(const SiPlayer* player) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The next sequence of the voice's list. At the end of the list the module's end command runs, with the cursor behind
 // the zero that ends the list.
 
@@ -217,7 +202,6 @@ static Flow next_pattern(SiPlayer* player, SiVoice* voice, int64_t* cursor) {
     return Flow_Read;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The slide commands read a step and the number of ticks it lasts.
 
 static Flow slide_arguments(SiPlayer* player, SiVoice* voice, int64_t* cursor) {
@@ -229,8 +213,6 @@ static Flow slide_arguments(SiPlayer* player, SiVoice* voice, int64_t* cursor) {
     voice->slide_left = b[2];
     return Flow_Read;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static Flow run_command(SiPlayer* player, SiVoice* voice, const SiTableEntry* entry, int64_t* cursor) {
     uint8_t b[5];
@@ -342,7 +324,6 @@ static Flow run_command(SiPlayer* player, SiVoice* voice, const SiTableEntry* en
     return Flow_Return;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A sample command: the sample table entry becomes the voice's sample and repeat.
 
 static Flow sample_command(SiPlayer* player, SiVoice* voice, uint32_t index) {
@@ -359,7 +340,6 @@ static Flow sample_command(SiPlayer* player, SiVoice* voice, uint32_t index) {
     return Flow_Read;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The envelope command: the volume and the three nibble pairs of the attack, the decay and the wait of each.
 
 static Flow envelope_command(SiPlayer* player, SiVoice* voice, uint8_t volume, int64_t* cursor) {
@@ -379,7 +359,6 @@ static Flow envelope_command(SiPlayer* player, SiVoice* voice, uint8_t volume, i
     return Flow_Read;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The arpeggio command: the pattern is at a signed word offset from the arpeggio table.
 
 static Flow arpeggio_command(SiPlayer* player, SiVoice* voice, uint32_t index) {
@@ -393,7 +372,6 @@ static Flow arpeggio_command(SiPlayer* player, SiVoice* voice, uint32_t index) {
     return Flow_Read;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A command byte: the classes by range, the rest through the module's command table.
 
 static Flow dispatch(SiPlayer* player, SiVoice* voice, uint8_t byte, int64_t* cursor) {
@@ -424,7 +402,6 @@ static Flow dispatch(SiPlayer* player, SiVoice* voice, uint8_t byte, int64_t* cu
     return run_command(player, voice, &image->commands[index], cursor);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sequence: notes and commands until the step ends.
 
 static void read_sequence(SiPlayer* player, SiVoice* voice) {
@@ -466,14 +443,12 @@ static void read_sequence(SiPlayer* player, SiVoice* voice) {
     player->broken = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The effects of a tick
 
 static void lower_volume(SiVoice* voice, uint8_t step) {
     voice->volume = voice->volume < step ? 0 : (uint8_t)(voice->volume - step);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume: attack, then decay, then release once it has started.
 
 static void step_envelope(SiVoice* voice) {
@@ -504,7 +479,6 @@ static void step_envelope(SiVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The slide of the period: the step's top bit is its direction.
 
 static void step_slide(SiVoice* voice) {
@@ -519,7 +493,6 @@ static void step_slide(SiVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The arpeggio: the pattern's next note, added to the voice's note; a byte with the top bit set ends the pattern.
 
 static void step_arpeggio(SiPlayer* player, SiVoice* voice) {
@@ -541,7 +514,6 @@ static void step_arpeggio(SiPlayer* player, SiVoice* voice) {
     set_period(player, voice, (uint8_t)(entry + voice->note));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The vibrato: after its delay the period moves by the depth, up and down every rate ticks.
 
 static void step_vibrato(SiPlayer* player, SiVoice* voice) {
@@ -570,7 +542,6 @@ static void step_vibrato(SiPlayer* player, SiVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The note slides a semitone a tempo tick when the voice has a note step.
 
 static void step_note(SiPlayer* player, SiVoice* voice) {
@@ -582,7 +553,6 @@ static void step_note(SiPlayer* player, SiVoice* voice) {
     write_sample(player, voice);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The release starts when the note has release_start ticks left, unless the sequence goes on with an end of step.
 
 static void step_release(SiPlayer* player, SiVoice* voice) {
@@ -605,7 +575,6 @@ static void step_release(SiPlayer* player, SiVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A voice's routine of a tick
 
 static void run_voice(SiPlayer* player, SiVoice* voice) {
@@ -640,8 +609,6 @@ static void run_voice(SiPlayer* player, SiVoice* voice) {
     step_arpeggio(player, voice);
     step_vibrato(player, voice);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void start_requested_song(SiPlayer* player) {
     SiState* state = &player->state;
@@ -709,7 +676,6 @@ static void start_requested_song(SiPlayer* player) {
     state->master_volume = MASTER_VOLUME_FULL;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The notes started in the last tick: the DMA comes on. The DMA start raises the voice's audio interrupt (its enable
 // came with the DMACON word); the handler writes the voice's repeat registers at once and disables the interrupt again,
 // so a note gets it once.
@@ -725,7 +691,6 @@ static void start_notes(SiPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The fade out counts the master volume down to 0, where the song stops.
 
 static void run_fade(SiPlayer* player) {
@@ -742,7 +707,6 @@ static void run_fade(SiPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What some versions of the tick do before the rest.
 
 static void apply_prologue(SiPlayer* player) {
@@ -764,7 +728,6 @@ static void apply_prologue(SiPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The song's work of a tick: the voices, the fade, the tempo counter.
 
 static void run_song(SiPlayer* player) {
@@ -782,8 +745,6 @@ static void run_song(SiPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 SiTickResult si_tick(SiPlayer* player, NuadeVoices* voices) {
     player->looped = false;
     apply_prologue(player);
@@ -799,8 +760,6 @@ SiTickResult si_tick(SiPlayer* player, NuadeVoices* voices) {
                             .looped = player->looped,
                             .ended = player->state.song == 0 || player->broken };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void init_voice(const SiModule* module, uint32_t index, SiVoice* voice) {
     const SiRecord r = si_module_record(module, index);
@@ -846,8 +805,6 @@ static void init_voice(const SiModule* module, uint32_t index, SiVoice* voice) {
     voice->shown_instrument = -1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool si_start(SiPlayer* player, uint32_t song, NuadeVoices* voices) {
     if (song >= player->module.layout.song_count) {
         return false;
@@ -865,8 +822,6 @@ bool si_start(SiPlayer* player, uint32_t song, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool si_probe(const uint8_t* data, size_t size) {
     SiModule module;
     if (!si_module_open(&module, data, size)) {
@@ -875,8 +830,6 @@ bool si_probe(const uint8_t* data, size_t size) {
     si_module_close(&module);
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SiCreateResult si_create(const uint8_t* data, size_t size) {
     SiPlayer* player = calloc(1, sizeof(*player));
@@ -890,8 +843,6 @@ SiCreateResult si_create(const uint8_t* data, size_t size) {
     return (SiCreateResult) { .player = player, .status = SiStatus_Ok };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void si_destroy(SiPlayer* player) {
     if (player != nullptr) {
         si_module_close(&player->module);
@@ -899,20 +850,14 @@ void si_destroy(SiPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t si_song_count(const SiPlayer* player) {
     return player->module.layout.song_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const char* si_format_name(const SiPlayer* player) {
     (void)player;
     return "Sound Images";
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SiVoiceState si_voice_state(const SiPlayer* player, uint32_t voice) {
     const SiVoice* v = &player->voices[voice];

@@ -27,7 +27,6 @@
 #define SUN_MORPH_COPY 0xfe
 #define SUN_MORPH_RANDOM 0xff
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Pitch
 
 // The period for a pitch (with vibrato): the note picks an entry of the period table, the fraction interpolates.
@@ -51,8 +50,6 @@ static uint16_t lookup_period(const SunModule* module, const SunVoice* voice, ui
     return (uint16_t)(((uint32_t)first * (0x100 - fraction) + (uint32_t)second * fraction) >> 8);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A, B: the vibrato moves the pitch by (|phase| - 0x4000) * table value / 4096 (16 bit arithmetic).
 static uint16_t vibrato_pitch(const SunModule* module, const SunVoice* voice) {
     int16_t phase = (int16_t)voice->vibrato_phase;
@@ -65,8 +62,6 @@ static uint16_t vibrato_pitch(const SunModule* module, const SunVoice* voice) {
     return (uint16_t)(voice->pitch + (uint16_t)((product >> 6) >> 6));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A table position that counts up and returns to `loop` on reaching `end`.
 static void advance_position(uint16_t* position, uint16_t end, uint16_t loop) {
     (*position)++;
@@ -74,8 +69,6 @@ static void advance_position(uint16_t* position, uint16_t end, uint16_t loop) {
         *position = loop;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // C: a position that runs once up to `end`, then loops between `loop` and `stop`.
 static void advance_position_c(uint16_t* position, bool* looping, uint16_t end, uint16_t loop, uint16_t stop) {
@@ -90,22 +83,17 @@ static void advance_position_c(uint16_t* position, bool* looping, uint16_t end, 
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Waveform morph
 
 static int16_t wave_sample(const SunMemory* mem, uint32_t address) {
     return (int8_t)sun_mem_u8(mem, address);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void load_wave(const SunMemory* mem, uint32_t address, int8_t* out, uint32_t bytes) {
     for (uint32_t i = 0; i < bytes; i++) {
         out[i] = (int8_t)sun_mem_u8(mem, address + i);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // B with a second waveform, C: each sample is the two waveforms weighted by (128 - weight) and weight, in 16 bit
 // arithmetic.
@@ -117,8 +105,6 @@ static void morph_blend(const SunMemory* mem, const SunInstrument* inst, int32_t
         out[i] = (int8_t)((int16_t)(a + b) >> 7);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // B without a second waveform: a one pole filter over the first waveform (or over the last output), which starts from
 // the source's last sample; `weight` is the share of the filter state.
@@ -139,8 +125,6 @@ static void morph_hold(const SunMemory* mem, const SunInstrument* inst, bool in_
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A, type 1, position below 0xfe: each sample moves towards the source by (128 - position) / 128 of the distance.
 static void morph_smooth(const SunMemory* mem, const SunInstrument* inst, bool in_place, uint32_t position, int8_t* out,
                          uint32_t bytes) {
@@ -159,8 +143,6 @@ static void morph_smooth(const SunMemory* mem, const SunInstrument* inst, bool i
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A, type 1, position 0xff: random words from the two seeds.
 static void morph_random(SunPlayer* player, int8_t* out, uint32_t bytes) {
     uint32_t state = player->seed[0];
@@ -174,8 +156,6 @@ static void morph_random(SunPlayer* player, int8_t* out, uint32_t bytes) {
     player->seed[1] = (uint16_t)second;
     player->seed[0] = (uint16_t)((state & 0xffffu) ^ second);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A, type 4: a resonant filter run over the first waveform, starting from the end of the previous output; the position
 // sets its frequency and damping. `previous` is the last output (or the first waveform before there is one).
@@ -199,8 +179,6 @@ static void morph_filter(const SunMemory* mem, const SunBuild* build, const int8
         out[i] = (int8_t)((uint16_t)state >> 7);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Generation A: computes the next waveform of an active voice into its back buffer, then advances the morph position.
 static void morph_a(SunPlayer* player, SunVoice* voice) {
@@ -249,7 +227,6 @@ static void morph_a(SunPlayer* player, SunVoice* voice) {
     advance_position(&voice->morph_pos, inst->morph_end, inst->morph_loop);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Synth: one voice, every tick
 
 // The volume the envelope and the voice volume give; the master volume scales it in generation A.
@@ -267,23 +244,17 @@ static uint8_t envelope_level(const SunPlayer* player, const SunVoice* voice) {
     return (uint8_t)level;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A, B: the volume changes by its slide and stays within 0 .. 0x80.
 static void slide_volume_ab(SunVoice* voice) {
     const int sum = voice->volume + voice->volume_slide;
     voice->volume = (uint8_t)(sum < 0 ? 0 : (sum >= 0x81 ? 0x80 : sum));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // C: the volume is a byte that changes by its slide; a negative result clears it, one above 0x40 limits it.
 static void slide_volume_c(SunVoice* voice) {
     const uint8_t sum = (uint8_t)(voice->volume + (uint8_t)voice->volume_slide);
     voice->volume = sum >= 0x80 ? 0 : (sum >= 0x41 ? 0x40 : sum);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A: one tick of an active voice's synth.
 static void synth_a(SunPlayer* player, SunVoice* voice) {
@@ -305,8 +276,6 @@ static void synth_a(SunPlayer* player, SunVoice* voice) {
     voice->vibrato_phase = (uint16_t)(voice->vibrato_phase + inst->vibrato_step);
     advance_position(&voice->vibrato_pos, inst->vibrato_end, inst->vibrato_loop);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // B: one tick of an active voice's synth, including the morph.
 static void synth_b(SunPlayer* player, SunVoice* voice) {
@@ -334,8 +303,6 @@ static void synth_b(SunPlayer* player, SunVoice* voice) {
     advance_position(&voice->morph_pos, inst->morph_end, inst->morph_loop);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // C: one tick of an active voice's synth, including the morph. The envelope and the morph position each run once up to
 // their end, then loop between the loop position and the stop position.
 static void synth_c(SunPlayer* player, SunVoice* voice) {
@@ -355,8 +322,6 @@ static void synth_c(SunPlayer* player, SunVoice* voice) {
     advance_position_c(&voice->morph_pos, &voice->morph_looping, inst->morph_end, inst->morph_loop, inst->morph_stop);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void synth_voice(SunPlayer* player, SunVoice* voice) {
     if (!voice->active) {
         return;
@@ -374,7 +339,6 @@ static void synth_voice(SunPlayer* player, SunVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Sequencer: one voice, once per row
 
 static void start_instrument(SunPlayer* player, SunVoice* voice, uint8_t value) {
@@ -396,8 +360,6 @@ static void start_instrument(SunPlayer* player, SunVoice* voice, uint8_t value) 
     voice->restart_words = voice->inst.words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A note sets the pitch (and in generation A starts the last instrument again).
 static void start_note(SunPlayer* player, SunVoice* voice, uint8_t note) {
     const SunGen gen = player->module.build->gen;
@@ -408,8 +370,6 @@ static void start_note(SunPlayer* player, SunVoice* voice, uint8_t note) {
         start_instrument(player, voice, voice->last_instrument);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void apply_command(SunPlayer* player, SunVoice* voice, const SunItem* item) {
     const SunGen gen = player->module.build->gen;
@@ -468,8 +428,6 @@ static void apply_command(SunPlayer* player, SunVoice* voice, const SunItem* ite
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Reads a voice's pattern up to the end of the row.
 static void sequence_voice(SunPlayer* player, SunVoice* voice) {
     const SunGen gen = player->module.build->gen;
@@ -491,7 +449,6 @@ static void sequence_voice(SunPlayer* player, SunVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // DMA and the Paula registers
 
 static uint32_t wave_copy_bytes(const SunPlayer* player, const SunVoice* voice) {
@@ -502,8 +459,6 @@ static uint32_t wave_copy_bytes(const SunPlayer* player, const SunVoice* voice) 
     const uint32_t longs = voice->inst.words >> 1;
     return 4 * (longs != 0 ? longs : 1);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A: before the tick's work. The voices triggered by the last row stop their DMA and get the new start address.
 static void stage_one_a(SunPlayer* player) {
@@ -526,8 +481,6 @@ static void stage_one_a(SunPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A: after the tick's work. DMA starts for the triggered voices; the registers written after it are the repeat. The
 // back buffers become the front buffers.
 static void stage_two_a(SunPlayer* player) {
@@ -549,8 +502,6 @@ static void stage_two_a(SunPlayer* player) {
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // B, C: the tick after a row. Like stages one and two together, with the front buffers of all voices refreshed.
 static void stage_full_bc(SunPlayer* player) {
@@ -586,8 +537,6 @@ static void stage_full_bc(SunPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // B, C: the other ticks. Volume and period, and the front buffers of the synth voices.
 static void stage_light_bc(SunPlayer* player) {
     for (uint32_t v = 0; v < SUN_VOICES; v++) {
@@ -599,8 +548,6 @@ static void stage_light_bc(SunPlayer* player) {
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A: the master volume fades by fade_step every fade_reload + 1 ticks until it reaches 0 or 0x40.
 static void fade_a(SunPlayer* player) {
@@ -623,7 +570,6 @@ static void fade_a(SunPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Song position
 
 static void load_step(SunPlayer* player, const SunStep* step) {
@@ -632,8 +578,6 @@ static void load_step(SunPlayer* player, const SunStep* step) {
         player->voices[v].transpose = step->transpose[v];
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The next step; the end of the table wraps to the first step (the eagleplayer's SongEnd, in generation A).
 static void next_step(SunPlayer* player, bool* looped) {
@@ -650,8 +594,6 @@ static void next_step(SunPlayer* player, bool* looped) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Counts a tick; true when it is a row.
 static bool advance_tick(SunPlayer* player, bool* looped) {
     player->tick_count++;
@@ -667,7 +609,6 @@ static bool advance_tick(SunPlayer* player, bool* looped) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Player
 
 bool sun_probe(const uint8_t* data, size_t size) {
@@ -678,8 +619,6 @@ bool sun_probe(const uint8_t* data, size_t size) {
     sun_module_close(&module);
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SunCreateResult sun_create(const uint8_t* data, size_t size) {
     SunPlayer* player = calloc(1, sizeof(*player));
@@ -693,16 +632,12 @@ SunCreateResult sun_create(const uint8_t* data, size_t size) {
     return (SunCreateResult) { .player = player, .status = SunStatus_Ok };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void sun_destroy(SunPlayer* player) {
     if (player != NULL) {
         sun_module_close(&player->module);
         free(player);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sun_start(SunPlayer* player, NuadeVoices* voices) {
     const SunModule* module = &player->module;
@@ -748,8 +683,6 @@ bool sun_start(SunPlayer* player, NuadeVoices* voices) {
     return !end;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 SunTickResult sun_tick(SunPlayer* player, NuadeVoices* voices) {
     SunTickResult result = { 0 };
     const SunGen gen = player->module.build->gen;
@@ -786,14 +719,10 @@ SunTickResult sun_tick(SunPlayer* player, NuadeVoices* voices) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const char* sun_format_name(const SunPlayer* player) {
     (void)player;
     return "SUN-Tronic";
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SunVoiceState sun_voice_state(const SunPlayer* player, uint32_t voice) {
     const SunVoice* v = &player->voices[voice];

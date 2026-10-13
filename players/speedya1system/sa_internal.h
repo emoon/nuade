@@ -19,7 +19,6 @@
 #define SA1_ROWS 16
 #define SA1_EFFECT_FIRST 0x50 // the first cell byte that is an effect
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Cells
 
 typedef struct Sa1Cell {
@@ -46,7 +45,6 @@ Sa1Delays sa1_cell_delays(Sa1Cell cell);
 // The period of a cell's note, 0 for the note numbers the table leaves out (no note).
 uint16_t sa1_note_period(uint8_t first);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Samples
 
 // Check2 and the replayer's setup, then a walk through the song. False for a file the eagleplayer rejects or the port

@@ -15,14 +15,10 @@
 #define LX_COLUMN_SHIFT (-1)
 #define LX_COLUMN_NOTE_BASE 1
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe laxity_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return lx_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult laxity_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -39,27 +35,19 @@ static NuadePlayerOpenResult laxity_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void laxity_close(void* user_data) {
     lx_destroy((LxPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool laxity_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return subsong == 0 && lx_start((LxPlayer*)user_data, voices);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult laxity_tick(void* user_data, NuadeVoices* voices) {
     const LxTickResult tick = lx_tick((LxPlayer*)user_data, voices);
     return (NuadeTickResult) { .length = LX_TICK_LENGTH, .flags = tick.looped ? NuadeTick_Looped : NuadeTick_None };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void laxity_metadata(void* user_data, const NuadeMetadataSink* sink) {
     const LxPlayer* player = (const LxPlayer*)user_data;
@@ -70,8 +58,6 @@ static void laxity_metadata(void* user_data, const NuadeMetadataSink* sink) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadePositionResult laxity_position(void* user_data) {
     const LxPosition p = lx_position((const LxPlayer*)user_data);
     return (NuadePositionResult) { .valid = true,
@@ -81,8 +67,6 @@ static NuadePositionResult laxity_position(void* user_data) {
                                                  .rows = (uint32_t)p.rows,
                                                  .speed = (uint32_t)p.speed } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t laxity_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const LxPlayer* player = (const LxPlayer*)user_data;
@@ -102,8 +86,6 @@ static uint32_t laxity_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTrackerInfoResult laxity_tracker_info(void* user_data, const NuadePosition* at) {
     const LxPlayer* player = (const LxPlayer*)user_data;
     if ((int)at->order >= lx_order_count(player)) {
@@ -119,8 +101,6 @@ static NuadeTrackerInfoResult laxity_tracker_info(void* user_data, const NuadePo
                                                              { "fx", NuadeColumn_Hex, 1, 0 },
                                                              { "arg", NuadeColumn_Hex, 2, 0 } } } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePatternCell laxity_cell(const void* ctx, uint32_t order, uint32_t channel, uint32_t row) {
     NuadePatternCell cell = nuade_cell_empty();
@@ -141,8 +121,6 @@ static NuadePatternCell laxity_cell(const void* ctx, uint32_t order, uint32_t ch
     return cell;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t laxity_tracker_cells(void* user_data, const NuadePosition* at, uint32_t channel, int32_t row_lo,
                                      int32_t row_hi, NuadePatternCell* out, uint32_t cap) {
     const LxPlayer* player = (const LxPlayer*)user_data;
@@ -152,8 +130,6 @@ static uint32_t laxity_tracker_cells(void* user_data, const NuadePosition* at, u
     return nuade_tracker_fill(at, LX_VOICES, (uint32_t)lx_position(player).rows, channel, row_lo, row_hi, out, cap,
                               laxity_cell, user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_laxity = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -172,8 +148,6 @@ const NuadePlayer nuade_player_laxity = {
     .tracker_info = laxity_tracker_info,
     .tracker_cells = laxity_tracker_cells,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 LxPlayer* lx_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_laxity) {

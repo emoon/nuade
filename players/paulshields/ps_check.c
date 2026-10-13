@@ -7,21 +7,18 @@
 #include "ps_internal.h"
 #include <stdlib.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A pattern duration: one byte, or a zero and a big-endian word.
 
 static int64_t skip_duration(const PshModule* m, int64_t at) {
     return psh_u8(m, at) == 0 ? at + 3 : at + 1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A sample command of the short and long layouts needs an entry in the sample table.
 
 static bool sample_exists(const PshModule* m, int64_t at) {
     return psh_sample_number(m, psh_u8(m, at)) != nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The commands of one pattern of the short and long layouts, up to the one that leaves it.
 
 static bool check_pattern(const PshModule* m, int64_t at) {
@@ -60,14 +57,12 @@ static bool check_pattern(const PshModule* m, int64_t at) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An instrument command of the old layout needs a record that names an entry of the sample table.
 
 static bool instrument_exists(const PshModule* m, int64_t at) {
     return psh_instrument_sample(m, (int64_t)m->instruments + psh_u8(m, at)) != nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The commands of one pattern of the old layout, up to the one that leaves it.
 
 static bool check_old_pattern(const PshModule* m, int64_t at) {
@@ -109,7 +104,6 @@ static bool check_old_pattern(const PshModule* m, int64_t at) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One voice: its order list up to the loop or stop code, with every pattern it names checked once.
 
 static bool check_voice(const PshModule* m, int64_t at, bool* seen) {
@@ -151,8 +145,6 @@ static bool check_voice(const PshModule* m, int64_t at, bool* seen) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool psh_check_song(const PshModule* m) {
     bool* seen = calloc((size_t)m->size + 1, sizeof(bool));

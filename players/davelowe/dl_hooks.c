@@ -27,13 +27,9 @@ static const uint16_t s_record_fixer_start[] = { 0x5341, 0x2608, 0x265a, 0x241a,
 // A hook that does not stop is broken
 #define MAX_HOOK_STEPS 4096
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t signed_word(const DlImage* image, uint32_t address) {
     return (uint32_t)(int32_t)(int16_t)dli_u16(image, address);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool expect_words(DlCursor* cursor, const uint16_t* words, uint32_t count) {
     for (uint32_t i = 0; i < count; i++) {
@@ -43,8 +39,6 @@ static bool expect_words(DlCursor* cursor, const uint16_t* words, uint32_t count
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // An lea whose opcode is `pc_relative_opcode` (relative to its extension word) or the absolute form, which is one
 // less; returns false for another opcode
@@ -62,8 +56,6 @@ static bool read_lea(DlCursor* cursor, uint16_t pc_relative_opcode, uint32_t* ta
     }
     return false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // lea table,a2 / lea list,a0 / moveq #n-1,d7 / the loop
 static bool hook_resolve_indices(DlImage* image, uint32_t at) {
@@ -88,8 +80,6 @@ static bool hook_resolve_indices(DlImage* image, uint32_t at) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // One table of the record fixer: `count` entries of (address of a record's pointer field, offset, size, loop length)
 static void fix_records(DlImage* image, uint32_t bank, uint32_t table, uint32_t count, uint32_t no_loop_marker) {
     DlCursor entry = { .image = image, .address = table };
@@ -104,8 +94,6 @@ static void fix_records(DlImage* image, uint32_t bank, uint32_t table, uint32_t 
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A call of the record fixer: the setup is lea table,a2 / move.w #n,d1 / jsr fixer / rts, and the fixer compares each
 // size with the address that marks "no loop"
@@ -126,8 +114,6 @@ static bool run_record_setup(DlImage* image, uint32_t setup, uint32_t bank) {
     fix_records(image, bank, table, count, dlc_u32(&fixer));
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Three calls of (lea bank,a0 / bsr setup), then rts
 static bool hook_fix_records(DlImage* image, uint32_t at) {
@@ -156,8 +142,6 @@ static bool hook_fix_records(DlImage* image, uint32_t at) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The address arithmetic of a straight-line hook: `pointer` is the address being built, `field` the place that the next
 // store writes it to, `steps` a table of words that the closing loop adds to the pointer.
 typedef struct BaseChain {
@@ -166,8 +150,6 @@ typedef struct BaseChain {
     uint32_t steps;
     uint32_t loops_left;
 } BaseChain;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool hook_set_bases(DlImage* image, uint32_t at) {
     BaseChain chain = { 0 };
@@ -229,8 +211,6 @@ static bool hook_set_bases(DlImage* image, uint32_t at) {
     }
     return false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool dl_run_load_hook(DlImage* image, uint32_t hook) {
     if (hook == 0) {

@@ -10,14 +10,10 @@
 // The grid of the pattern view: the events come at any tick.
 #define GRID_TICKS 6
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe cinemaware_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return cw_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult cinemaware_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -46,27 +42,19 @@ static NuadePlayerOpenResult cinemaware_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void cinemaware_close(void* user_data) {
     cw_destroy((CwPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool cinemaware_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return subsong == 0 && cw_start((CwPlayer*)user_data, voices);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult cinemaware_tick(void* user_data, NuadeVoices* voices) {
     const CwTickResult tick = cw_tick((CwPlayer*)user_data, voices);
     return (NuadeTickResult) { .length = CW_TICK_LENGTH, .flags = tick.looped ? NuadeTick_Looped : NuadeTick_None };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void cinemaware_metadata(void* user_data, const NuadeMetadataSink* sink) {
     const CwPlayer* player = (const CwPlayer*)user_data;
@@ -79,8 +67,6 @@ static void cinemaware_metadata(void* user_data, const NuadeMetadataSink* sink) 
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t cinemaware_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const CwPlayer* player = (const CwPlayer*)user_data;
     const uint32_t n = cap < CW_VOICES ? cap : CW_VOICES;
@@ -91,15 +77,11 @@ static uint32_t cinemaware_voice_info(void* user_data, NuadeVoiceInfo* out, uint
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t cinemaware_grid_ticks(void* user_data, uint32_t subsong) {
     (void)user_data;
     (void)subsong;
     return GRID_TICKS;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_cinemaware = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -116,8 +98,6 @@ const NuadePlayer nuade_player_cinemaware = {
     .voice_info = cinemaware_voice_info,
     .grid_ticks = cinemaware_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CwPlayer* cw_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_cinemaware) {

@@ -48,15 +48,11 @@
 #define PERIOD_FLOOR_SHIFT 0x60
 #define PERIOD_OCTAVE 0x18
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool rhst_probe(const uint8_t* data, size_t size) {
     RhstModule* module = rhst_module_open(data, size);
     rhst_module_close(module);
     return module != nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RhstPlayer* rhst_create(const uint8_t* data, size_t size) {
     RhstPlayer* player = (RhstPlayer*)calloc(1, sizeof(RhstPlayer));
@@ -71,8 +67,6 @@ RhstPlayer* rhst_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void rhst_destroy(RhstPlayer* player) {
     if (player != nullptr) {
         rhst_module_close(player->module);
@@ -80,27 +74,20 @@ void rhst_destroy(RhstPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int rhst_subsong_count(const RhstPlayer* player) {
     return (int)player->module->song_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Paula
 
 static const int8_t* sample_at(const RhstModule* m, uint32_t offset) {
     return (const int8_t*)(m->image + offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void set_sample(const RhstModule* m, NuadePaulaChannel* paula, uint32_t offset, uint16_t words) {
     paula->lc = sample_at(m, offset);
     paula->len_words = words;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The hardware init: the four short waveforms, volume 0, DMA on.
 static void hardware_init(RhstPlayer* p) {
@@ -114,14 +101,10 @@ static void hardware_init(RhstPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // AUDxVOL from a chip volume byte: four Paula steps per chip step
 static uint8_t paula_volume(uint8_t chip_volume) {
     return (uint8_t)((chip_volume << 2) & 0x3F);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void store_voices(RhstPlayer* p) {
     for (uint32_t i = 0; i < RHST_RAW_VOICES; i++) {
@@ -129,7 +112,6 @@ static void store_voices(RhstPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Starting a subsong
 
 // The init of a voice: its track list, its first stream, the first instrument.
@@ -147,8 +129,6 @@ static void init_voice(const RhstPlayer* p, RhstVoice* v, uint32_t voice) {
         .mixer_mask = m->mixer_mask[voice],
     };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool rhst_start(RhstPlayer* player, int subsong, NuadeVoices* voices) {
     const RhstModule* m = player->module;
@@ -174,15 +154,12 @@ bool rhst_start(RhstPlayer* player, int subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sequencer
 
 // The eagleplayer's wrapper of the stop command and of the next-track command calls SongEnd; the replayer goes on.
 static void song_end(RhstPlayer* p) {
     p->song_ended = true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Stop: the song stops, the chip registers are cleared and the hardware init runs again.
 static void stop_song(RhstPlayer* p) {
@@ -196,8 +173,6 @@ static void stop_song(RhstPlayer* p) {
     hardware_init(p);
     p->ended = true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The next-track command: the next entry of the track list; its end starts the list over, and when that is the
 // longest list of the subsong it is the song's end.
@@ -215,8 +190,6 @@ static void next_track(RhstPlayer* p, RhstVoice* v) {
     v->stream = m->data + entry;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 typedef enum CommandResult {
     CommandResult_Next,    // the step goes on with the next byte
     CommandResult_EndStep, // the command ends the step (a rest)
@@ -227,8 +200,6 @@ typedef enum StepResult {
     StepResult_Continue,
     StepResult_Stop,
 } StepResult;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The start of a note: the envelope starts unless the note is tied to the one before.
 static void start_note(RhstVoice* v, uint8_t note) {
@@ -241,8 +212,6 @@ static void start_note(RhstVoice* v, uint8_t note) {
         v->phase_left = v->phase_init;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void command_mixer(RhstPlayer* p, const RhstVoice* v, RhstCommand command) {
     switch (command) {
@@ -260,8 +229,6 @@ static void command_mixer(RhstPlayer* p, const RhstVoice* v, RhstCommand command
             break;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A command from the jump table.
 static CommandResult run_command(RhstPlayer* p, RhstVoice* v, uint32_t* at, RhstCommand command) {
@@ -330,8 +297,6 @@ static CommandResult run_command(RhstPlayer* p, RhstVoice* v, uint32_t* at, Rhst
     return CommandResult_Next;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A voice's turn in the sequencer: hold the note, or read commands up to the next note or rest.
 static StepResult step_voice(RhstPlayer* p, RhstVoice* v) {
     const RhstModule* m = p->module;
@@ -377,7 +342,6 @@ static StepResult step_voice(RhstPlayer* p, RhstVoice* v) {
     return StepResult_Continue;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The chip registers of a voice
 
 // The volume envelope: a delay, an attack that adds `rate` to the volume up to 15, then a decay that subtracts it.
@@ -406,8 +370,6 @@ static void run_envelope(RhstVoice* v) {
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The vibrato triangle: `vib_pos` runs between 0 and twice the depth; the period moves by its distance from the middle,
 // scaled up for the low notes (the period table steps are wider there).
@@ -439,8 +401,6 @@ static uint16_t run_vibrato(RhstVoice* v, bool toggle_before, uint16_t note_inde
     return (uint16_t)(period + offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The period of the voice's note: the semitone list steps along, the table gives the period.
 static uint16_t note_period(RhstPlayer* p, RhstVoice* v, uint16_t* index2) {
     const RhstModule* m = p->module;
@@ -454,8 +414,6 @@ static uint16_t note_period(RhstPlayer* p, RhstVoice* v, uint16_t* index2) {
     *index2 = (uint16_t)(2 * (uint16_t)(semitone + v->note));
     return rhst_module_u16(m, (uint32_t)((int32_t)m->periods + (int16_t)*index2));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The mixer register: the bits of this voice's mask come from the shadow, or from the noise trigger or percussion.
 static void run_mixer(RhstPlayer* p, RhstVoice* v) {
@@ -473,8 +431,6 @@ static void run_mixer(RhstPlayer* p, RhstVoice* v) {
     }
     p->mixer_out = (uint8_t)((bits & v->mixer_mask) | (p->mixer_out & ~v->mixer_mask));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The chip's period and volume of a voice for this tick.
 static void run_voice(RhstPlayer* p, uint32_t index) {
@@ -501,8 +457,6 @@ static void run_voice(RhstPlayer* p, uint32_t index) {
     p->out_volume[index] = v->volume;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The play routine: steps the sequencer every `tempo` ticks, then computes the registers of the three voices. The stop
 // command ends the routine at once.
 static void play(RhstPlayer* p) {
@@ -524,7 +478,6 @@ static void play(RhstPlayer* p) {
     p->noise_out = p->noise_work;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The output stage
 
 static void write_tone(RhstPlayer* p, uint32_t channel, uint32_t voice) {
@@ -532,8 +485,6 @@ static void write_tone(RhstPlayer* p, uint32_t channel, uint32_t voice) {
     paula->volume = paula_volume(p->out_volume[voice]);
     paula->period = (uint16_t)(p->out_period[voice] << 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The second channel: the tone, or the noise sample at a period from the noise register.
 static void write_second_channel(RhstPlayer* p, bool noise, uint32_t noise_add, uint32_t noise_shift) {
@@ -548,8 +499,6 @@ static void write_second_channel(RhstPlayer* p, bool noise, uint32_t noise_add, 
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The first and second builds write the voices the same way.
 static void write_registers_tone_b(RhstPlayer* p) {
     write_tone(p, 0, 0);
@@ -557,8 +506,6 @@ static void write_registers_tone_b(RhstPlayer* p) {
     write_second_channel(p, (p->mixer_out & MIXER_TONE_B) == 0, 2, 4);
     write_tone(p, 2, 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void output_idle(RhstPlayer* p) {
     if (p->active) {
@@ -570,16 +517,12 @@ static void output_idle(RhstPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void output_gated(RhstPlayer* p) {
     if (p->active) {
         play(p);
         write_registers_tone_b(p);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The third build: always writes. The fourth channel plays a window below the module (zeros) at volume 0 once the
 // first tick is over.
@@ -600,8 +543,6 @@ static void output_always(RhstPlayer* p) {
     fourth->len_words = NOISE_FOURTH_WORDS;
     fourth->period = NOISE_FOURTH_PERIOD;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RhstTickResult rhst_tick(RhstPlayer* player, NuadeVoices* voices) {
     player->song_ended = false;

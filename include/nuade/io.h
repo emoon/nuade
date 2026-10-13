@@ -1,8 +1,7 @@
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // nuade IO API: every file a player reads (the song by URL, external sample and instrument files, instrument
 // directories) goes through a NuadeIo the host can replace, so songs can come from zips, archives, the network or
 // memory.
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -32,8 +31,6 @@ typedef void (*NuadeIoDirVisitor)(const char* name, bool is_dir, void* ctx);
 
 struct NuadeIoPrivate;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 typedef struct NuadeIo {
     uint64_t api_version; // NUADE_IO_API_VERSION
     struct NuadeIoPrivate* private_data;
@@ -47,8 +44,6 @@ typedef struct NuadeIo {
     // list at all; players then only try exact names.
     bool (*list_dir)(struct NuadeIoPrivate* self, const char* url, NuadeIoDirVisitor visit, void* ctx);
 } NuadeIo;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Local filesystem. Static, never freed.
 const NuadeIo* nuade_io_default(void);

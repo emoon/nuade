@@ -8,14 +8,10 @@
 #include <nuade/players/earache.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe earache_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return ea_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult earache_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -32,21 +28,15 @@ static NuadePlayerOpenResult earache_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void earache_close(void* user_data) {
     ea_destroy((EaPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool earache_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)subsong;
     (void)sample_rate;
     return ea_start((EaPlayer*)user_data, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult earache_tick(void* user_data, NuadeVoices* voices) {
     const EaTickResult tick = ea_tick((EaPlayer*)user_data, voices);
@@ -60,14 +50,10 @@ static NuadeTickResult earache_tick(void* user_data, NuadeVoices* voices) {
     return (NuadeTickResult) { .length = EA_TICK_LENGTH, .flags = flags };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void earache_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "EarAche");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t earache_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const EaPlayer* player = (const EaPlayer*)user_data;
@@ -79,14 +65,10 @@ static uint32_t earache_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t earache_grid_ticks(void* user_data, uint32_t subsong) {
     (void)subsong;
     return ea_grid_ticks((const EaPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_earache = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -103,8 +85,6 @@ const NuadePlayer nuade_player_earache = {
     .voice_info = earache_voice_info,
     .grid_ticks = earache_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 EaPlayer* ea_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_earache) {

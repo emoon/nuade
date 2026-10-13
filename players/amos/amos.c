@@ -42,8 +42,6 @@
 // zeros after the last sample reach that far before the Paula tail of nuade_paula_padded_copy.
 #define LOOP_REACH 0x10000
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The finetune rows one after the other; a row ends with 0.
 static const uint16_t k_periods[FINETUNES * PERIOD_ROW] = {
     856, 808, 762, 720, 678, 640, 604, 570, 538, 508, 480, 453, 428, 404, 381, 360, 339, 320, 302, 285, 269, 254, 240,
@@ -78,8 +76,6 @@ static const uint8_t k_sine[32] = { 0,   24,  49,  74,  97,  120, 141, 161, 180,
                                     255, 253, 250, 244, 235, 224, 212, 197, 180, 161, 141, 120, 97,  74,  49,  24 };
 
 static const uint8_t k_funk_speeds[16] = { 0, 5, 6, 7, 8, 10, 11, 13, 16, 19, 22, 26, 32, 43, 64, 128 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The ProTracker effect numbers a cell can hold. The converter writes 0 - 4, A - D and F; a row's one-shot effect is
 // OR-ed with the persistent one, which can make D (volume with slide up), E (volume with slide down or volume slide)
@@ -122,37 +118,25 @@ typedef struct EffectWord {
     uint8_t param;
 } EffectWord;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t bank_u8(const AmosBank* b, int64_t offset) {
     return offset >= 0 && (uint64_t)offset < b->size ? b->data[offset] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t bank_u16(const AmosBank* b, int64_t offset) {
     return (uint16_t)(bank_u8(b, offset) << 8 | bank_u8(b, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int16_t bank_i16(const AmosBank* b, int64_t offset) {
     return (int16_t)bank_u16(b, offset);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t bank_u32(const AmosBank* b, int64_t offset) {
     return (uint32_t)bank_u16(b, offset) << 16 | bank_u16(b, offset + 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool bank_in_range(const AmosBank* b, int64_t offset, int64_t length) {
     return offset >= 0 && length >= 0 && (uint64_t)(offset + length) <= b->size;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Copies up to `count` bytes from `offset`; what lies outside the bank is left as it is.
 static void bank_copy(const AmosBank* b, size_t offset, void* destination, size_t count) {
@@ -161,8 +145,6 @@ static void bank_copy(const AmosBank* b, size_t offset, void* destination, size_
     }
     memcpy(destination, b->data + offset, count < b->size - offset ? count : b->size - offset);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Where the parts of the bank are.
 typedef struct BankHeader {
@@ -191,8 +173,6 @@ typedef struct InstrumentRecord {
     char name[AMOS_NAME_SIZE + 1];
 } InstrumentRecord;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Check2 for the bank header.
 static bool read_header(const AmosBank* bank, BankHeader* header) {
     if (bank->size < 0x30) {
@@ -212,14 +192,10 @@ static bool read_header(const AmosBank* bank, BankHeader* header) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The start of position list `index` of the song block: the offsets are signed words relative to the first one.
 static int64_t position_list(const AmosBank* bank, int64_t song, int index) {
     return song + 2 + bank_i16(bank, song + 2 + 2 * index);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool read_song_block(const AmosBank* bank, int64_t song, SongBlock* block) {
     if (!bank_in_range(bank, song, 12) || bank_u16(bank, song) != SONG_LIST_COUNT) {
@@ -234,8 +210,6 @@ static bool read_song_block(const AmosBank* bank, int64_t song, SongBlock* block
     block->last_list = position_list(bank, song, 3);
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static InstrumentRecord read_instrument(const AmosBank* bank, int64_t table, int index) {
     const int64_t at = table + 2 + (int64_t)INSTRUMENT_SIZE * index;
@@ -252,14 +226,10 @@ static InstrumentRecord read_instrument(const AmosBank* bank, int64_t table, int
     return r;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A track of the track table: a signed word offset from the table start, after the pattern count word.
 static int64_t track_address(const AmosBank* bank, int64_t table, uint32_t track) {
     return table + bank_i16(bank, table + 2 + 2 * (int64_t)track);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Check2 and the layout: the header, the song block, and the first position list ending right before the second.
 static bool parse_bank(const AmosBank* bank, BankHeader* header, SongBlock* block) {
@@ -273,8 +243,6 @@ static bool parse_bank(const AmosBank* bank, BankHeader* header, SongBlock* bloc
     return before == 0xFFFE || before == 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool amos_probe(const uint8_t* data, size_t size) {
     if (data == nullptr) {
         return false;
@@ -284,8 +252,6 @@ bool amos_probe(const uint8_t* data, size_t size) {
     SongBlock block;
     return parse_bank(&bank, &header, &block);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The commands of a track word with bit 15 set. They are the high byte; the low byte is the parameter.
 enum {
@@ -327,15 +293,11 @@ typedef struct Stream {
     int64_t pos;
 } Stream;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t stream_next(Stream* s) {
     const uint16_t word = bank_u16(s->bank, s->pos);
     s->pos += 2;
     return word;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A one-shot effect of this row only (jump, volume, tempo): the cell takes it and the row's effect follows it.
 static void track_oneshot(AmosPtCell* c, TrackState* t, uint8_t effect, uint8_t param) {
@@ -343,8 +305,6 @@ static void track_oneshot(AmosPtCell* c, TrackState* t, uint8_t effect, uint8_t 
     c->param = param;
     t->effect_row = (EffectWord) { effect, param };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A persistent effect: the cell takes it and every following row of the note repeats it.
 static void track_persistent(AmosPtCell* c, TrackState* t, uint8_t effect, uint8_t param) {
@@ -354,22 +314,16 @@ static void track_persistent(AmosPtCell* c, TrackState* t, uint8_t effect, uint8
     t->effect_row = t->effect_keep;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The row ends with the persistent effect OR-ed into its cell.
 static void track_apply_effect(AmosPtCell* c, EffectWord e) {
     c->effect |= e.effect;
     c->param |= e.param;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Sets the instrument of the cell (the next sample number after the one in the word).
 static void track_instrument(AmosPtCell* c, uint8_t param) {
     c->sample |= (uint8_t)(param + 1) & 0x1F;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Command 0x7Fxx + operand word: a note. The operand holds the sample number (top 6 bits) and the period.
 static void track_note(AmosPtCell* c, TrackState* t, uint16_t word, uint16_t operand) {
@@ -377,8 +331,6 @@ static void track_note(AmosPtCell* c, TrackState* t, uint16_t word, uint16_t ope
     c->period = operand & 0x3FF;
     t->wait = (int8_t)(word & 0x7F);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Converts one track into the cells of `channel` of `pattern` (the sub-routine at 0x420). The previous pattern is
 // where an end-of-track mark on row 0 writes.
@@ -468,8 +420,6 @@ static void convert_track(const AmosBank* bank, int64_t track, AmosPattern* patt
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // InitPlayer, sample part: the instrument records become PT sample slots.
 static void convert_instruments(AmosModule* m, const AmosBank* bank, int64_t table) {
     const uint16_t count = bank_u16(bank, table);
@@ -502,8 +452,6 @@ static void convert_instruments(AmosModule* m, const AmosBank* bank, int64_t tab
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A word list up to its negative terminator: `end` is the position after the terminator, `max` the largest entry,
 // `count` the number of entries.
 typedef struct WordList {
@@ -512,8 +460,6 @@ typedef struct WordList {
     uint32_t count;
     uint8_t entries[AMOS_ORDER_MAX]; // the first entries, as bytes
 } WordList;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // False if the bank ends first.
 static bool scan_list(const AmosBank* bank, int64_t start, WordList* list) {
@@ -536,8 +482,6 @@ static bool scan_list(const AmosBank* bank, int64_t start, WordList* list) {
     }
     return false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool convert_song(AmosModule* m, const AmosBank* bank, const SongBlock* block) {
     memcpy(m->title, block->title, sizeof(m->title));
@@ -574,8 +518,6 @@ static bool convert_song(AmosModule* m, const AmosBank* bank, const SongBlock* b
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 AmosPlayer* amos_create(const uint8_t* data, size_t size) {
     if (data == nullptr) {
@@ -617,8 +559,6 @@ AmosPlayer* amos_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void amos_destroy(AmosPlayer* p) {
     if (p == nullptr) {
         return;
@@ -629,21 +569,16 @@ void amos_destroy(AmosPlayer* p) {
     free(p);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer
 
 static bool cell_is_empty(const AmosPtCell* c) {
     return c->period == 0 && c->effect == 0 && c->param == 0 && c->sample == 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const AmosPtCell* pattern_cell(const AmosModule* m, uint32_t pattern, int row, int channel) {
     static const AmosPtCell empty = { 0 };
     return pattern < m->pattern_count ? &m->patterns[pattern].cell[row][channel] : &empty;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A word of the finetune tables. The original reads them as one array, so an index past a row runs into the next
 // finetune; past the last row it would read the replayer's own variables, which this does not model (0).
@@ -651,8 +586,6 @@ static uint16_t period_at(uint8_t finetune, int index) {
     const int flat = finetune * PERIOD_ROW + index;
     return flat < FINETUNES * PERIOD_ROW ? k_periods[flat] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The first entry of the finetune row that does not exceed the period (the row ends with a 0, so one always does).
 static int period_index(uint8_t finetune, uint16_t period) {
@@ -662,8 +595,6 @@ static int period_index(uint8_t finetune, uint16_t period) {
     }
     return index;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The invert loop: each time the speed accumulator overflows, one byte of the loop is flipped.
 static void funk_update(AmosVoice* v) {
@@ -688,8 +619,6 @@ static void funk_update(AmosVoice* v) {
     *next = (int8_t)(0xFF - (uint8_t)*next);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void volume_slide_up(AmosVoice* v, uint8_t amount) {
     v->volume = (uint8_t)(v->volume + amount);
     // cmpi.b #$40 / bmi: the byte volume - 0x40 is not negative, which is 0x40 .. 0xBF
@@ -698,16 +627,12 @@ static void volume_slide_up(AmosVoice* v, uint8_t amount) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void volume_slide_down(AmosVoice* v, uint8_t amount) {
     v->volume = (uint8_t)(v->volume - amount);
     if ((int8_t)v->volume < 0) {
         v->volume = 0;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void volume_slide(AmosVoice* v) {
     const uint8_t up = v->cell.param >> 4;
@@ -718,8 +643,6 @@ static void volume_slide(AmosVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Portamento up / down by `amount`, with the PT period limits. The period keeps its top nibble.
 static void slide_up(AmosVoice* v, uint8_t amount) {
     v->period = (uint16_t)(v->period - amount);
@@ -729,8 +652,6 @@ static void slide_up(AmosVoice* v, uint8_t amount) {
     v->paula.period = v->period & 0xFFF;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void slide_down(AmosVoice* v, uint8_t amount) {
     v->period = (uint16_t)(v->period + amount);
     if ((int16_t)(v->period & 0xFFF) >= PERIOD_SLIDE_MAX) {
@@ -739,8 +660,6 @@ static void slide_down(AmosVoice* v, uint8_t amount) {
     v->paula.period = v->period & 0xFFF;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The parameter of a slide goes through a mask that starts at 0 and becomes 0xFF with the first slide (the fine
 // slides set it to 0xF for their own parameter).
 static uint8_t slide_amount(AmosSong* s, const AmosVoice* v) {
@@ -748,8 +667,6 @@ static uint8_t slide_amount(AmosSong* s, const AmosVoice* v) {
     s->slide_mask = 0xFF;
     return amount;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void tone_portamento(AmosVoice* v) {
     if (v->cell.param != 0) {
@@ -776,8 +693,6 @@ static void tone_portamento(AmosVoice* v) {
     v->paula.period = v->glissando ? period_at(v->finetune, period_index(v->finetune, v->period)) : v->period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Sets the target of a tone portamento from the note of the cell.
 static void tone_portamento_setup(AmosVoice* v) {
     int index = period_index(v->finetune, v->cell.period);
@@ -792,8 +707,6 @@ static void tone_portamento_setup(AmosVoice* v) {
         v->porta_down = true;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The vibrato waveform: sine, ramp or square, indexed by bits 2..6 of the position.
 static uint8_t waveform(uint8_t shape, uint8_t position) {
@@ -810,8 +723,6 @@ static uint8_t waveform(uint8_t shape, uint8_t position) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A parameter byte changes the depth (low nibble) and speed (high nibble) of the vibrato command.
 static void update_vibrato_command(AmosVoice* v) {
     const uint8_t param = v->cell.param;
@@ -823,8 +734,6 @@ static void update_vibrato_command(AmosVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void vibrato(AmosVoice* v) {
     if (v->cell.param != 0) {
         update_vibrato_command(v);
@@ -834,8 +743,6 @@ static void vibrato(AmosVoice* v) {
     v->paula.period = (v->vibrato_pos & 0x80) ? (uint16_t)(v->period - delta) : (uint16_t)(v->period + delta);
     v->vibrato_pos = (uint8_t)(v->vibrato_pos + v->vibrato_speed * 4);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void arpeggio(const AmosSong* s, AmosVoice* v) {
     int offset;
@@ -858,8 +765,6 @@ static void arpeggio(const AmosSong* s, AmosVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Restarts the sample of the voice: DMA off, registers, DMA on, then the repeat (the original waits a few raster lines
 // between the steps).
 static void retrigger(AmosVoice* v) {
@@ -872,8 +777,6 @@ static void retrigger(AmosVoice* v) {
     v->paula.len_words = v->loop_length;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // E9x: retrigger every x ticks, from the first tick when the row has no note
 static void retrigger_every(const AmosSong* s, AmosVoice* v) {
     const uint8_t interval = v->cell.param & 0xF;
@@ -885,23 +788,17 @@ static void retrigger_every(const AmosSong* s, AmosVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void pattern_jump(AmosSong* s, const AmosVoice* v) {
     s->song_position = (uint8_t)(v->cell.param - 1);
     s->break_row = 0;
     s->break_pending = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void pattern_break(AmosSong* s, const AmosVoice* v) {
     const unsigned row = (unsigned)(v->cell.param >> 4) * 10 + (v->cell.param & 0xF);
     s->break_row = row > 0x3F ? 0 : (uint8_t)row;
     s->break_pending = true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // E6x: x = 0 marks the loop row, otherwise loop back x times.
 static void pattern_loop(AmosSong* s, AmosVoice* v) {
@@ -919,8 +816,6 @@ static void pattern_loop(AmosSong* s, AmosVoice* v) {
     s->loop_pending = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Fxx: below 0x20 the speed (ticks per row), from there on the tempo as a CIA timer value.
 static void set_speed(AmosSong* s, const AmosVoice* v) {
     const uint8_t param = v->cell.param;
@@ -934,8 +829,6 @@ static void set_speed(AmosSong* s, const AmosVoice* v) {
         s->timer = (uint16_t)(TIMER_DIVIDEND / param);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The E commands. The fine slides and the pattern commands act on the first tick of a row only.
 static void extended(AmosSong* s, AmosVoice* v) {
@@ -1012,8 +905,6 @@ static void extended(AmosSong* s, AmosVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The commands of the first tick of a row, after the note.
 static void first_tick_command(AmosSong* s, AmosVoice* v) {
     switch (v->cell.effect) {
@@ -1037,8 +928,6 @@ static void first_tick_command(AmosSong* s, AmosVoice* v) {
             break;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The effects of the ticks after the first (the effects 5 - 9 cannot occur, see Effect).
 static void tick_effects(AmosSong* s, AmosVoice* v) {
@@ -1075,16 +964,12 @@ static void tick_effects(AmosSong* s, AmosVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_tick_effects(AmosSong* s) {
     for (int i = 0; i < AMOS_VOICES; i++) {
         tick_effects(s, &s->voices[i]);
         s->voices[i].paula.volume = s->voices[i].volume;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Loads the sample the cell names: pointers, length, finetune, volume and the loop.
 static void select_sample(const AmosPlayer* p, AmosVoice* v, uint8_t sample) {
@@ -1105,8 +990,6 @@ static void select_sample(const AmosPlayer* p, AmosVoice* v, uint8_t sample) {
         v->loop_length = slot->loop_length != 0 ? slot->loop_length : 2;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Starts the note of the cell. The sample's DMA goes off now and comes on once all voices of the row are set.
 static void start_note(AmosSong* s, AmosVoice* v) {
@@ -1132,8 +1015,6 @@ static void start_note(AmosSong* s, AmosVoice* v) {
     first_tick_command(s, v);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void play_voice(AmosPlayer* p, AmosVoice* v, const AmosPtCell* cell) {
     AmosSong* s = &p->song;
     if (!v->cell_set) {
@@ -1158,8 +1039,6 @@ static void play_voice(AmosPlayer* p, AmosVoice* v, const AmosPtCell* cell) {
     }
     start_note(s, v);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The first tick of a row: SongEnd check, every voice reads its cell, DMA comes on for the started notes.
 static void play_row(AmosPlayer* p) {
@@ -1202,8 +1081,6 @@ static void play_row(AmosPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void next_position(AmosSong* s, const AmosModule* m) {
     s->row = s->break_row;
     s->break_row = 0;
@@ -1213,8 +1090,6 @@ static void next_position(AmosSong* s, const AmosModule* m) {
         s->song_position = 0;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // After the row tick: next row, pattern delay, pattern loop, end of pattern.
 static void advance_row(AmosSong* s, const AmosModule* m) {
@@ -1239,8 +1114,6 @@ static void advance_row(AmosSong* s, const AmosModule* m) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void play_tick(AmosPlayer* p) {
     AmosSong* s = &p->song;
     const AmosModule* m = &p->module;
@@ -1261,7 +1134,6 @@ static void play_tick(AmosPlayer* p) {
     advance_row(s, m);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Entry points
 
 // InitSound: the sample memory as the bank has it, the first long of every sample cleared and a loop start that lies
@@ -1296,8 +1168,6 @@ bool amos_start(AmosPlayer* p, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 AmosTickResult amos_tick(AmosPlayer* p, NuadeVoices* voices) {
     AmosSong* s = &p->song;
     s->looped = false;
@@ -1310,39 +1180,27 @@ AmosTickResult amos_tick(AmosPlayer* p, NuadeVoices* voices) {
     return (AmosTickResult) { .looped = s->looped, .length = length };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const char* amos_title(const AmosPlayer* p) {
     return p->module.title;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const char* amos_sample_name(const AmosPlayer* p, int sample) {
     return sample >= 0 && sample < AMOS_SAMPLES ? p->module.samples[sample].name : "";
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 AmosPosition amos_position(const AmosPlayer* p) {
     const AmosSong* s = &p->song;
     return (AmosPosition) { .order = s->shown_order, .row = s->shown_row, .speed = (int)s->speed };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int amos_order_count(const AmosPlayer* p) {
     return p->module.order_length < AMOS_ORDER_MAX ? p->module.order_length : AMOS_ORDER_MAX;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 AmosVoiceState amos_voice_state(const AmosPlayer* p, int voice) {
     const AmosVoice* v = &p->song.voices[voice];
     return (AmosVoiceState) { .note = v->sample != 0 ? v->note : -1, .sample = v->sample };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 AmosCell amos_pattern_cell(const AmosPlayer* p, int order, int voice, int row) {
     const AmosModule* m = &p->module;

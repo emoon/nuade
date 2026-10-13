@@ -76,7 +76,6 @@ static const uint16_t psa_periods[38] = {
     285, 269, 254, 240, 226, 214, 202, 190, 180, 170, 160, 151, 143, 135, 127, 120, 113, 107, 22356,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module layout.
 
 typedef struct PsaInstrument {
@@ -89,13 +88,9 @@ typedef struct PsaInstrument {
     PsaEnvelope envelope;
 } PsaInstrument;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const uint8_t* module_bytes(const PsaPlayer* player) {
     return player->chip + PSA_MODULE_BASE;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t module_u8(PsaPlayer* player, int64_t offset) {
     if (offset < 0 || (uint64_t)offset >= player->size) {
@@ -105,7 +100,6 @@ static uint8_t module_u8(PsaPlayer* player, int64_t offset) {
     return module_bytes(player)[offset];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A word access of the replayer: an odd address is an address error of the 68000.
 
 static uint16_t module_u16(PsaPlayer* player, int64_t offset) {
@@ -115,13 +109,9 @@ static uint16_t module_u16(PsaPlayer* player, int64_t offset) {
     return (uint16_t)(((unsigned)module_u8(player, offset) << 8) | module_u8(player, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t module_u32(PsaPlayer* player, int64_t offset) {
     return ((uint32_t)module_u16(player, offset) << 16) | module_u16(player, offset + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static PsaSubsong read_subsong(PsaPlayer* player, uint32_t index) {
     const int64_t at = PSA_SUBSONG_TABLE + (int64_t)index * PSA_SUBSONG_BYTES;
@@ -129,8 +119,6 @@ static PsaSubsong read_subsong(PsaPlayer* player, uint32_t index) {
                           .end = module_u16(player, at + 2),
                           .loop = module_u16(player, at + 4) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static PsaNote read_note(PsaPlayer* player, int64_t offset) {
     const uint8_t effect = module_u8(player, offset + 2);
@@ -141,7 +129,6 @@ static PsaNote read_note(PsaPlayer* player, int64_t offset) {
                        .param = module_u8(player, offset + 3) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The instrument record: the fields from +0 to +0x21 (the envelope is read as a long at +0x1E).
 
 static PsaInstrument read_instrument(PsaPlayer* player, int64_t at) {
@@ -177,7 +164,6 @@ static PsaInstrument read_instrument(PsaPlayer* player, int64_t at) {
     return ins;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period table; the index the replayer computes from the note and the arpeggio.
 
 static uint16_t period_at(PsaPlayer* player, uint32_t index) {
@@ -188,7 +174,6 @@ static uint16_t period_at(PsaPlayer* player, uint32_t index) {
     return psa_periods[index];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Chip memory: an address is an offset into the image. Paula ignores bit 0 of AUDxLC.
 
 static void write_lc(PsaPlayer* player, PsaVoice* voice, int64_t address) {
@@ -200,7 +185,6 @@ static void write_lc(PsaPlayer* player, PsaVoice* voice, int64_t address) {
     voice->paula.lc = (const int8_t*)player->chip + (address & ~(int64_t)1);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A Paula block must lie wholly in the module or wholly in the wave buffer (AUDxLEN 0 plays 65536 words).
 
 static void check_block(PsaPlayer* player, const int8_t* lc, uint16_t len_words) {
@@ -215,21 +199,18 @@ static void check_block(PsaPlayer* player, const int8_t* lc, uint16_t len_words)
     player->fault = player->fault || !(in_wave || in_module);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // L342: AUDxVOL. The eagleplayer scales the volume by its master volume and balance, the identity at the defaults.
 
 static void write_volume(PsaVoice* voice, uint16_t volume) {
     voice->paula.volume = (uint8_t)(volume & 0x7F);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // L73a: the replayer's SongEnd call.
 
 static void song_end(PsaPlayer* player) {
     player->looped = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // L892: the song stops: DMA and volume of all four channels off.
 
 static void stop_song(PsaPlayer* player) {
@@ -240,7 +221,6 @@ static void stop_song(PsaPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // L9aa: the first row of the pattern the pattern number table gives at `position`.
 
 static void load_pattern(PsaPlayer* player) {
@@ -249,7 +229,6 @@ static void load_pattern(PsaPlayer* player) {
     player->next_row = (int64_t)player->layout.patterns + ((int64_t)number << PSA_PATTERN_SHIFT);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // L976: counts the row; behind the last row of a pattern the next entry of the pattern number table is read, and the
 // end of the table wraps to the loop entry or stops the song.
 
@@ -273,7 +252,6 @@ static void count_row(PsaPlayer* player) {
     player->speed_counter = player->speed;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // L9ce, a note without an instrument start: the period only (L9a14 and L9ac2 end here as well).
 
 static void set_note_period(PsaPlayer* player, PsaVoice* voice, uint8_t note) {
@@ -283,7 +261,6 @@ static void set_note_period(PsaPlayer* player, PsaVoice* voice, uint8_t note) {
     voice->last_period = voice->period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // L9ce, effect 3 on a note: the target period and the direction to slide.
 
 static void set_portamento(PsaPlayer* player, PsaVoice* voice, const PsaNote* n) {
@@ -293,7 +270,6 @@ static void set_portamento(PsaPlayer* player, PsaVoice* voice, const PsaNote* n)
     voice->porta_speed = above ? (int16_t)(uint16_t)(-(int)n->param) : (int16_t)n->param;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // L9a14: a note starts its instrument. DMA is switched off now and on at the end of the tick; the registers are
 // written for the new sound. A pulse-width instrument plays a window of the wave buffer, a sample the module.
 
@@ -333,7 +309,6 @@ static void start_instrument(PsaPlayer* player, PsaVoice* voice, const PsaNote* 
     voice->loop_words = ins.loop_words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // L9ce: one voice reads its note of the row.
 
 static void voice_row(PsaPlayer* player, PsaVoice* voice, const PsaNote* n) {
@@ -374,7 +349,6 @@ static void voice_row(PsaPlayer* player, PsaVoice* voice, const PsaNote* n) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // L92c: the tick that reads the next row.
 
 static void next_row(PsaPlayer* player) {
@@ -388,7 +362,6 @@ static void next_row(PsaPlayer* player) {
     count_row(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Lb8c, the arpeggio: the voice cycles through the note, the note plus the high nibble and the note plus the low
 // nibble of the parameter, one per tick.
 
@@ -402,7 +375,6 @@ static void arpeggio(PsaPlayer* player, PsaVoice* voice, uint8_t param) {
     voice->paula.period = period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Lbf0, effect 4. The depth and length come from the parameter on the tick the row was read.
 
 static void vibrato(PsaPlayer* player, PsaVoice* voice, uint8_t param) {
@@ -421,7 +393,6 @@ static void vibrato(PsaPlayer* player, PsaVoice* voice, uint8_t param) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Lc52, effect A: the volume rises by the parameter, or falls by its low seven bits when bit 7 is set.
 
 static void volume_slide(PsaVoice* voice, uint8_t param) {
@@ -442,7 +413,6 @@ static void volume_slide(PsaVoice* voice, uint8_t param) {
     voice->volume = volume;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Lce4, effect 3: the period slides to the target and stops there.
 
 static void tone_portamento(PsaVoice* voice) {
@@ -463,7 +433,6 @@ static void tone_portamento(PsaVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Lb8c: the effect of the row, on every tick.
 
 static void row_effect(PsaPlayer* player, PsaVoice* voice) {
@@ -498,7 +467,6 @@ static void row_effect(PsaPlayer* player, PsaVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Ld42: the pulse-width LFO moves the window of the wave buffer up and down.
 
 static void pulse_width(PsaPlayer* player, PsaVoice* voice) {
@@ -531,7 +499,6 @@ static void pulse_width(PsaPlayer* player, PsaVoice* voice) {
     write_lc(player, voice, voice->wave + position);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Lda4: the volume envelope. Attack and decay add to / subtract from the volume byte, the sustain waits for the
 // release effect (or counts down), every other state releases.
 
@@ -585,7 +552,6 @@ static void volume_envelope(PsaVoice* voice) {
     write_volume(voice, voice->volume);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // L8d2: one tick of the replayer.
 
 static void play_tick(PsaPlayer* player) {
@@ -605,7 +571,6 @@ static void play_tick(PsaPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // L80a: DMA on for the voices that started a note, then the repeat registers of the sample notes.
 
 static void start_dma(PsaPlayer* player) {
@@ -625,7 +590,6 @@ static void start_dma(PsaPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What Paula would play must be inside the module or the wave buffer.
 
 static void check_voices(PsaPlayer* player) {
@@ -640,7 +604,6 @@ static void check_voices(PsaPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // L6fe: the interrupt.
 
 static void interrupt(PsaPlayer* player) {
@@ -652,7 +615,6 @@ static void interrupt(PsaPlayer* player) {
     check_voices(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // L76c: InitSound.
 
 bool psa_start(PsaPlayer* player, uint32_t subsong, NuadeVoices* voices) {
@@ -678,8 +640,6 @@ bool psa_start(PsaPlayer* player, uint32_t subsong, NuadeVoices* voices) {
     return !player->fault;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 PsaTickResult psa_tick(PsaPlayer* player, NuadeVoices* voices) {
     interrupt(player);
     if (player->fault) {
@@ -698,7 +658,6 @@ PsaTickResult psa_tick(PsaPlayer* player, NuadeVoices* voices) {
     return (PsaTickResult) { .looped = player->looped, .ended = silent };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What a wrap of the sequence carries into the next pass and decides whether a later pass reads outside what the port
 // models: the speed and its counter, the arpeggio phase, and per voice the last note's table index and the row's
 // effect (an arpeggio keeps running on the last row's parameter). Positions and row counter are the loop entry and 0 at
@@ -715,8 +674,6 @@ typedef struct PsaWrapState {
     bool period_only[PSA_VOICES];
 } PsaWrapState;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static PsaWrapState wrap_state(const PsaPlayer* player) {
     PsaWrapState state
         = { .speed = player->speed, .speed_counter = player->speed_counter, .arpeggio_tick = player->arpeggio_tick };
@@ -729,8 +686,6 @@ static PsaWrapState wrap_state(const PsaPlayer* player) {
     }
     return state;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool same_wrap_state(const PsaWrapState* a, const PsaWrapState* b) {
     if (a->speed != b->speed || a->speed_counter != b->speed_counter || a->arpeggio_tick != b->arpeggio_tick) {
@@ -745,7 +700,6 @@ static bool same_wrap_state(const PsaWrapState* a, const PsaWrapState* b) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Plays `subsong` through without sound. Every module read, word access and Paula buffer of the run goes through the
 // checks that set `fault`. The run is a proof only when it stops on a repeat: from the loop entry the sequence is the
 // same every pass, so once the state of a wrap (PsaWrapState) equals that of an earlier wrap all later passes repeat
@@ -787,7 +741,6 @@ static bool dry_run_is_clean(PsaPlayer* player, uint32_t subsong, uint32_t* budg
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2 and the part of InitPlayer that counts the subsongs: the pattern number table, the patterns and the subsong
 // table must be inside the module.
 
@@ -809,8 +762,6 @@ static bool parse_layout(PsaPlayer* player) {
     }
     return !player->fault;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PsaPlayer* psa_create(const uint8_t* data, size_t size) {
     if (data == nullptr || size < PSA_SUBSONG_TABLE + PSA_SUBSONG_BYTES || size > 0x7FFFFFFF) {
@@ -861,16 +812,12 @@ PsaPlayer* psa_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void psa_destroy(PsaPlayer* player) {
     if (player != nullptr) {
         free(player->chip);
         free(player);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool psa_probe(const uint8_t* data, size_t size) {
     PsaPlayer* player = psa_create(data, size);
@@ -879,25 +826,17 @@ bool psa_probe(const uint8_t* data, size_t size) {
     return playable;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t psa_subsong_count(const PsaPlayer* player) {
     return player->layout.subsong_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const char* psa_title(const PsaPlayer* player) {
     return player->title;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t psa_grid_ticks(const PsaPlayer* player) {
     return (uint32_t)player->speed + 1;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PsaVoiceState psa_voice_state(const PsaPlayer* player, uint32_t voice) {
     const PsaVoice* v = &player->voices[voice];

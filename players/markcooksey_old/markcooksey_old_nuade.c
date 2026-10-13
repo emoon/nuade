@@ -10,13 +10,9 @@
 // The grid of the pattern view: the voices play on their own timing.
 #define GRID_TICKS 6
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe markcooksey_old_probe(const uint8_t* data, size_t size, const char* filename) {
     return mco_probe(data, size, filename) != McoKind_None ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult markcooksey_old_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -45,20 +41,14 @@ static NuadePlayerOpenResult markcooksey_old_open(const NuadeSongSource* source)
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void markcooksey_old_close(void* user_data) {
     mco_destroy((McoPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool markcooksey_old_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return mco_start((McoPlayer*)user_data, (int)subsong, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult markcooksey_old_tick(void* user_data, NuadeVoices* voices) {
     const McoTickResult tick = mco_tick((McoPlayer*)user_data, voices);
@@ -67,14 +57,10 @@ static NuadeTickResult markcooksey_old_tick(void* user_data, NuadeVoices* voices
                                         | (tick.ended ? NuadeTick_Ended : 0) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void markcooksey_old_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Mark Cooksey (old)");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t markcooksey_old_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const McoPlayer* player = (const McoPlayer*)user_data;
@@ -86,15 +72,11 @@ static uint32_t markcooksey_old_voice_info(void* user_data, NuadeVoiceInfo* out,
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t markcooksey_old_grid_ticks(void* user_data, uint32_t subsong) {
     (void)user_data;
     (void)subsong;
     return GRID_TICKS;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_markcooksey_old = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -111,8 +93,6 @@ const NuadePlayer nuade_player_markcooksey_old = {
     .voice_info = markcooksey_old_voice_info,
     .grid_ticks = markcooksey_old_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 McoPlayer* mco_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_markcooksey_old) {

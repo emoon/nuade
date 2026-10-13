@@ -47,14 +47,10 @@ static const PercussionCommand k_commands[GM_COMMAND_LAST - GM_COMMAND_FIRST + 1
     { PercussionWave_Noise, 0x25C, -10, 0x30, 16 }, { PercussionWave_Noise, 0x25C, -10, 0x28, 2 },
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool gm_probe(const uint8_t* data, size_t size) {
     GmModule module;
     return gm_module_parse(&module, data, size);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 GmPlayer* gm_create(const uint8_t* data, size_t size) {
     GmPlayer* player = calloc(1, sizeof(*player));
@@ -73,8 +69,6 @@ GmPlayer* gm_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void gm_destroy(GmPlayer* player) {
     if (player != nullptr) {
         free(player->bytes);
@@ -82,7 +76,6 @@ void gm_destroy(GmPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitSound: the voices play their waveform from the start (with no period, and volume 0). The sequencer is set to step
 // into the first row on the first tick; the position table wraps then (its last entry is the end mark).
 
@@ -109,7 +102,6 @@ bool gm_start(GmPlayer* player, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The next noise buffer: eight longwords of a scrambled seed.
 
 static void make_noise(GmPlayer* player) {
@@ -124,7 +116,6 @@ static void make_noise(GmPlayer* player) {
     player->noise_seed = seed;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A volume above the threshold drops by the decrement (as words: it can wrap around).
 
 static void decay_volume(GmVoice* voice) {
@@ -133,7 +124,6 @@ static void decay_volume(GmVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note byte of a row: a note off, nothing, or a note (period and full volume).
 
 static void start_note(GmVoice* voice, uint8_t entry) {
@@ -146,7 +136,6 @@ static void start_note(GmVoice* voice, uint8_t entry) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The percussion voice's period moves by its step every tick.
 
 static void slide_percussion(GmPlayer* player) {
@@ -154,7 +143,6 @@ static void slide_percussion(GmPlayer* player) {
     player->voices[GM_PERCUSSION_VOICE].paula.period = player->percussion_period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A byte of the fourth voice of a percussion song. A command restarts the DMA with its waveform; a byte that is not
 // a command plays the first 32 bytes of the pattern and leaves period, volume and decay as they were. Then the period
 // slides.
@@ -188,7 +176,6 @@ static void play_percussion(GmPlayer* player, uint8_t entry) {
     slide_percussion(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Plays one row: the three note voices, and the fourth as a note voice or as percussion.
 
 static void play_row(GmPlayer* player) {
@@ -203,7 +190,6 @@ static void play_row(GmPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The next row; behind the last row the next pattern of the position table. The table wraps at its end mark, and the
 // eagleplayer calls SongEnd from the second wrap on (the first is the start of the song).
 
@@ -224,8 +210,6 @@ static void step_row(GmPlayer* player, bool* looped) {
     }
     player->pattern = pattern;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 GmTickResult gm_tick(GmPlayer* player, NuadeVoices* voices) {
     GmTickResult result = { 0 };
@@ -249,8 +233,6 @@ GmTickResult gm_tick(GmPlayer* player, NuadeVoices* voices) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void gm_title(const GmPlayer* player, char out[GM_NAME_LENGTH + 1]) {
     size_t length = 0;
     for (size_t i = 0; i < GM_NAME_LENGTH; i++) {
@@ -264,27 +246,19 @@ void gm_title(const GmPlayer* player, char out[GM_NAME_LENGTH + 1]) {
     out[length] = '\0';
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 GmPosition gm_position(const GmPlayer* player) {
     GmPosition position
         = { .order = player->order, .row = player->row, .tick = player->tick, .speed = player->module.speed };
     return position;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t gm_order_count(const GmPlayer* player) {
     return player->module.order_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t gm_row_count(const GmPlayer* player) {
     return player->module.rows;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 GmCell gm_cell(const GmPlayer* player, uint32_t order, uint32_t voice, uint32_t row) {
     GmCell cell = { .note = -1, .command = -1 };
@@ -304,8 +278,6 @@ GmCell gm_cell(const GmPlayer* player, uint32_t order, uint32_t voice, uint32_t 
     }
     return cell;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int gm_voice_note(const GmPlayer* player, uint32_t voice) {
     return voice < GM_VOICES ? player->voices[voice].note : -1;

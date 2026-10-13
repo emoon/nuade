@@ -37,7 +37,6 @@
 // AUDxLC holds a word address: bit 0 of the pointer the program computes is dropped.
 #define LC_ALIGN_MASK (~1u)
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period table: the entry 0 is 0xFFFF, the entries 1 .. 36 are the periods from C-1 (856) to B-3 (113). The
 // replayer indexes it by a byte offset and the indexes can pass the table; what follows it is the pattern command
 // classification table.
@@ -46,8 +45,6 @@ static const uint16_t k_periods[PERIOD_TABLE_NOTES + 1] = {
     0xFFFF, 856, 808, 762, 720, 678, 640, 604, 570, 538, 508, 480, 453, 428, 404, 381, 360, 339, 320,
     302,    285, 269, 254, 240, 226, 214, 202, 190, 180, 170, 160, 151, 143, 135, 127, 120, 113,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t period_at(uint8_t byte_offset) {
     const unsigned index = byte_offset / 2u;
@@ -59,8 +56,6 @@ static uint16_t period_at(uint8_t byte_offset) {
     return (uint16_t)(((unsigned)db_pattern_command((uint8_t)first) << 8)
                       | (unsigned)db_pattern_command((uint8_t)(first + 1)));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DbCreateResult db_create(const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
     DbCreateResult result = { .status = DbStatus_InvalidData };
@@ -78,8 +73,6 @@ DbCreateResult db_create(const uint8_t* data, size_t size, const char* path, con
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void db_destroy(DbPlayer* player) {
     if (player == nullptr) {
         return;
@@ -88,13 +81,10 @@ void db_destroy(DbPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int db_subsong_count(const DbPlayer* player) {
     return (int)player->module.subsong_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitSound: all variables are 0, every voice runs the first program (the idle one), the first turn loads the step.
 
 bool db_start(DbPlayer* player, int subsong, NuadeVoices* voices) {
@@ -115,7 +105,6 @@ bool db_start(DbPlayer* player, int subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A byte jump: the replayer replaces the low byte of its word offset and keeps the high byte, which only counts the
 // bytes the turn went past 255.
 
@@ -123,13 +112,10 @@ static uint16_t with_low_byte(uint16_t position, unsigned low) {
     return (uint16_t)((position & 0xFF00u) | (low & 0xFFu));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t note_offset_of(uint8_t note, uint8_t transpose) {
     return (uint8_t)((note + transpose) * 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // -1 for a note the period table does not hold
 
 static int note_value(uint8_t note_offset) {
@@ -137,7 +123,6 @@ static int note_value(uint8_t note_offset) {
     return index >= 1 && index <= PERIOD_TABLE_NOTES ? nuade_period_to_note(k_periods[index]) : -1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Pattern events
 
 typedef enum TurnFlow {
@@ -146,8 +131,6 @@ typedef enum TurnFlow {
     TurnFlow_End,   // the voice's turn ends; its position stays where it was
 } TurnFlow;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void start_note(DbVoice* v, DbPatternEvent e, uint8_t volume, uint8_t code_base) {
     v->volume = volume;
     v->note_offset = note_offset_of((uint8_t)(e.code - code_base), v->transpose);
@@ -155,8 +138,6 @@ static void start_note(DbVoice* v, DbPatternEvent e, uint8_t volume, uint8_t cod
     v->note = note_value(v->note_offset);
     v->instrument = e.second;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static TurnFlow run_pattern_event(DbPlayer* p, DbVoice* v, DbPatternEvent e, uint16_t* position, DbTickResult* result) {
     switch (db_pattern_command(e.code)) {
@@ -266,7 +247,6 @@ static TurnFlow run_pattern_event(DbPlayer* p, DbVoice* v, DbPatternEvent e, uin
     return TurnFlow_End;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One voice's events up to the first one that ends its turn.
 
 static void run_voice_events(DbPlayer* p, DbVoice* v, DbTickResult* result) {
@@ -287,7 +267,6 @@ static void run_voice_events(DbPlayer* p, DbVoice* v, DbTickResult* result) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The step at `position`: the voices start at the top of their patterns.
 
 static void load_step(DbPlayer* p) {
@@ -307,7 +286,6 @@ static void load_step(DbPlayer* p) {
     p->step_pending = false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sequencer turn: the groove step gives the number of turns to skip after this one; it ends with 0xFF and starts
 // over.
 
@@ -321,8 +299,6 @@ static void next_groove_step(DbPlayer* p) {
     p->groove_position = (uint8_t)(at + 1);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_sequencer(DbPlayer* p, DbTickResult* result) {
     if (p->step_pending) {
         load_step(p);
@@ -333,7 +309,6 @@ static void run_sequencer(DbPlayer* p, DbTickResult* result) {
     next_groove_step(p);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note asked for a program: it replaces the voice's program when its priority (the first byte) is not lower.
 
 static void request_programs(DbPlayer* p) {
@@ -360,7 +335,6 @@ static void request_programs(DbPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxLEN: the 24 bit argument halved, the low 16 bits.
 
 static uint16_t length_argument(DbProgramCommand c) {
@@ -368,14 +342,11 @@ static uint16_t length_argument(DbProgramCommand c) {
     return (uint16_t)(bytes >> 1);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The word argument of the commands that move the sample pointer and the pitch bend.
 
 static uint16_t word_argument(DbProgramCommand c) {
     return (uint16_t)((c.second << 8) | c.third);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static TurnFlow run_program_command(DbPlayer* p, DbVoice* v, DbProgramCommand c, uint16_t* position) {
     switch (db_program_op(c.code)) {
@@ -494,7 +465,6 @@ static TurnFlow run_program_command(DbPlayer* p, DbVoice* v, DbProgramCommand c,
     return TurnFlow_End;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One voice's program up to the first command that ends its turn.
 
 static void run_program(DbPlayer* p, DbVoice* v) {
@@ -515,7 +485,6 @@ static void run_program(DbPlayer* p, DbVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The fade out: every interval turns the master volume falls by the step; below 0 the player switches to the fade's
 // subsong at once, without calling SongEnd, with the master volume at 0.
 
@@ -540,7 +509,6 @@ static void run_fade(DbPlayer* p) {
     p->row_counter = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxVOL: the voice volume and its offset, a byte that is negative (bit 7) for silence, scaled by the master volume.
 
 static void write_volume(const DbPlayer* p, DbVoice* v) {
@@ -552,7 +520,6 @@ static void write_volume(const DbPlayer* p, DbVoice* v) {
     v->paula.volume = (uint8_t)(((unsigned)sum * p->master_volume) >> VOLUME_SCALE_SHIFT);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The slide moves `slide_offset` towards the distance between the slide target and the note by `slide_rate` per tick
 // and stops (rate 0) when it gets there or passes it.
 
@@ -575,7 +542,6 @@ static void run_slide(DbVoice* v, int16_t distance) {
     v->slide_offset = offset;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxPER: a fixed note, or the note plus the arpeggio step, the slide and the bend.
 
 static void write_period(const DbPlayer* p, DbVoice* v) {
@@ -596,7 +562,6 @@ static void write_period(const DbPlayer* p, DbVoice* v) {
     v->paula.period = (uint16_t)(note_period + (uint16_t)v->slide_offset + v->bend);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // LC and LEN are written before the DMA comes on, so a channel that starts latches them. A song plays AUDxLEN 0 (65536
 // words): a note whose program has not set a length plays the sample file after its sample until the next tick
 // restarts the channel.
@@ -615,8 +580,6 @@ static void write_registers(DbPlayer* p) {
         nuade_paula_channel_dma_on(&p->voices[i].paula);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DbTickResult db_tick(DbPlayer* player, NuadeVoices* voices) {
     DbTickResult result = { 0 };
@@ -639,13 +602,9 @@ DbTickResult db_tick(DbPlayer* player, NuadeVoices* voices) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t db_grid_ticks(const DbPlayer* player) {
     return (uint32_t)db_groove_step(&player->module, 0) + 1;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DbVoiceState db_voice_state(const DbPlayer* player, int voice) {
     const DbVoice* v = &player->voices[voice];

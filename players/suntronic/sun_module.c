@@ -64,7 +64,6 @@ static const SunBuild s_builds[] = {
       .fixed_master_volume = true },
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Memory
 
 uint8_t sun_mem_u8(const SunMemory* mem, uint32_t address) {
@@ -73,19 +72,13 @@ uint8_t sun_mem_u8(const SunMemory* mem, uint32_t address) {
     return address >= SUN_MODULE_BASE && offset < limit ? mem->bytes[offset] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t sun_mem_u16(const SunMemory* mem, uint32_t address) {
     return (uint16_t)(((uint16_t)sun_mem_u8(mem, address) << 8) | sun_mem_u8(mem, address + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t sun_mem_u32(const SunMemory* mem, uint32_t address) {
     return ((uint32_t)sun_mem_u16(mem, address) << 16) | sun_mem_u16(mem, address + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void mem_set_u32(SunMemory* mem, uint32_t address, uint32_t value) {
     const uint32_t offset = address - SUN_MODULE_BASE;
@@ -97,8 +90,6 @@ static void mem_set_u32(SunMemory* mem, uint32_t address, uint32_t value) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // True when the replayer reads [address, address + length) as constant data: inside the module or the zeros above it,
 // behind the code (which InitPlayer patches) and the variable bytes that InitSound and the replayer write.
 static bool data_readable(const SunModule* module, uint32_t address, uint32_t length) {
@@ -109,7 +100,6 @@ static bool data_readable(const SunModule* module, uint32_t address, uint32_t le
     return (uint64_t)(address - SUN_MODULE_BASE) + length <= limit;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's check and the build
 
 static uint64_t code_hash(const uint8_t* code, uint32_t size) {
@@ -119,8 +109,6 @@ static uint64_t code_hash(const uint8_t* code, uint32_t size) {
     }
     return hash;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Check2: `movem.l d0-d7/a0-a6,-(a7)`, `lea x(pc),a6`, then `tst.b $18(a6)` (generation A) or `tst.b $10(a6)`.
 static bool eagleplayer_check(const uint8_t* data, size_t size, uint8_t* id) {
@@ -134,8 +122,6 @@ static bool eagleplayer_check(const uint8_t* data, size_t size, uint8_t* id) {
     *id = (uint8_t)tst;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static const SunBuild* find_build(const uint8_t* data, size_t size) {
     const uint32_t displacement = nuade_read_be16(data + 6);
@@ -152,7 +138,6 @@ static const SunBuild* find_build(const uint8_t* data, size_t size) {
     return NULL;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer: find the table operands in the code and relocate the tables
 
 typedef struct Operands {
@@ -160,8 +145,6 @@ typedef struct Operands {
     uint32_t synth_table;
     uint32_t sample_table;
 } Operands;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The scan loop `cmpi.w #opcode,(a0)+ / beq / dbra d0`: on a match *address is the word after the opcode.
 static bool find_opcode(const SunMemory* mem, uint16_t opcode, uint32_t* address, uint16_t* budget) {
@@ -178,14 +161,10 @@ static bool find_opcode(const SunMemory* mem, uint16_t opcode, uint32_t* address
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // `lea d16(a6),a1` / `lea d16(a6),a2`: the table address is the variable block plus the sign extended operand.
 static uint32_t operand_target(const SunMemory* mem, uint32_t vars, uint32_t operand_address) {
     return vars + (uint32_t)(int32_t)(int16_t)sun_mem_u16(mem, operand_address);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The step table is the first `lea d16(a6),a1`; the synth and sample instrument tables are the second and third
 // `lea d16(a6),a2` (the first is the period table).
@@ -212,21 +191,15 @@ static bool find_operands(const SunMemory* mem, uint32_t vars, Operands* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Pointers from the original link address range [low, high) move to the module's address.
 typedef struct Rebase {
     uint32_t low;
     uint32_t high;
 } Rebase;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool rebase_in_range(const Rebase* rebase, uint32_t value) {
     return value >= rebase->low && value < rebase->high;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void rebase_long(SunMemory* mem, uint32_t address, const Rebase* rebase) {
     const uint32_t value = sun_mem_u32(mem, address);
@@ -235,15 +208,11 @@ static void rebase_long(SunMemory* mem, uint32_t address, const Rebase* rebase) 
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void rebase_longs(SunMemory* mem, uint32_t address, uint32_t count, const Rebase* rebase) {
     for (uint32_t i = 0; i < count; i++) {
         rebase_long(mem, address + 4 * i, rebase);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The instrument tables and the step table follow each other, and the sample table is whole longs (the replayer
 // relocates it long by long).
@@ -251,8 +220,6 @@ static bool tables_ordered(const Operands* ops) {
     return ops->synth_table <= ops->sample_table && ops->sample_table <= ops->step_table
            && (ops->step_table - ops->sample_table) % 4 == 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Generation A (id 0x18). The step table is followed by a fixed footer; the first synth instrument's envelope pointer
 // is the address right behind the footer's 0x7f marker, which gives the link address of the module.
@@ -317,8 +284,6 @@ static bool relocate_a(SunMemory* mem, const Operands* ops) {
     }
     return false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Generations B and C (id 0x10). The link address is found from the lowest pointer of the synth instrument table that
 // lies within 0x100 of its first one, which the step table's end (the first zero long) is assumed to precede directly.
@@ -388,7 +353,6 @@ static bool relocate_bc(SunMemory* mem, const Operands* ops) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Records
 
 static uint32_t synth_record_size(SunGen gen) {
@@ -403,13 +367,9 @@ static uint32_t synth_record_size(SunGen gen) {
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t step_stride(SunGen gen) {
     return gen == SunGen_C ? 16 : 20;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SunInstrument sun_module_instrument(const SunModule* module, uint32_t index) {
     const SunMemory* mem = &module->memory;
@@ -448,8 +408,6 @@ SunInstrument sun_module_instrument(const SunModule* module, uint32_t index) {
     return inst;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 SunStep sun_module_step(const SunModule* module, uint32_t index, bool* end) {
     const SunMemory* mem = &module->memory;
     const SunGen gen = module->build->gen;
@@ -467,8 +425,6 @@ SunStep sun_module_step(const SunModule* module, uint32_t index, bool* end) {
     return step;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t sun_module_start_step(const SunModule* module) {
     switch (module->build->gen) {
         case SunGen_A:
@@ -481,14 +437,11 @@ uint32_t sun_module_start_step(const SunModule* module) {
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Pattern items
 
 static uint8_t first_note(SunGen gen) {
     return gen == SunGen_C ? 0xc4 : 0xb8;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Argument bytes of a command byte, 0 for a byte the generation does not handle.
 static uint32_t command_arguments(SunGen gen, uint8_t command) {
@@ -518,8 +471,6 @@ static uint32_t command_arguments(SunGen gen, uint8_t command) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 SunItem sun_read_item(const SunMemory* mem, SunGen gen, uint32_t* address) {
     const uint8_t byte = sun_mem_u8(mem, (*address)++);
     SunItem item = { .value = byte };
@@ -539,7 +490,6 @@ SunItem sun_read_item(const SunMemory* mem, SunGen gen, uint32_t* address) {
     return item;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The proof that a song stays inside the model
 
 // A position that counts up and returns to `loop` on reaching `end` visits only positions below `end`. The replayer
@@ -548,14 +498,10 @@ static bool position_loops(uint16_t end, uint16_t loop) {
     return end >= 1 && end <= SUN_MAX_POSITION && loop < end;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Generation C's two stage position: up to `end`, then between `loop` and `stop`.
 static bool position_loops_c(uint16_t end, uint16_t loop, uint16_t stop) {
     return end >= 1 && end <= SUN_MAX_POSITION && stop <= SUN_MAX_POSITION && loop < stop && loop < end;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Whether an instrument the song starts is one the port models.
 static bool instrument_modelled(const SunModule* module, uint32_t index) {
@@ -606,8 +552,6 @@ static bool instrument_modelled(const SunModule* module, uint32_t index) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Walks one voice's pattern of a step, 16 rows, and checks what the items ask of the replayer.
 static bool pattern_modelled(const SunModule* module, uint32_t pattern, bool used[]) {
     const SunMemory* mem = &module->memory;
@@ -637,8 +581,6 @@ static bool pattern_modelled(const SunModule* module, uint32_t pattern, bool use
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Counts the steps and checks the patterns of every step the replayer plays.
 static bool song_modelled(SunModule* module) {
@@ -706,8 +648,6 @@ static bool song_modelled(SunModule* module) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sun_module_open(SunModule* module, const uint8_t* data, size_t size) {
     *module = (SunModule) { 0 };
     uint8_t id = 0;
@@ -738,8 +678,6 @@ bool sun_module_open(SunModule* module, const uint8_t* data, size_t size) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void sun_module_close(SunModule* module) {
     free(module->memory.bytes);

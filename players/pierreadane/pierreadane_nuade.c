@@ -9,14 +9,10 @@
 
 #define PA_GRID_TICKS 3 // the voices run on their own durations: a display grid only, the replayer starts at speed 3
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe pierreadane_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return pa_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult pierreadane_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -46,21 +42,15 @@ static NuadePlayerOpenResult pierreadane_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void pierreadane_close(void* user_data) {
     pa_destroy((PaPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool pierreadane_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)subsong;
     (void)sample_rate;
     return pa_start((PaPlayer*)user_data, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult pierreadane_tick(void* user_data, NuadeVoices* voices) {
     const PaTickResult tick = pa_tick((PaPlayer*)user_data, voices);
@@ -70,14 +60,10 @@ static NuadeTickResult pierreadane_tick(void* user_data, NuadeVoices* voices) {
     return (NuadeTickResult) { .length = PA_TICK_LENGTH, .flags = flags };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void pierreadane_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Pierre Adane Packer");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t pierreadane_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const PaPlayer* player = (const PaPlayer*)user_data;
@@ -89,15 +75,11 @@ static uint32_t pierreadane_voice_info(void* user_data, NuadeVoiceInfo* out, uin
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t pierreadane_grid_ticks(void* user_data, uint32_t subsong) {
     (void)user_data;
     (void)subsong;
     return PA_GRID_TICKS;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_pierreadane = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -114,8 +96,6 @@ const NuadePlayer nuade_player_pierreadane = {
     .voice_info = pierreadane_voice_info,
     .grid_ticks = pierreadane_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PaPlayer* pa_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_pierreadane) {

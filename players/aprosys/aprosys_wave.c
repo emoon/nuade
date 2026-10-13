@@ -9,14 +9,10 @@
 
 #define FILTER_PASSES 4 // the comb filter runs four passes over the wave
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int8_t wave_get(const ApsWaveJob* job, int32_t index) {
     const int64_t at = (int64_t)job->dst + index;
     return at >= 0 && at < APS_WAVE_BYTES ? job->memory[at] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void wave_put(const ApsWaveJob* job, int32_t index, int8_t value) {
     const int64_t at = (int64_t)job->dst + index;
@@ -25,13 +21,9 @@ static void wave_put(const ApsWaveJob* job, int32_t index, int8_t value) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int8_t source_get(const ApsWaveJob* job, uint32_t address) {
     return (int8_t)aps_u8(job->module, address);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int16_t aps_divs16(int32_t dividend, int16_t divisor) {
     const int32_t quotient = dividend / divisor;
@@ -40,8 +32,6 @@ int16_t aps_divs16(int32_t dividend, int16_t divisor) {
     }
     return (int16_t)quotient;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int32_t aps_window_offset(const ApsSampleRecord* record, const int16_t levels[APS_ENVELOPES]) {
     switch (record->kind) {
@@ -59,8 +49,6 @@ int32_t aps_window_offset(const ApsSampleRecord* record, const int16_t levels[AP
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The address of the sample a source record names, with its window moved by the envelopes
 static uint32_t source_address(const ApsWaveJob* job, uint32_t record) {
     const ApsSampleRecord source = aps_sample_record(job->module, record);
@@ -68,7 +56,6 @@ static uint32_t source_address(const ApsWaveJob* job, uint32_t record) {
     return job->module->sample_data + words * 2;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Generators
 
 // Mode 0: a pulse, eight flat segments, or a ramp, from the two envelope-scaled amounts
@@ -113,8 +100,6 @@ static void generate_shape(const ApsWaveJob* job, const ApsSampleRecord* record,
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // One decimation pass of mode 1 / op 4: out[i] = x[i] / 2 plus the even samples of x, halved over the first half of
 // out and quartered over the second
 static void decimate(const int8_t* x, int8_t* out, uint32_t size) {
@@ -129,8 +114,6 @@ static void decimate(const int8_t* x, int8_t* out, uint32_t size) {
         out[half + i] = (int8_t)(out[half + i] + (x[2 * i] >> 2));
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Mode 1: the second record's sample, copied into the wave or mixed with what is in it
 static void generate_copy(const ApsWaveJob* job, const ApsSampleRecord* record, uint32_t size) {
@@ -187,8 +170,6 @@ static void generate_copy(const ApsWaveJob* job, const ApsSampleRecord* record, 
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Mode 2: two sample records combined sample by sample. Ops 0, 8 and 10..15 of the 68k code read a pointer the code
 // never sets; no module uses them and they do nothing here.
 static void generate_combine(const ApsWaveJob* job, const ApsSampleRecord* record, uint32_t size) {
@@ -234,7 +215,6 @@ static void generate_combine(const ApsWaveJob* job, const ApsSampleRecord* recor
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Filters
 
 // The comb filter: wave[i] = (wave[i] * a + wave[j] * 256 + wave[k] * b) / 256 in 16-bit arithmetic, with i walking the
@@ -270,8 +250,6 @@ static void filter_comb(const ApsWaveJob* job, const ApsSampleRecord* filter, ui
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The second filter record: two leaky integrators over the wave, kept between ticks
 static void filter_leaky(const ApsWaveJob* job, const ApsSampleRecord* filter, uint32_t size) {
@@ -327,8 +305,6 @@ static void filter_leaky(const ApsWaveJob* job, const ApsSampleRecord* filter, u
     memory->second = second;
     memory->first = first;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void aps_wave_build(const ApsWaveJob* job) {
     const ApsSampleRecord record = aps_sample_record(job->module, job->record);

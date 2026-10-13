@@ -7,15 +7,11 @@
 #include <nuade/players/davidwhittaker.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The identification scans for the player's 68k code: specific, but not a mark.
 static NuadeProbe davidwhittaker_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return dw_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult davidwhittaker_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -35,20 +31,14 @@ static NuadePlayerOpenResult davidwhittaker_open(const NuadeSongSource* source) 
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void davidwhittaker_close(void* user_data) {
     dw_destroy((DwModule*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool davidwhittaker_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return dw_start((DwModule*)user_data, (int)subsong, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult davidwhittaker_tick(void* user_data, NuadeVoices* voices) {
     (void)voices;
@@ -66,21 +56,15 @@ static NuadeTickResult davidwhittaker_tick(void* user_data, NuadeVoices* voices)
     return (NuadeTickResult) { .length = 1, .flags = flags };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void davidwhittaker_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "David Whittaker");
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A note lasts a multiple of the song speed in ticks, so one row of the grid is one speed step.
 static uint32_t davidwhittaker_grid_ticks(void* user_data, uint32_t subsong) {
     return dw_subsong_speed((DwModule*)user_data, (int)subsong);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t davidwhittaker_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const DwModule* module = (const DwModule*)user_data;
@@ -94,8 +78,6 @@ static uint32_t davidwhittaker_voice_info(void* user_data, NuadeVoiceInfo* out, 
     }
     return n;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_davidwhittaker = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -112,8 +94,6 @@ const NuadePlayer nuade_player_davidwhittaker = {
     .voice_info = davidwhittaker_voice_info,
     .grid_ticks = davidwhittaker_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DwModule* dw_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_davidwhittaker) {

@@ -18,7 +18,6 @@
 // The eagleplayer scans for the status register moves this far (bytes) from the start of the interrupt routine
 #define EAGLEPLAYER_SCAN_LENGTH 0xd48
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The versions: what differs between them (see FgFeatures), and the signature of each engine's code
 
 typedef struct VersionEntry {
@@ -64,13 +63,10 @@ static const VersionEntry s_versions[FgVersion_Count] = {
                                 .signature = 0xae7ef2b9 },
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const FgTraits* fg_traits(FgVersion version) {
     return &s_versions[version].traits;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The interrupt routine
 
 typedef struct TickPlan {
@@ -85,7 +81,6 @@ typedef struct TickPlan {
     uint32_t hardware;
 } TickPlan;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The interrupt routine, in the shape all four versions share: an optional call (the noise), the voice base, the
 // request call, the voice routine for the three voices with d6 = voice offset, and the calls of ext and hardware.
 static bool parse_tick(const FgModule* m, TickPlan* plan) {
@@ -143,7 +138,6 @@ static bool parse_tick(const FgModule* m, TickPlan* plan) {
     return last.flow == FgFlow_Jump || fg_cursor_peek(&c) == OP_RTS;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The five engine routines each voice runs per tick, in order
 
 typedef struct VoiceRoutines {
@@ -154,7 +148,6 @@ typedef struct VoiceRoutines {
     uint32_t pitch;
 } VoiceRoutines;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The per voice routine: the five calls, then either a return, or a sixth routine that only copies the pitch to a
 // variable nobody reads
 static bool parse_sequence(const FgModule* m, uint32_t start, VoiceRoutines* routines) {
@@ -174,7 +167,6 @@ static bool parse_sequence(const FgModule* m, uint32_t start, VoiceRoutines* rou
     return fg_cursor_peek(&c) == OP_RTS || (tail.length != 0 && tail.flow == FgFlow_Jump);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the request routine yields: the request variables, the table of section routines and the place of the
 // `asl.l #2,d6` that indexes it
 
@@ -184,7 +176,6 @@ typedef struct RequestPlan {
     uint32_t shift; // the address of the asl.l
 } RequestPlan;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The request routine loads the address of the request variables and of the section table (`asl.l #2,d6` follows that
 // load)
 static bool parse_request(const FgModule* m, uint32_t start, RequestPlan* plan) {
@@ -204,7 +195,6 @@ static bool parse_request(const FgModule* m, uint32_t start, RequestPlan* plan) 
     return plan->variables != FG_NOT_FOUND && plan->table != FG_NOT_FOUND;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The table's longs up to the first that is not the address of code (the eagleplayer stops at a zero long or at the
 // rts that follows the table)
 static uint32_t read_section_table(const FgModule* m, uint32_t table, uint32_t* entries) {
@@ -219,18 +209,14 @@ static uint32_t read_section_table(const FgModule* m, uint32_t table, uint32_t* 
     return count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void fg_layout_free(FgLayout* layout) {
     free(layout->sections);
     free(layout->op_pool);
     memset(layout, 0, sizeof(*layout));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The init routine
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The registers an init routine writes: per voice what was written, and the DMA enable
 typedef struct InitWrites {
     bool lc[FG_ACTIVE_VOICES];
@@ -240,7 +226,6 @@ typedef struct InitWrites {
     bool dma;
 } InitWrites;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A word written to the custom register `reg`: AUDxLEN, AUDxPER, AUDxVOL (volume 0) of a voice, or DMACON
 static bool init_word_write(FgInit* init, InitWrites* seen, uint32_t reg, uint16_t value) {
     uint8_t voice = 0;
@@ -272,7 +257,6 @@ static bool init_word_write(FgInit* init, InitWrites* seen, uint32_t reg, uint16
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxLC of a voice, once
 static bool init_lc_write(FgInit* init, InitWrites* seen, uint32_t reg, uint32_t lc) {
     uint8_t voice = 0;
@@ -284,7 +268,6 @@ static bool init_lc_write(FgInit* init, InitWrites* seen, uint32_t reg, uint32_t
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the init routine writes: the first request from the subsong table, and the audio registers of the three voices
 // (AUDxLC, AUDxLEN, AUDxVOL, in the Eco version AUDxPER) and the DMA. The Eco version writes through absolute
 // addresses, the others through a6 = the custom chip base.
@@ -367,20 +350,17 @@ static bool parse_init(const FgModule* m, uint32_t request_var, uint32_t subsong
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The signature of the engine
 
 #define FNV_OFFSET 2166136261u
 #define FNV_PRIME 16777619u
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The word at `word` of the instruction at `at` is part of a relocated long (an absolute address or an immediate
 // address) that is an operand: the long never covers the opcode word
 static bool is_relocated_operand(const FgModule* m, uint32_t at, uint32_t word) {
     return (word >= at + 2 && fg_module_is_reloc(m, word)) || (word >= at + 4 && fg_module_is_reloc(m, word - 2));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // FNV-1a over the words of every instruction the roots reach (calls followed), in address order. The operand words of
 // relocated longs (absolute addresses, which depend on where the module keeps its tables) count as 0xffff.
 static uint32_t engine_signature(const FgModule* m, const uint32_t* roots, uint32_t root_count) {
@@ -408,7 +388,6 @@ static uint32_t engine_signature(const FgModule* m, const uint32_t* roots, uint3
     return ok ? hash : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The version whose engine has the signature of the code the interrupt routine and the sections reach
 static bool match_version(const FgModule* m, const FgEngineCalls* calls, FgLayout* layout) {
     uint32_t roots[1 + FG_MAX_ENGINE_CALLS];
@@ -428,7 +407,6 @@ static bool match_version(const FgModule* m, const FgEngineCalls* calls, FgLayou
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The channel mask routine: the table, the mask of the position, and the command it starts
 static bool parse_mask(const FgModule* m, uint32_t routine, uint32_t stride, FgChannelMask* mask) {
     FgRoutine r = { 0 };
@@ -460,7 +438,6 @@ static bool parse_mask(const FgModule* m, uint32_t routine, uint32_t stride, FgC
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the request routine does besides starting the section: AUDxLEN of one voice (Eco), the setup gate cleared
 static bool parse_request_effects(const FgModule* m, const TickPlan* plan, FgLayout* layout) {
     const FgFeatures* f = &layout->features;
@@ -480,7 +457,6 @@ static bool parse_request_effects(const FgModule* m, const TickPlan* plan, FgLay
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The engine routines and variables the locator needs before the sections can be decoded
 
 typedef struct EngineVars {
@@ -491,7 +467,6 @@ typedef struct EngineVars {
     uint32_t kick_routine; // the routine the command routine calls: the one that sets the bits of the mask
 } EngineVars;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The first routine that the routine at `routine` calls, FG_NOT_FOUND if it calls none
 static uint32_t first_call_of(const FgModule* m, uint32_t routine) {
     FgRoutine r = { 0 };
@@ -500,7 +475,6 @@ static uint32_t first_call_of(const FgModule* m, uint32_t routine) {
     return target;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The variables the sections read and write: the position (from the tempo routine), the transpose (from the note start)
 // and the envelope cap (from the envelope routine); the kick mask byte is the one the hardware routine reads, and the
 // routine that sets its bits is the one the command routine calls. The tempo routine and the note start are called from
@@ -516,7 +490,6 @@ static bool read_engine_vars(const FgModule* m, const TickPlan* plan, const Voic
     return vars->position != FG_NOT_FOUND;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The note start every track routine ends in: where the routine at `track` jumps to
 static uint32_t note_start_of(const FgModule* m, uint32_t track) {
     uint32_t value = 0;
@@ -528,14 +501,12 @@ static uint32_t note_start_of(const FgModule* m, uint32_t track) {
     return jump.length != 0 && jump.flow == FgFlow_Jump ? jump.target : FG_NOT_FOUND;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Every track routine ends in the same note start: the one of the first voice's track routine the sections call
 static uint32_t note_start_of_callees(const FgModule* m, const FgCallees* callees) {
     const uint32_t track = callees->track[0] != FG_NOT_FOUND ? callees->track[0] : callees->track[1];
     return track == FG_NOT_FOUND ? FG_NOT_FOUND : note_start_of(m, track);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The table a routine loads first into the first (or the second) table register
 static uint32_t table_of(const FgModule* m, uint32_t routine, bool second) {
     FgRoutine r = { 0 };
@@ -544,7 +515,6 @@ static uint32_t table_of(const FgModule* m, uint32_t routine, bool second) {
     return table;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tables the engine reads, from the operands of the routines that use them
 static bool read_tables(const FgModule* m, const TickPlan* plan, const VoiceRoutines* routines,
                         const FgCallees* callees, FgLayout* layout) {
@@ -580,7 +550,6 @@ static bool read_tables(const FgModule* m, const TickPlan* plan, const VoiceRout
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The features the version table lists are in the code: each is read off the instructions it needs
 static bool check_features(const FgModule* m, const TickPlan* plan, const FgCallees* callees, const EngineVars* vars,
                            uint32_t note_start, const FgLayout* layout) {
@@ -606,7 +575,6 @@ static bool check_features(const FgModule* m, const TickPlan* plan, const FgCall
 #define OPERAND_ABS 2     // the address follows the opcode word
 #define OPERAND_IMM_ABS 4 // the address follows an immediate word
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Every instruction of the routine that starts with `opcode` has `value` as the long at `operand` bytes after its start
 static bool operands_equal(const FgModule* m, uint32_t routine, uint16_t opcode, uint32_t operand, uint32_t value) {
     FgRoutine r = { 0 };
@@ -622,13 +590,11 @@ static bool operands_equal(const FgModule* m, uint32_t routine, uint16_t opcode,
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Every instruction of `routine` that starts with `opcode` has `value` at `operand`, and there is at least one
 static bool operands_are(const FgModule* m, uint32_t routine, uint16_t opcode, uint32_t operand, uint32_t value) {
     return operands_equal(m, routine, opcode, operand, value) && fg_find(m, routine, opcode, 0) != FG_NOT_FOUND;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The clr.w instructions of the request routine clear the song variables the engine clears: the tempo counter, the
 // position and, where there is one, the transpose; each of them, and nothing else
 static bool request_clears(const FgModule* m, uint32_t request, uint32_t counter, uint32_t position,
@@ -653,7 +619,6 @@ static bool request_clears(const FgModule* m, uint32_t request, uint32_t counter
     return ok && cleared_counter && cleared_position && cleared_transpose == (transpose != FG_NOT_FOUND);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The engine models each of these as one variable, but the module names it in several routines with a relocated address
 // the signature does not compare: the routines must name the same address.
 //   position: the interrupt's preload, the tempo routine, both tails, the channel mask, the setup (gated versions),
@@ -726,7 +691,6 @@ static bool check_shared_variables(const FgModule* m, const TickPlan* plan, cons
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer finds the section table by scanning the interrupt routine's code for `asl.l #2,d6`, and removes the
 // status register moves of the note start by scanning on from there. The engine assumes both patches: they must land
 // where the scans land.
@@ -756,7 +720,6 @@ static bool check_eagleplayer_patches(const FgModule* m, const RequestPlan* requ
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The Eco voice records hold the address of their AUDxLC register: the voice's own
 static bool check_register_pointers(const FgModule* m, const FgLayout* layout) {
     if (!layout->features.wave_select) {
@@ -771,7 +734,6 @@ static bool check_register_pointers(const FgModule* m, const FgLayout* layout) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Every address and table the engine reads or writes is inside the module, so damaged operands fail the open
 static bool check_layout_addresses(const FgModule* m, const FgLayout* l) {
     const FgFeatures* f = &l->features;
@@ -794,8 +756,6 @@ static bool check_layout_addresses(const FgModule* m, const FgLayout* l) {
              || (fg_in_module(m, l->kick_silence, FG_WAVE_BYTES) && fg_in_module(m, l->kick_sample, FG_SAMPLE_BYTES)));
     return ok;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool fg_locate(const FgModule* m, FgLayout* layout) {
     memset(layout, 0, sizeof(*layout));

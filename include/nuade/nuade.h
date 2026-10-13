@@ -1,7 +1,6 @@
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // nuade host API: play any song through any compiled-in player without knowing which one.
 // Single-threaded per song.
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -13,7 +12,6 @@ extern "C" {
 
 typedef struct NuadeSong NuadeSong;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Songs
 
 typedef struct NuadeSongResult {
@@ -35,7 +33,6 @@ typedef struct NuadeDuration {
     bool capped;     // true: neither happened within `max_frames`
 } NuadeDuration;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Silent scan
 //
 // A dry run of a tick player that records where each voice starts a sample, with no audio rendered. It runs on a
@@ -63,14 +60,12 @@ typedef struct NuadeScan {
     bool truncated;  // neither happened within `max_ticks`
 } NuadeScan;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Registry: the players compiled in (CMake NUADE_PLAYERS).
 
 uint32_t nuade_player_count(void);
 const NuadePlayer* nuade_player_get(uint32_t index);
 const NuadePlayer* nuade_player_find(const char* id);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Songs
 
 // Open a song file from local disk.
@@ -107,7 +102,6 @@ bool nuade_seek(NuadeSong* song, uint64_t frame);
 // restarted at the beginning of that subsong. Returns false on a bad subsong or rate.
 bool nuade_duration(NuadeSong* song, uint32_t subsong, uint32_t sample_rate, uint64_t max_frames, NuadeDuration* out);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Silent scan (see the types above)
 
 // Scan a subsong of a tick player until it loops, ends or `max_ticks` ticks have run. 0 for a self-rendering player, a
@@ -115,7 +109,6 @@ bool nuade_duration(NuadeSong* song, uint32_t subsong, uint32_t sample_rate, uin
 NuadeScan* nuade_scan(const NuadeSong* song, uint32_t subsong, uint32_t sample_rate, uint32_t max_ticks);
 void nuade_scan_free(NuadeScan* scan);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Display
 //
 // The framework keeps the last NUADE_SNAPSHOT_RING ticks (render calls, for a self-rendering player) of position and
@@ -158,7 +151,6 @@ uint32_t nuade_vu(NuadeSong* song, float* out, uint32_t cap);
 // rendered after the first nuade_vu or nuade_scope call. Returns how many were written.
 uint32_t nuade_scope(NuadeSong* song, uint32_t voice, float* out, uint32_t cap);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Settings: they apply to every player and take effect from the next nuade_render.
 
 // Loop points to play through before the song ends: 0 (the default) plays on through every loop point; N > 0 ends the
@@ -170,7 +162,6 @@ void nuade_set_repeat_count(NuadeSong* song, uint32_t count);
 // Returns false (and changes nothing) outside 0..1.
 bool nuade_set_stereo_separation(NuadeSong* song, float separation);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Metadata
 
 // Value of a NUADE_META_* tag, 0 if the player did not set it.

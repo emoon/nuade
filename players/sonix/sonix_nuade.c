@@ -18,14 +18,10 @@ typedef struct SonixNuade {
     SonixSong* song;
 } SonixNuade;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Modland-style "smus.name" prefix or ".smus" suffix.
 static bool has_sonix_name(const char* path) {
     return nuade_path_has_ext(path, "snx") || nuade_path_has_ext(path, "smus") || nuade_path_has_ext(path, "tiny");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // SMUS has an IFF signature; SNX and TINY are headerless and only recognised by parsing, which other formats can
 // pass, so like UADE they need a Sonix file name.
@@ -43,8 +39,6 @@ static NuadeProbe sonix_probe(const uint8_t* data, size_t size, const char* file
     sonix_song_destroy(song);
     return result;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult sonix_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -86,15 +80,11 @@ static NuadePlayerOpenResult sonix_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void sonix_close(void* user_data) {
     SonixNuade* nuade = (SonixNuade*)user_data;
     sonix_song_destroy(nuade->song);
     free(nuade);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool sonix_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     SonixNuade* nuade = (SonixNuade*)user_data;
@@ -106,8 +96,6 @@ static bool sonix_start(void* user_data, uint32_t subsong, uint32_t sample_rate,
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult sonix_tick(void* user_data, NuadeVoices* voices) {
     (void)voices;
     SonixNuade* nuade = (SonixNuade*)user_data;
@@ -116,8 +104,6 @@ static NuadeTickResult sonix_tick(void* user_data, NuadeVoices* voices) {
     return (NuadeTickResult) { .length = length, .flags = looped ? NuadeTick_Looped : NuadeTick_None };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Sonix scores are event streams: no rows, a byte offset into each channel's track.
 static NuadePositionResult sonix_position(void* user_data) {
     const SonixSong* song = ((const SonixNuade*)user_data)->song;
@@ -125,8 +111,6 @@ static NuadePositionResult sonix_position(void* user_data) {
         .valid = true, .position = { .mode = NuadeScroll_Events, .tick = song->tick_count, .tempo = song->tempo_cur }
     };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t sonix_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const SonixSong* song = ((const SonixNuade*)user_data)->song;
@@ -139,8 +123,6 @@ static uint32_t sonix_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t 
     }
     return n;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t sonix_events(void* user_data, uint32_t voice, uint32_t track_pos, uint32_t before, uint32_t after,
                              NuadeEvent* out, uint32_t cap) {
@@ -165,8 +147,6 @@ static uint32_t sonix_events(void* user_data, uint32_t voice, uint32_t track_pos
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void sonix_metadata(void* user_data, const NuadeMetadataSink* sink) {
     SonixNuade* nuade = (SonixNuade*)user_data;
     const SonixSongMetadata* meta = sonix_song_get_metadata(nuade->song);
@@ -179,17 +159,11 @@ static void sonix_metadata(void* user_data, const NuadeMetadataSink* sink) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool sonix_dump_state(void* user_data, const char* path) {
     return sonix_set_dump_file(((SonixNuade*)user_data)->song, path);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 extern const NuadePlayer nuade_player_sonix;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SonixSong* sonix_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_sonix) {
@@ -197,8 +171,6 @@ SonixSong* sonix_from_nuade(NuadeSong* song) {
     }
     return ((SonixNuade*)nuade_player_data(song))->song;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_sonix = {
     .api_version = NUADE_PLAYER_API_VERSION,

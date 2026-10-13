@@ -46,8 +46,6 @@ typedef struct Hunk {
     uint32_t relocation_count;
 } Hunk;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint64_t hash_bytes(uint64_t hash, const uint8_t* data, size_t size) {
     for (size_t i = 0; i < size; i++) {
         hash = (hash ^ data[i]) * FNV_PRIME;
@@ -55,14 +53,10 @@ static uint64_t hash_bytes(uint64_t hash, const uint8_t* data, size_t size) {
     return hash;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint64_t hash_u32(uint64_t hash, uint32_t value) {
     const uint8_t bytes[4] = { (uint8_t)(value >> 24), (uint8_t)(value >> 16), (uint8_t)(value >> 8), (uint8_t)value };
     return hash_bytes(hash, bytes, sizeof(bytes));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The identity of a build: the hunk size, the module up to the end of the replayer's tables and sequence data, and the
 // relocations (they decide which longs are addresses).
@@ -73,8 +67,6 @@ static uint64_t build_hash(const Hunk* hunk, uint32_t prefix_end) {
     return hash_bytes(hash, hunk->relocations, 4ull * hunk->relocation_count);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool read_u32(const uint8_t* data, size_t size, size_t* at, uint32_t* value) {
     if (*at > size || size - *at < 4) {
         return false;
@@ -83,8 +75,6 @@ static bool read_u32(const uint8_t* data, size_t size, size_t* at, uint32_t* val
     *at += 4;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The hunk file as the loader takes it: one code hunk, relocations against hunk 0, then the end of the file.
 static bool parse_hunk_file(const uint8_t* data, size_t size, Hunk* hunk) {
@@ -146,8 +136,6 @@ static bool parse_hunk_file(const uint8_t* data, size_t size, Hunk* hunk) {
     return (tag & HUNK_SIZE_MASK) == HUNK_END && at == size;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The header and the eagleplayer's module check: the identification and the three longs it requires to be set.
 static bool read_header(const Hunk* hunk, SplHeader* header) {
     const uint8_t* code = hunk->code;
@@ -162,8 +150,6 @@ static bool read_header(const Hunk* hunk, SplHeader* header) {
     return header->play != 0 && header->init != 0 && header->subsongs != 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const SplBuild* find_build(const Hunk* hunk) {
     for (uint32_t i = 0; i < spl_build_count; i++) {
         const SplBuild* build = &spl_builds[i];
@@ -173,8 +159,6 @@ static const SplBuild* find_build(const Hunk* hunk) {
     }
     return nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SplModule* spl_module_open(const uint8_t* data, size_t size) {
     Hunk hunk;
@@ -215,8 +199,6 @@ SplModule* spl_module_open(const uint8_t* data, size_t size) {
     return module;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void spl_module_close(SplModule* module) {
     if (module != nullptr) {
         free(module->chip);
@@ -225,13 +207,9 @@ void spl_module_close(SplModule* module) {
     free(module);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void spl_module_reset(SplModule* module) {
     memcpy(module->chip, module->original, module->size);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint8_t spl_module_u8(const SplModule* module, uint32_t at) {
     return at >= module->build->load_base && at - module->build->load_base < module->size
@@ -239,19 +217,13 @@ uint8_t spl_module_u8(const SplModule* module, uint32_t at) {
                : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t spl_module_u16(const SplModule* module, uint32_t at) {
     return (uint16_t)((spl_module_u8(module, at) << 8) | spl_module_u8(module, at + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t spl_module_u32(const SplModule* module, uint32_t at) {
     return ((uint32_t)spl_module_u16(module, at) << 16) | spl_module_u16(module, at + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void spl_module_write32(SplModule* module, uint32_t at, uint32_t value) {
     for (uint32_t i = 0; i < 4; i++) {
@@ -261,8 +233,6 @@ void spl_module_write32(SplModule* module, uint32_t at, uint32_t value) {
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const int8_t* spl_module_chip_pointer(const SplModule* module, uint32_t at) {
     const uint32_t even = at & ~1u;

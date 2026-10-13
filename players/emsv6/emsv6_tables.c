@@ -6,8 +6,6 @@
 #define FINETUNES 16
 #define NOTES 97 // notes of one table
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The word before table 0, one note below its first (the vibrato of the first note reads it).
 static const uint16_t k_note_below_first = 14496;
 
@@ -143,7 +141,6 @@ static const uint16_t k_periods[FINETUNES][NOTES] = {
     },
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Past the end of the data the replayer reads whatever follows its code; read as 0.
 
 uint16_t e6_period_table(int finetune, int note) {

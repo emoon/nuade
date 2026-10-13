@@ -10,8 +10,6 @@
 
 #define WB_HARDWARE_HIGH 0x00DFu // absolute addresses 0xDFxxxx are custom chip registers
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 typedef struct Decoder {
     const uint8_t* mod;
     uint32_t size;
@@ -19,8 +17,6 @@ typedef struct Decoder {
     uint32_t len; // bytes of the instruction so far
     bool flow_ends;
 } Decoder;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // An operand's extension words. `imm_bytes` is the size of an immediate operand (2 for byte and word, 4 for long).
 static bool decode_ea(Decoder* d, uint32_t ea, uint32_t imm_bytes) {
@@ -54,13 +50,9 @@ static bool decode_ea(Decoder* d, uint32_t ea, uint32_t imm_bytes) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t size_to_imm(uint32_t size_field) {
     return size_field == 2 ? 4u : 2u;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The length of the instruction at `at`; sets the branch target and whether the code after it is reachable.
 static bool decode_one(Decoder* d, uint32_t at, WbInsn* out) {
@@ -189,8 +181,6 @@ static bool decode_one(Decoder* d, uint32_t at, WbInsn* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool wb_code_decode(WbCode* code, const uint8_t* mod, uint32_t size, uint32_t limit, uint32_t origin) {
     memset(code, 0, sizeof(*code));
     if (limit == 0 || limit > size || limit > 0xFFFEu) {
@@ -285,15 +275,11 @@ bool wb_code_decode(WbCode* code, const uint8_t* mod, uint32_t size, uint32_t li
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void wb_code_free(WbCode* code) {
     free(code->insn);
     free(code->index_at);
     memset(code, 0, sizeof(*code));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const WbInsn* wb_code_insn_at(const WbCode* code, uint32_t at) {
     if (at >= code->limit || code->index_at[at] == 0) {
@@ -302,13 +288,9 @@ const WbInsn* wb_code_insn_at(const WbCode* code, uint32_t at) {
     return &code->insn[code->index_at[at] - 1u];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint64_t fnv_byte(uint64_t h, uint8_t b) {
     return (h ^ b) * WB_FNV_PRIME;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint64_t wb_code_hash(const WbCode* code, const uint8_t* mod, uint32_t masked_at) {
     uint64_t h = WB_FNV_OFFSET;
@@ -352,8 +334,6 @@ uint64_t wb_code_hash(const WbCode* code, const uint8_t* mod, uint32_t masked_at
     }
     return h;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t wb_code_slots(const WbCode* code, const uint8_t* mod, uint32_t* out) {
     uint32_t n = 0;

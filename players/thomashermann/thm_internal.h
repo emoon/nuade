@@ -62,8 +62,6 @@ typedef struct ThmNote {
     uint16_t loop_offset_carry; // the bits the shifted loop offset pushes past 16, which the replayer keeps
 } ThmNote;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Parse the module, load the sample file and prove the songs; null (with *status) when it cannot play it.
 ThmModule* thm_module_load(const uint8_t* data, size_t size, const char* path, const NuadeIo* io, ThmStatus* status);
 void thm_module_free(ThmModule* module);

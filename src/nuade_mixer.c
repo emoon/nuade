@@ -33,8 +33,6 @@ struct NuadeVoices {
     NuadeVoice* voices;
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void emit(const NuadeVoices* mixer, u32 voice, NuadeVoiceEventKind kind, f64 value, const NuadeSample* sample) {
     if (mixer->observer != nullptr) {
         const NuadeVoiceEvent event
@@ -43,13 +41,9 @@ static void emit(const NuadeVoices* mixer, u32 voice, NuadeVoiceEventKind kind, 
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void reset_voice(NuadeVoice* voice) {
     *voice = (NuadeVoice) { .volume = 1.0f };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 NuadeVoices* nuade_mixer_create(u32 voice_count) {
     NuadeVoices* mixer = (NuadeVoices*)calloc(1, sizeof(NuadeVoices));
@@ -69,16 +63,12 @@ NuadeVoices* nuade_mixer_create(u32 voice_count) {
     return mixer;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void nuade_mixer_destroy(NuadeVoices* mixer) {
     if (mixer != nullptr) {
         free(mixer->voices);
         free(mixer);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void nuade_mixer_reset(NuadeVoices* mixer, u32 sample_rate) {
     mixer->sample_rate = sample_rate;
@@ -88,20 +78,15 @@ void nuade_mixer_reset(NuadeVoices* mixer, u32 sample_rate) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void nuade_mixer_set_observer(NuadeVoices* mixer, NuadeVoiceObserver observer, void* user) {
     mixer->observer = observer;
     mixer->observer_user = user;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void nuade_mixer_set_separation(NuadeVoices* mixer, f32 separation) {
     mixer->separation = separation;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Voice calls
 
 // A loop that does not fit in the sample is clipped to it; one that starts past the end is no loop.
@@ -117,8 +102,6 @@ static NuadeSample normalized(const NuadeSample* sample) {
     return s;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The voice a call is for. Any call starts a new observation period for nuade_voice_get_state's event_frame.
 static NuadeVoice* voice_at(NuadeVoices* mixer, u32 voice) {
     if (mixer == nullptr || voice >= mixer->voice_count) {
@@ -128,16 +111,12 @@ static NuadeVoice* voice_at(NuadeVoices* mixer, u32 voice) {
     return &mixer->voices[voice];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void start_sample(NuadeVoice* v, const NuadeSample* sample, u32 start_frame) {
     v->current = normalized(sample);
     v->has_queued = false;
     v->playing = v->current.data != nullptr;
     v->position = (f64)start_frame;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void nuade_voice_play(NuadeVoices* mixer, uint32_t voice, const NuadeSample* sample, uint32_t start_frame) {
     NuadeVoice* v = voice_at(mixer, voice);
@@ -147,8 +126,6 @@ void nuade_voice_play(NuadeVoices* mixer, uint32_t voice, const NuadeSample* sam
     start_sample(v, sample, start_frame);
     emit(mixer, voice, NuadeVoiceEvent_Play, (f64)start_frame, sample);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void nuade_voice_queue(NuadeVoices* mixer, uint32_t voice, const NuadeSample* sample) {
     NuadeVoice* v = voice_at(mixer, voice);
@@ -164,8 +141,6 @@ void nuade_voice_queue(NuadeVoices* mixer, uint32_t voice, const NuadeSample* sa
     emit(mixer, voice, NuadeVoiceEvent_Queue, 0.0, sample);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void nuade_voice_stop(NuadeVoices* mixer, uint32_t voice) {
     NuadeVoice* v = voice_at(mixer, voice);
     if (v == nullptr) {
@@ -175,8 +150,6 @@ void nuade_voice_stop(NuadeVoices* mixer, uint32_t voice) {
     v->has_queued = false;
     emit(mixer, voice, NuadeVoiceEvent_Stop, 0.0, nullptr);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void nuade_voice_set_pitch(NuadeVoices* mixer, uint32_t voice, double hz) {
     NuadeVoice* v = voice_at(mixer, voice);
@@ -188,8 +161,6 @@ void nuade_voice_set_pitch(NuadeVoices* mixer, uint32_t voice, double hz) {
     emit(mixer, voice, NuadeVoiceEvent_Pitch, hz, nullptr);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void nuade_voice_set_volume(NuadeVoices* mixer, uint32_t voice, float volume) {
     NuadeVoice* v = voice_at(mixer, voice);
     if (v == nullptr) {
@@ -199,8 +170,6 @@ void nuade_voice_set_volume(NuadeVoices* mixer, uint32_t voice, float volume) {
     emit(mixer, voice, NuadeVoiceEvent_Volume, volume, nullptr);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void nuade_voice_set_pan(NuadeVoices* mixer, uint32_t voice, float pan) {
     NuadeVoice* v = voice_at(mixer, voice);
     if (v == nullptr) {
@@ -209,8 +178,6 @@ void nuade_voice_set_pan(NuadeVoices* mixer, uint32_t voice, float pan) {
     v->pan = pan;
     emit(mixer, voice, NuadeVoiceEvent_Pan, pan, nullptr);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool nuade_voice_is_playing(const NuadeVoices* mixer, uint32_t voice) {
     if (mixer == nullptr || voice >= mixer->voice_count) {
@@ -224,8 +191,6 @@ bool nuade_voice_is_playing(const NuadeVoices* mixer, uint32_t voice) {
     const bool ran_off_end = !v->has_queued && v->current.loop_length == 0 && v->position >= (f64)v->current.length;
     return v->playing && !ran_off_end;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void nuade_voice_get_state(const NuadeVoices* mixer, uint32_t voice, NuadeVoiceState* state) {
     *state = (NuadeVoiceState) { 0 };
@@ -244,14 +209,11 @@ void nuade_voice_get_state(const NuadeVoices* mixer, uint32_t voice, NuadeVoiceS
     state->frame = mixer->frame;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Mixing
 
 static u32 sample_end(const NuadeSample* s) {
     return s->loop_length != 0 ? s->loop_start + s->loop_length : s->length;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void note_event(const NuadeVoices* mixer, NuadeVoice* v) {
     if (!v->has_event) {
@@ -259,8 +221,6 @@ static void note_event(const NuadeVoices* mixer, NuadeVoice* v) {
         v->event_frame = mixer->frame;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Move the position back inside the sample: wrap a loop, move on to the queued sample, or end the voice. Returns false
 // when the voice is idle afterwards.
@@ -291,16 +251,12 @@ static bool settle(NuadeVoices* mixer, u32 index, NuadeVoice* v) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static f32 read_sample(const NuadeSample* s, u32 position) {
     if (s->format == NuadeSampleFormat_S16) {
         return (f32)((const i16*)s->data)[position] / 32768.0f;
     }
     return (f32)((const i8*)s->data)[position] / 128.0f;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void nuade_mixer_mix(NuadeVoices* mixer, float* stereo, float* const* voice_out, u32 offset, u32 frames) {
     for (u32 i = 0; i < frames; i++) {
@@ -332,8 +288,6 @@ void nuade_mixer_mix(NuadeVoices* mixer, float* stereo, float* const* voice_out,
         mixer->frame++;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void nuade_mixer_advance(NuadeVoices* mixer, u32 frames) {
     for (u32 i = 0; i < frames; i++) {

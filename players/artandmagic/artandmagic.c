@@ -87,9 +87,7 @@ enum {
     InstrumentFlag_PitchSequence = 0x40,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Types
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A voice's record of the voice table.
 typedef struct VoiceTableEntry {
@@ -124,27 +122,20 @@ typedef struct SampleEntry {
     uint16_t repeat_words; // AUDxLEN of the repeat
 } SampleEntry;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Module access. Reads outside the file give 0.
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t rd8(const AamPlayer* p, int64_t off) {
     return (off >= 0 && (uint64_t)off < p->size) ? p->image[off] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t rd16(const AamPlayer* p, int64_t off) {
     return (uint16_t)((rd8(p, off) << 8) | rd8(p, off + 1));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t rd32(const AamPlayer* p, int64_t off) {
     return ((uint32_t)rd16(p, off) << 16) | rd16(p, off + 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The next byte of a note stream or track list and the position after it. A stream that runs off the file reads as the
 // byte that stops a voice.
 
@@ -154,21 +145,16 @@ static uint8_t stream_byte(const AamPlayer* p, uint32_t* pos) {
     return value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The file offset an address word of a pointer table points at.
 
 static uint32_t module_pointer(const AamPlayer* p, int64_t at) {
     return rd32(p, at) - LOAD_ADDRESS;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static VoiceTableEntry read_voice_table_entry(const AamPlayer* p, uint8_t channel) {
     const uint32_t at = p->layout.voice_table + VOICE_TABLE_ENTRY_SIZE * channel;
     return (VoiceTableEntry) { .track_list = module_pointer(p, at), .swing = { rd16(p, at + 4), rd16(p, at + 6) } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static Instrument read_instrument(const AamPlayer* p, uint8_t index) {
     const uint32_t at = p->layout.instruments + INSTRUMENT_SIZE * index;
@@ -182,21 +168,16 @@ static Instrument read_instrument(const AamPlayer* p, uint8_t index) {
                           .sample = rd8(p, at + 7) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period table entry of a note. A note past the table reads the driver's tables that follow it.
 
 static uint16_t period_at(const AamPlayer* p, int note) {
     return rd16(p, (int64_t)p->layout.periods + 2 * (int64_t)note);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static SampleRecord read_sample_record(const AamPlayer* p, uint32_t number) {
     const uint32_t at = p->layout.sample_table + SAMPLE_RECORD_SIZE * number;
     return (SampleRecord) { .start = rd32(p, at), .repeat_start = rd32(p, at + 4), .length = rd32(p, at + 8) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static SampleEntry read_sample_entry(const AamPlayer* p, uint8_t number) {
     const SampleRecord record = read_sample_record(p, number);
@@ -206,16 +187,13 @@ static SampleEntry read_sample_entry(const AamPlayer* p, uint8_t number) {
                            .repeat_words = (uint16_t)(record.length - (record.repeat_start - record.start)) >> 1 };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Paula reads from an even address; an address past the file has nothing to play.
 
 static const int8_t* sample_data(const AamPlayer* p, uint32_t off) {
     return off <= p->size ? (const int8_t*)(p->image + (off & ~1u)) : nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AamLayout and set-up
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define EXIT_TAG 0x45584954u // "EXIT"
 #define FORM_TAG 0x464F524Du // "FORM"
@@ -247,7 +225,6 @@ static const LayoutSite s_layout_sites[] = {
 };
 // clang-format on
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The address a `lea d16(pc),An` at `site` loads, or NO_ADDR when there is no such instruction.
 
 static uint32_t lea_target(const AamPlayer* p, uint32_t site) {
@@ -257,8 +234,6 @@ static uint32_t lea_target(const AamPlayer* p, uint32_t site) {
     const int64_t target = (int64_t)site + 2 + (int16_t)rd16(p, site + 2);
     return (target >= 0 && target < (int64_t)p->size) ? (uint32_t)target : NO_ADDR;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool locate_layout(const AamPlayer* p, AamLayout* layout) {
     const int build = rd32(p, BUILD_MARK_OFFSET) == BUILD_MARK ? 1 : 0;
@@ -282,15 +257,12 @@ static bool locate_layout(const AamPlayer* p, AamLayout* layout) {
            && layout->pitch_seqs + ADDRESS_SIZE * PITCH_SEQS <= layout->pointers_end;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void write32(AamPlayer* p, uint32_t at, uint32_t value) {
     for (uint32_t i = 0; i < 4; i++) {
         p->image[at + i] = (uint8_t)(value >> (24 - 8 * i));
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's relocation: every address of the pointer tables moves from the original link to the load address.
 
 static void relocate_pointers(AamPlayer* p) {
@@ -305,8 +277,6 @@ static void relocate_pointers(AamPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void write_sample_record(AamPlayer* p, uint32_t number, SampleRecord record) {
     const uint32_t at = p->layout.sample_table + SAMPLE_RECORD_SIZE * number;
     write32(p, at, record.start);
@@ -314,7 +284,6 @@ static void write_sample_record(AamPlayer* p, uint32_t number, SampleRecord reco
     write32(p, at + 8, record.length);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One 8SVX form of the sample area, as the init code reads it: the header chunk, two chunks it skips (NAME, ANNO) and
 // the BODY.
 
@@ -324,8 +293,6 @@ typedef struct SampleForm {
     uint32_t body;     // file offset of the body
     uint32_t body_size;
 } SampleForm;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool read_sample_form(const AamPlayer* p, uint32_t at, SampleForm* form) {
     // Chunk starts are file offsets; 64 bits keep the sums of crafted sizes from wrapping.
@@ -340,7 +307,6 @@ static bool read_sample_form(const AamPlayer* p, uint32_t at, SampleForm* form) 
     return chunk + 8 + (int64_t)form->body_size <= (int64_t)p->size;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The init code of the module: for every form from the first on, a record of the sample table (absolute addresses of
 // the sample and of its repeat, and the length), then the body moved down behind the previous one. A form without a
 // repeat repeats its last two bytes.
@@ -370,9 +336,7 @@ static void build_samples(AamPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The voice routines
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Half of a nibble, rounded up: the driver shifts right and adds the bit that fell out.
 
@@ -380,7 +344,6 @@ static int8_t half_rounded_up(uint8_t nibble) {
     return (int8_t)((nibble >> 1) + (nibble & 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The track list: the next pattern of the voice, with the transposition and repeat count the entry carries. The end of
 // the list starts it over; that is where the eagleplayer calls SongEnd.
 
@@ -418,7 +381,6 @@ static void next_track_entry(AamPlayer* p, AamVoice* v) {
     v->track_pos = pos;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pattern ended: repeat it, or take the next entry of the track list. Then point the voice at the pattern's notes.
 
 static void next_pattern(AamPlayer* p, AamVoice* v) {
@@ -433,7 +395,6 @@ static void next_pattern(AamPlayer* p, AamVoice* v) {
     v->note_pos = module_pointer(p, (int64_t)p->layout.patterns + ADDRESS_SIZE * (int64_t)v->pattern);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note starts: the sample goes into the channel's registers (its DMA starts a tick later), the pitch and volume
 // restart and the volume envelope is set up.
 
@@ -465,7 +426,6 @@ static void start_note(AamPlayer* p, AamVoice* v) {
     v->shown_instrument = v->instrument;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note (or a tie, which starts the same note again) ends the event: the stream continues at `pos`.
 
 static void begin_note(AamPlayer* p, AamVoice* v, uint32_t pos) {
@@ -474,7 +434,6 @@ static void begin_note(AamPlayer* p, AamVoice* v, uint32_t pos) {
     v->steps_left = v->duration;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Portamento event, after its command byte: slide speed and the step at which it starts, the note to start on and the
 // note to slide to.
 
@@ -487,7 +446,6 @@ static void begin_portamento(AamPlayer* p, AamVoice* v, uint32_t pos) {
     begin_note(p, v, pos);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The byte after a prefix of a note event. It ends the event when it is a portamento (if the prefix allows one) or a
 // byte of the prefix's own class or above, which means the event has no note and plays the previous one again.
 // Otherwise it is left in `b` for the next prefix.
@@ -506,7 +464,6 @@ static bool prefix_ends_event(AamPlayer* p, AamVoice* v, uint32_t* pos, uint8_t*
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The next event of the note stream: a note, a rest, a portamento or the end of the voice.
 
 static void read_note(AamPlayer* p, AamVoice* v) {
@@ -571,7 +528,6 @@ static void read_note(AamPlayer* p, AamVoice* v) {
     begin_note(p, v, pos);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume ramp: one tick of the envelope's time. False when the ramp has run out.
 
 static bool ramp_advance(const Instrument* ins, AamVoice* v) {
@@ -581,7 +537,6 @@ static bool ramp_advance(const Instrument* ins, AamVoice* v) {
     return left;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The level for a ramp position: the note's volume scaled by ramp / 512.
 
 static uint16_t ramp_level(const AamVoice* v, uint16_t ramp) {
@@ -589,7 +544,6 @@ static uint16_t ramp_level(const AamVoice* v, uint16_t ramp) {
     return (uint16_t)((product >> 9) & 0x7FFF);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One tick of the slide towards the target note: the pitch moves a fraction of the distance, and snaps to the target
 // when it gets there.
 
@@ -615,7 +569,6 @@ static void slide_step(const AamPlayer* p, AamVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One tick of the vibrato: the pitch moves by a fraction of the distance to the next note, up and down.
 
 static void vibrato_step(const AamPlayer* p, const Instrument* ins, AamVoice* v) {
@@ -629,14 +582,12 @@ static void vibrato_step(const AamPlayer* p, const Instrument* ins, AamVoice* v)
     v->pitch += v->vibrato_down ? 0u - (uint32_t)delta : (uint32_t)delta;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Where the voice's pitch sequence starts.
 
 static uint32_t pitch_seq_start(const AamPlayer* p, const AamVoice* v) {
     return module_pointer(p, (int64_t)p->layout.pitch_seqs + ADDRESS_SIZE * (int64_t)v->pitch_seq);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One step of the pitch sequence: a list of notes added to the note, ending in a loop (255, offset) or a stop (254).
 
 static void pitch_seq_step(const AamPlayer* p, AamVoice* v) {
@@ -660,7 +611,6 @@ static void pitch_seq_step(const AamPlayer* p, AamVoice* v) {
     v->pitch_seq_pos = pos;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume envelope: a fade in over the first ticks, or a fade out when the note is about to end.
 
 static void envelope_step(const Instrument* ins, AamVoice* v) {
@@ -683,7 +633,6 @@ static void envelope_step(const Instrument* ins, AamVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The per-tick effects of a note: set-up on the tick the DMA starts, then slide or vibrato, the pitch sequence and the
 // envelope.
 
@@ -714,7 +663,6 @@ static void voice_effects(const AamPlayer* p, const Instrument* ins, AamVoice* v
     envelope_step(ins, v);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One tick of a voice.
 
 static void voice_tick(AamPlayer* p, AamVoice* v) {
@@ -754,7 +702,6 @@ static void voice_tick(AamPlayer* p, AamVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The init routine of the driver for one voice: it starts on the first track list entry, one step from reading its
 // first note.
 
@@ -769,16 +716,12 @@ static void voice_init(AamPlayer* p, AamVoice* v, uint8_t channel) {
     v->shown_instrument = -1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Public API
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool aam_probe(const uint8_t* data, size_t size) {
     return size >= CODE_TAG_OFFSET + 4 && size <= INT32_MAX && nuade_read_be32(data + CODE_TAG_OFFSET) == EXIT_TAG
            && nuade_read_be32(data + size - 4) == EXIT_TAG;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 AamPlayer* aam_create(const uint8_t* data, size_t size) {
     if (!aam_probe(data, size)) {
@@ -803,8 +746,6 @@ AamPlayer* aam_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void aam_destroy(AamPlayer* player) {
     if (player == nullptr) {
         return;
@@ -812,8 +753,6 @@ void aam_destroy(AamPlayer* player) {
     free(player->image);
     free(player);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool aam_start(AamPlayer* player, NuadeVoices* voices) {
     if (voices == nullptr) {
@@ -835,8 +774,6 @@ bool aam_start(AamPlayer* player, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 AamTickResult aam_tick(AamPlayer* player, NuadeVoices* voices) {
     player->looped = false;
     bool any = false;
@@ -848,8 +785,6 @@ AamTickResult aam_tick(AamPlayer* player, NuadeVoices* voices) {
     }
     return (AamTickResult) { .looped = player->looped, .ended = !any };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 AamVoiceState aam_voice_state(const AamPlayer* player, int voice) {
     if (voice < 0 || voice >= AAM_VOICES) {

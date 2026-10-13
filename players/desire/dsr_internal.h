@@ -21,7 +21,6 @@
 #define DSR_MAX_SUBSONGS 63         // the subsong number goes into a voice's state byte, below its bit 6
 #define DSR_PERIODS 96              // the period table: 8 steps per semitone, 12 semitones
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module, zero filled beyond its end: a read past it returns 0 (the replayer would read whatever follows in
 // memory). An AUDxLC up to `capacity` has room for any AUDxLEN (nuade_paula_padded_copy of `capacity` bytes).
 
@@ -30,7 +29,6 @@ uint16_t dsr_u16(const DsrMemory* m, int64_t offset);
 int16_t dsr_s16(const DsrMemory* m, int64_t offset);
 uint32_t dsr_u32(const DsrMemory* m, int64_t offset);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tables the code addresses; all are offsets into the module.
 
 #define DSR_ORDER_ENTRY 2 // bytes
@@ -48,7 +46,6 @@ typedef struct DsrInstrument {
     uint8_t transpose;
 } DsrInstrument;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The loaded module
 
 // Finds the replayer in the module's code and the tables. This is also the check: false for anything the player
@@ -71,7 +68,6 @@ uint16_t dsr_read_period(const DsrModule* module, uint16_t index);
 DsrInstrument dsr_read_instrument(const DsrModule* module, uint8_t number);
 DsrCommandArgs dsr_read_command_args(const DsrModule* module, uint16_t at);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer's state
 
 // Decodes the state byte, or the request byte of a record (the same coding: bit 6 selects the song list).

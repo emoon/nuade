@@ -73,7 +73,6 @@ extern const Mm8Mixer mm8_mixer_68k;
 // Row of the volume table that scales the quieter of two volumes to the louder one.
 const int8_t* mm8_volume_row(const Mm8* e, uint16_t va, uint16_t vb);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Whether the voice of the pair has data.
 static inline bool mm8_voice_present(const Mm8Block* b, int voice) {
     return b->ch->stream[voice].remaining != 0;

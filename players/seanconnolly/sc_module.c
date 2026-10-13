@@ -33,7 +33,6 @@
 #define SCO_V2_SINGLE_SIZES_B 0x12u
 #define SCO_FORM 0x464F524Du
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The known versions. The slots are the displacement words of the `lea d16(pc),An` that address a table, from the init
 // entry; the hashes were taken from the corpus files.
 
@@ -152,8 +151,6 @@ static const ScoVersion sco_versions[] = {
     },
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool exempt_variable(const ScoModule* module, uint32_t at) {
     const ScoVersion* version = module->version;
     const uint32_t noise = sco_noise_address(module);
@@ -161,7 +158,6 @@ static bool exempt_variable(const ScoModule* module, uint32_t at) {
     return at - noise < (uint32_t)version->noise_words * 2 || at - seed < 6;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A table, stream or pattern read. The replayer's variables are live state in the original, kept in structs here: a
 // read that lands in them (the noise buffer and seed apart, which the image does hold) is flagged.
 
@@ -172,67 +168,45 @@ uint8_t sco_u8(const ScoModule* module, uint32_t at) {
     return at < module->size ? module->image[at] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t peek8(const ScoModule* module, uint32_t at) {
     return at < module->size ? module->image[at] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t sco_peek16(const ScoModule* module, uint32_t at) {
     return (uint16_t)((peek8(module, at) << 8) | peek8(module, at + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t sco_peek32(const ScoModule* module, uint32_t at) {
     return ((uint32_t)sco_peek16(module, at) << 16) | sco_peek16(module, at + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sco_module_var_read(const ScoModule* module) {
     return *module->var_read;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t sco_u16(const ScoModule* module, uint32_t at) {
     return (uint16_t)((sco_u8(module, at) << 8) | sco_u8(module, at + 1));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t sco_u32(const ScoModule* module, uint32_t at) {
     return ((uint32_t)sco_u16(module, at) << 16) | sco_u16(module, at + 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t indexed_address(uint32_t base, uint16_t index) {
     return base + (uint32_t)(int32_t)(int16_t)index;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint8_t sco_u8_indexed(const ScoModule* module, uint32_t base, uint16_t index) {
     return sco_u8(module, indexed_address(base, index));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t sco_u16_indexed(const ScoModule* module, uint32_t base, uint16_t index) {
     return sco_u16(module, indexed_address(base, index));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t sco_u32_indexed(const ScoModule* module, uint32_t base, uint16_t index) {
     return sco_u32(module, indexed_address(base, index));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void sco_write8(ScoModule* module, uint32_t at, uint8_t value) {
     if (at < module->size) {
@@ -240,21 +214,15 @@ void sco_write8(ScoModule* module, uint32_t at, uint8_t value) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void sco_write16(ScoModule* module, uint32_t at, uint16_t value) {
     sco_write8(module, at, (uint8_t)(value >> 8));
     sco_write8(module, at + 1, (uint8_t)value);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const int8_t* sco_chip(const ScoModule* module, uint32_t at) {
     const uint32_t clamped = at < module->size ? at : module->size;
     return (const int8_t*)module->image + (clamped & ~1u);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ScoSampleBounds sco_sample_bounds(const ScoModule* module, uint32_t entry_offset) {
     const uint32_t table = module->base[ScoRole_SampleTable];
@@ -263,8 +231,6 @@ ScoSampleBounds sco_sample_bounds(const ScoModule* module, uint32_t entry_offset
                                .end = base + sco_u32(module, table + entry_offset + 4) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void sco_registers_write(const ScoModule* module, const ScoRegisters* registers, NuadePaulaChannel* paula) {
     paula->lc = sco_chip(module, registers->lc);
     paula->len_words = registers->len_words;
@@ -272,20 +238,15 @@ void sco_registers_write(const ScoModule* module, const ScoRegisters* registers,
     paula->volume = (uint8_t)(registers->volume & 0x7F);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void sco_module_reset(ScoModule* module) {
     memcpy(module->image + module->var_start, module->original + module->var_start, module->entry - module->var_start);
     *module->var_read = false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint64_t fnv_byte(uint64_t hash, uint8_t byte) {
     return (hash ^ byte) * SCO_FNV_PRIME;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The signature of a version: the code with its slot words zeroed.
 
 static uint64_t code_hash(const uint8_t* data, uint32_t entry, const ScoVersion* version) {
@@ -303,7 +264,6 @@ static uint64_t code_hash(const uint8_t* data, uint32_t entry, const ScoVersion*
     return hash;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module's own address of each table: the target of its slots. Every slot of a role must name the same address, in
 // the data behind the code.
 
@@ -327,7 +287,6 @@ static bool bind_roles(ScoModule* module, const uint8_t* data) {
     return (bound & version->required_roles) == version->required_roles;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's end-of-song flag of the sample build: the long after the first zero long of the module's text (from
 // offset 0x10 in steps of 2). SongEnd is called when that long is 0, so it must be the voices' flags the replayer
 // clears.
@@ -340,7 +299,6 @@ static bool sampler_flags_found(const uint8_t* data, uint32_t size, uint32_t ent
     return at <= size - 4 && at + 4 == (uint32_t)((int32_t)entry + SCO_V2_FLAGS_AT);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the sample build's replayer reads from its variables before it writes them: the DMA bit table and the four longs
 // loaded into registers at the start of the voice routine.
 
@@ -363,7 +321,6 @@ static bool sampler_variables_ok(const uint8_t* data, uint32_t size, uint32_t en
     return sampler_flags_found(data, size, entry);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The subsong count the eagleplayer's SubSongRange reports: the song table ends where the streams start. For the sample
 // build it is 1 when the size of the sample data that InitPlayer works out has one of two values.
 
@@ -386,8 +343,6 @@ static bool sampler_single_subsong(const ScoModule* module) {
     return size == SCO_V2_SINGLE_SIZES_A || size == SCO_V2_SINGLE_SIZES_B;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool find_subsongs(ScoModule* module) {
     const uint32_t songs = module->base[ScoRole_Songs];
     const uint32_t streams = module->base[ScoRole_Streams];
@@ -401,7 +356,6 @@ static bool find_subsongs(ScoModule* module) {
     return module->subsong_count >= 1 && module->subsong_count <= SCO_MAX_SUBSONGS;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The version whose code the module has. The module's header must lead to the init routine (the first bra.w) and to the
 // version's interrupt routine.
 
@@ -419,8 +373,6 @@ static const ScoVersion* find_version(const uint8_t* data, uint32_t size, uint32
     }
     return nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sco_module_load(ScoModule* module, const uint8_t* data, size_t size) {
     memset(module, 0, sizeof(*module));
@@ -466,8 +418,6 @@ bool sco_module_load(ScoModule* module, const uint8_t* data, size_t size) {
     *module->var_read = false;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void sco_module_free(ScoModule* module) {
     free(module->image);

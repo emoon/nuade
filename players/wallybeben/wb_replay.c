@@ -44,13 +44,9 @@
 #define MODE_NOTE_SLIDE 1u     // the voice mode of a slide or an arpeggio up
 #define MODE_ARP_DOWN 2u
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const WbQuirks* quirks(const WbReplay* r) {
     return &r->module->version->quirks;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The proof plays a voice alone to learn whether the voice depends on anything another voice can change. These record
 // the places where it does: a read of a register another voice left behind, or of live state, a write into another
@@ -61,8 +57,6 @@ static void mark_coupled(const WbReplay* r) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The voice depends on state another voice can change, even when the lookup feeds the output period only.
 static void track_couple(const WbReplay* r) {
     if (r->track != nullptr) {
@@ -70,15 +64,11 @@ static void track_couple(const WbReplay* r) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void track_period_only(WbReplay* r, bool on) {
     if (r->track != nullptr) {
         r->track->period_only = on;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void track_arp_write(WbReplay* r, uint32_t pos) {
     if (r->track != nullptr) {
@@ -86,15 +76,11 @@ static void track_arp_write(WbReplay* r, uint32_t pos) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void track_arp_read(WbReplay* r, uint32_t pos) {
     if (r->track != nullptr) {
         r->track->arp_read |= 1ull << pos;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Charges the proof's budget; the replay faults (and the open refuses the module) when it cannot pay.
 static bool charge(WbReplay* r, uint64_t units) {
@@ -105,8 +91,6 @@ static bool charge(WbReplay* r, uint64_t units) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void set_period_hi(WbReplay* r, uint8_t value) {
     r->period_hi = value;
     if (r->track != nullptr) {
@@ -114,16 +98,12 @@ static void set_period_hi(WbReplay* r, uint8_t value) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t period_hi_in(WbReplay* r) {
     if (r->track != nullptr && !r->track->period_hi_own) {
         r->track->coupled = true;
     }
     return r->period_hi;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The upper bytes of the division register decide the table index of a slide and the quotient of a release: a read of
 // them is a read of what the voices before left.
@@ -134,8 +114,6 @@ static uint32_t divide_work_in(WbReplay* r) {
     return r->divide_work;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void set_divide_work(WbReplay* r, uint32_t value) {
     r->divide_work = value;
     if (r->track != nullptr) {
@@ -143,15 +121,11 @@ static void set_divide_work(WbReplay* r, uint32_t value) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A note whose volume the envelope cannot raise: it plays nothing whatever its sample holds.
 static bool note_is_silent(const WbReplay* r, uint32_t v) {
     return r->vb.volume[v] == 0 && (r->vb.env_target[v] == 0 || r->vb.env_attack[v] == 0)
            && r->vb.env_release[v] < RELEASE_WRAP_MIN;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // One byte of a pattern stream: `ptr` is the stream, `offset` the position in it.
 static uint8_t stream_u8(WbReplay* r, uint32_t ptr, uint32_t offset) {
@@ -164,8 +138,6 @@ static uint8_t stream_u8(WbReplay* r, uint32_t ptr, uint32_t offset) {
     }
     return b;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The replayer's variables as the module's memory has them: a note past the period table reads whatever lies behind it.
 typedef struct VarMap {
@@ -212,8 +184,6 @@ static const VarMap k_vars[] = {
     VAR(WbRole_SlideSpeedB, slide_speed_b, 1, 1, false),
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t read_native(const void* field, uint32_t bytes) {
     switch (bytes) {
         case 1:
@@ -224,8 +194,6 @@ static uint32_t read_native(const void* field, uint32_t bytes) {
             return *(const uint32_t*)field;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void write_native(void* field, uint32_t bytes, uint32_t value) {
     switch (bytes) {
@@ -241,8 +209,6 @@ static void write_native(void* field, uint32_t bytes, uint32_t value) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A byte of a table of pointers (the eagleplayer moved them to the load address): `address` lies in the table that
 // starts at `first` and has `count` entries.
 static bool pointer_table_byte(uint32_t address, uint32_t first, uint32_t count, const uint32_t* entries,
@@ -257,8 +223,6 @@ static bool pointer_table_byte(uint32_t address, uint32_t first, uint32_t count,
     *out = (uint8_t)((entry + WB_UADE_LOAD_ADDRESS) >> (8 * (3 - (address - first) % 4u)));
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A byte of UADE's memory as the replayer sees it at `address`, a module offset the replayer computed (it may leave the
 // module): the live value of a variable, else the module's byte, else zero behind the module. False for what the port
@@ -336,8 +300,6 @@ static bool memory_byte(const WbReplay* r, uint32_t address, uint8_t* out) {
     return wb_module_data_u8(m, address, out);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A word of the period table; a note past the table reads the memory behind it.
 static uint16_t period_at(WbReplay* r, uint32_t byte_index) {
     uint16_t p = 0;
@@ -359,7 +321,6 @@ static uint16_t period_at(WbReplay* r, uint32_t byte_index) {
     return (uint16_t)((hi << 8) | lo);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Paula
 
 // AUDxLC for a sample pointer (a module offset). Paula reads chip memory, which repeats every 2 MiB: the module's
@@ -373,8 +334,6 @@ static const int8_t* sample_address(const WbReplay* r, uint32_t pointer, bool* o
     }
     return nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A sample the port does not hold is fine under a silent note. The first sample table entry grows without bound, so in
 // the proof a note that plays from it must be silent, whatever the entry holds.
@@ -392,8 +351,6 @@ static void check_sample_use(WbReplay* r, uint32_t v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The volume reset routine: AUDxVOL of all voices to 0. The eagleplayer's patch calls SongEnd from it on every use but
 // the first.
 static void silence(WbReplay* r) {
@@ -407,15 +364,12 @@ static void silence(WbReplay* r) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void reset(WbReplay* r) {
     silence(r);
     r->tempo_ctr = 0;
     r->playing = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sequence list read. The eagleplayer's patch clears the voice's mark when the entry is the end marker; when all
 // four are clear it calls SongEnd and sets them again.
 
@@ -432,8 +386,6 @@ static void list_end(WbReplay* r, uint32_t voice) {
         r->song_end = true;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Takes the next pattern of the voice's list: the entries up to the maximum are patterns, higher ones set the
 // transposition, the end marker restarts the list.
@@ -471,8 +423,6 @@ static void load_pattern(WbReplay* r, uint32_t v) {
     r->fault = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A note's period into the base period and the output.
 // The lookup works in a register whose second byte is whatever the code before left there: the previous period (or 0
 // after an event read, the envelope's release and a division). The word builds index the table with the register's
@@ -487,8 +437,6 @@ static void set_period(WbReplay* r, uint32_t v) {
     r->period_out[v] = p;
     set_period_hi(r, (uint8_t)(p >> 8));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The arpeggio offsets named by the mask, bit by bit, into the voice's part of the arpeggio buffer.
 static void build_arp(WbReplay* r, uint32_t v) {
@@ -514,8 +462,6 @@ static void build_arp(WbReplay* r, uint32_t v) {
     r->vb.slide_target[v] = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The instrument flag of an envelope record writes byte 0x27 + voice of the voice block: it lands in the slide fields
 // of another voice.
 static void set_start_slide_flag(WbReplay* r, uint32_t v) {
@@ -526,8 +472,6 @@ static void set_start_slide_flag(WbReplay* r, uint32_t v) {
         r->vb.slide_param[v - 1] = 1;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The envelope record of the voice into its fields.
 static void load_envelope(WbReplay* r, uint32_t v) {
@@ -552,8 +496,6 @@ static void load_envelope(WbReplay* r, uint32_t v) {
         set_start_slide_flag(r, v);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The instrument record of the voice: the first block of the sample and the repeat, written to the channel.
 static void start_instrument(WbReplay* r, uint32_t v) {
@@ -587,11 +529,7 @@ static void start_instrument(WbReplay* r, uint32_t v) {
     r->loop_from_entry0[v] = ins.sample == 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void dispatch(WbReplay* r);
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Bit 0 of the envelope's flags raises the first tick of the note by a semitone (the next tick takes it back). The
 // replayer reads the flags through an address register that holds the envelope record only when the voice has no
@@ -618,8 +556,6 @@ static void bump_note(WbReplay* r, uint32_t v, uint8_t transposed, uint32_t stal
         r->vb.note[v]++;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The note of an event: the channel restarts with the instrument and the envelope, the voice takes the note and its
 // length.
@@ -670,22 +606,16 @@ static void start_note(WbReplay* r, uint32_t v, uint8_t note, uint8_t consumed, 
     r->last_instrument[r->vb.hw[v] >> 4] = r->vb.wave[v] >> 3;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 typedef struct EventReader {
     uint32_t stream;
     uint32_t pos;
     uint8_t consumed;
 } EventReader;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t next_byte(WbReplay* r, EventReader* e) {
     e->consumed++;
     return stream_u8(r, e->stream, e->pos++);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The next event of the voice's pattern. A pattern that ends loads the next one from the list and reads from there;
 // the stop and song commands leave the tick through the dispatcher again.
@@ -807,7 +737,6 @@ static void read_event(WbReplay* r, uint32_t v) {
     r->fault = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What a voice does between events.
 
 static void vibrato(WbReplay* r, uint32_t v) {
@@ -856,8 +785,6 @@ static void vibrato(WbReplay* r, uint32_t v) {
     track_period_only(r, false);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void arpeggio(WbReplay* r, uint32_t v) {
     for (uint32_t pass = 0; pass < MAX_ARP_PASSES; pass++) {
         const uint8_t pos = r->vb.arp_pos[v];
@@ -880,8 +807,6 @@ static void arpeggio(WbReplay* r, uint32_t v) {
     r->fault = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // How often the slide set-up's loop over the tempo runs: the builds that rotate the step count with subq.l / tst.b /
 // bpl (tempo + 1 times up to 0x80, once above), the others with dbra (tempo + 1 times).
 static uint32_t slide_tempo_steps(const WbReplay* r) {
@@ -894,8 +819,6 @@ static uint32_t slide_tempo_steps(const WbReplay* r) {
     }
     return steps;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The slide's step per tick: the period difference between the note and the target divided by the ticks it takes. The
 // routine works in the division register, whose upper half holds the last remainder: its note index is the whole
@@ -943,8 +866,6 @@ static void slide_setup(WbReplay* r, uint32_t v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A slide to a target note: from `window` ticks before the note ends, the base period moves by the step each tick.
 static void slide(WbReplay* r, uint32_t v) {
     const WbQuirks* q = quirks(r);
@@ -989,8 +910,6 @@ static void slide(WbReplay* r, uint32_t v) {
     r->period_out[v] = r->period_base[v];
     set_period_hi(r, (uint8_t)(r->period_base[v] >> 8));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The envelope: attack towards the target, then release when the note nears its end. The release point is a division
 // (or a shift) in the division register, which some builds do not clear first.
@@ -1047,8 +966,6 @@ static void envelope(WbReplay* r, uint32_t v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The vibrato flag copies a byte two voices on: byte 0x4E + voice of the block lies in the instrument or envelope
 // fields of another voice.
 static uint8_t vib_flag_source(const WbReplay* r, uint32_t v) {
@@ -1063,8 +980,6 @@ static uint8_t vib_flag_source(const WbReplay* r, uint32_t v) {
             return r->vb.env_sel[1];
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // What happens between events: vibrato, arpeggio or slide, according to the voice's mode.
 static void between_events(WbReplay* r, uint32_t v) {
@@ -1094,8 +1009,6 @@ static void between_events(WbReplay* r, uint32_t v) {
     }
     envelope(r, v);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // One voice of one tick.
 static void voice_tick(WbReplay* r, uint32_t v) {
@@ -1141,13 +1054,10 @@ static void voice_tick(WbReplay* r, uint32_t v) {
     between_events(r, v);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The builds with a silent long repeat an instrument without flags on silence.
 static bool repeats_on_silence(const WbReplay* r, uint32_t v) {
     return quirks(r)->loop_mode == WbLoop_FlagSilence && r->vb.inst_flags[v] == 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Where the voice repeats: the instrument's loop offset from its sample, or the silent long.
 static uint32_t repeat_start(const WbReplay* r, uint32_t v) {
@@ -1156,8 +1066,6 @@ static uint32_t repeat_start(const WbReplay* r, uint32_t v) {
     }
     return r->loop_lc[v] == WB_BAD_POINTER ? WB_BAD_POINTER : r->loop_lc[v] + r->loop_off[v];
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The end of the tick: periods, the DMA starts and stops, volumes, then the repeat registers.
 static void output(WbReplay* r) {
@@ -1206,8 +1114,6 @@ static void output(WbReplay* r) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void play(WbReplay* r) {
     if (r->playing == 0) {
         return;
@@ -1231,8 +1137,6 @@ static void play(WbReplay* r) {
     }
     output(r);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void start_song(WbReplay* r, uint8_t song) {
     if (quirks(r)->song_start_dma_off) {
@@ -1260,8 +1164,6 @@ static void start_song(WbReplay* r, uint8_t song) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The module's tick routine: a request in the command byte starts a song (0 stops it); otherwise the song plays.
 static void dispatch(WbReplay* r) {
     if (++r->depth > MAX_DISPATCH_DEPTH) {
@@ -1285,8 +1187,6 @@ static void dispatch(WbReplay* r) {
     r->depth--;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void wb_replay_tick(WbReplay* r) {
     r->song_end = false;
     r->aborted = false;
@@ -1295,8 +1195,6 @@ void wb_replay_tick(WbReplay* r) {
     }
     dispatch(r);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void wb_replay_init(WbReplay* r, const WbModule* m, uint32_t song, NuadePaulaChannel* paula, uint32_t* sample_ptr) {
     memset(r, 0, sizeof(*r));
@@ -1335,8 +1233,6 @@ void wb_replay_init(WbReplay* r, const WbModule* m, uint32_t song, NuadePaulaCha
     r->song_end = false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The proof of a song. The replay is deterministic, so a song that reaches a state it has been in before plays the same
 // states for ever: if no fault came up on the way, none ever will. Two ways to find such a repeat:
 //
@@ -1357,8 +1253,6 @@ typedef enum Proof {
     Proof_Budget,  // the work budget ran out
 } Proof;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The part of the replay that decides what it does next.
 static void save_state(WbReplay* saved, const WbReplay* r) {
     memcpy(saved, r, sizeof(*saved));
@@ -1372,8 +1266,6 @@ static void save_state(WbReplay* saved, const WbReplay* r) {
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Field by field, so that the padding of the struct does not take part.
 static bool same_state(const WbReplay* a, const WbReplay* b) {
@@ -1390,8 +1282,6 @@ static bool same_state(const WbReplay* a, const WbReplay* b) {
            && SAME(aborted) && SAME(fault) && SAME(depth) && SAME(last_period) && SAME(last_instrument);
 #undef SAME
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static Proof run_to_repeat(WbReplay* r, WbBudget* budget, WbReplay* saved, WbReplay* now) {
     save_state(saved, r);
@@ -1423,8 +1313,6 @@ static Proof run_to_repeat(WbReplay* r, WbBudget* budget, WbReplay* saved, WbRep
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 typedef struct ProofContext {
     const WbModule* module;
     WbBudget* budget;
@@ -1435,8 +1323,6 @@ typedef struct ProofContext {
     uint32_t* samples;
 } ProofContext;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void start_replay(ProofContext* c, uint32_t song, WbCoupling* track) {
     memset(c->paula, 0, sizeof(c->paula));
     wb_replay_init(c->replay, c->module, song, c->paula, c->samples);
@@ -1444,8 +1330,6 @@ static void start_replay(ProofContext* c, uint32_t song, WbCoupling* track) {
     c->replay->budget = c->budget;
     c->replay->track = track;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // What the voices played alone have in common.
 typedef struct AloneResult {
@@ -1455,8 +1339,6 @@ typedef struct AloneResult {
     uint32_t tempo_tick[WB_VOICES];
     uint8_t initial_tempo;
 } AloneResult;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Each voice that play() ticks alone, with the tempo `preset` (NO_TEMPO: the module's own).
 static Proof play_voices_alone(ProofContext* c, uint32_t song, int preset, AloneResult* out) {
@@ -1486,8 +1368,6 @@ static Proof play_voices_alone(ProofContext* c, uint32_t song, int preset, Alone
     return Proof_Safe;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The tempo is one variable of all voices. If the voices' events set one tempo T other than the module's, and one of
 // them does so in the first tick of play (the first tick starts the song), every voice runs on T from the end of that
 // tick, before anything reads the tempo: `tempo` is T, or NO_TEMPO when the voices set no other tempo. Proof_Coupled
@@ -1506,8 +1386,6 @@ static Proof common_tempo(const AloneResult* alone, int* tempo) {
     }
     return *tempo == NO_TEMPO || first_tick == FIRST_PLAY_TICK ? Proof_Safe : Proof_Coupled;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Each voice alone; Proof_Coupled when one of them is not independent of the others, or when two share a byte of the
 // arpeggio buffer.
@@ -1539,8 +1417,6 @@ static Proof prove_voices_alone(ProofContext* c, uint32_t song) {
     }
     return Proof_Safe;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Plays every subsong of the module and reports whether the replayer never met something it does not model, where
 // UADE plays on (see above). The ticks are charged to `budget`.

@@ -11,26 +11,19 @@
 #define VIBRATO_SHIFT 7
 #define SILENT_BUFFER_WORDS 4
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool mon_is_old_version(MonVersion version) {
     return version <= MonVersion_FlimbosQuest;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t mon_scaled_period(const MonModule* m, uint8_t note, uint16_t tuning) {
     return (uint16_t)(((uint32_t)mon_period_entry(m, note) * tuning) >> (PERIOD_SHIFT_HIGH + PERIOD_SHIFT_LOW));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t mon_scaled_period_word(const MonModule* m, uint8_t note, uint16_t tuning) {
     const uint16_t shifted = (uint16_t)(((uint32_t)mon_period_entry(m, note) * tuning) >> PERIOD_SHIFT_HIGH);
     return (uint16_t)(shifted >> PERIOD_SHIFT_LOW);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The AUDxVOL of an envelope byte: scaled by the voice's volume and by the song volume, each with a word shift.
 
 uint16_t mon_envelope_level(const MonPlayer* p, const MonVoice* v, uint8_t entry) {
@@ -38,8 +31,6 @@ uint16_t mon_envelope_level(const MonPlayer* p, const MonVoice* v, uint8_t entry
     const uint16_t voice_level = (uint16_t)((uint16_t)(entry * volume) >> VOLUME_SHIFT);
     return (uint16_t)((uint16_t)(voice_level * p->master) >> VOLUME_SHIFT);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t mon_divs(int32_t dividend, int16_t divisor) {
     const int32_t quotient = dividend / divisor;
@@ -50,7 +41,6 @@ uint32_t mon_divs(int32_t dividend, int16_t divisor) {
     return (uint32_t)(uint16_t)remainder << 16 | (uint16_t)quotient;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The slide from the previous note's period to the new one: the period moves by slide_step / slide_length of the
 // distance in each tick.
 
@@ -77,8 +67,6 @@ void mon_run_slide(MonVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t mon_list_byte(const MonModule* m, uint32_t list, uint8_t* pos) {
     uint8_t position = *pos;
     for (int guard = 0; guard < MON_LIST_GUARD; guard++) {
@@ -93,7 +81,6 @@ uint8_t mon_list_byte(const MonModule* m, uint32_t list, uint8_t* pos) {
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The older versions' vibrato list: a byte 0x80 jumps to the position in the byte behind it.
 
 static uint8_t absolute_list_byte(const MonModule* m, uint32_t list, uint8_t* pos) {
@@ -110,7 +97,6 @@ static uint8_t absolute_list_byte(const MonModule* m, uint32_t list, uint8_t* po
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The vibrato list gives the period offset as a fraction of the period.
 
 void mon_run_vibrato(MonPlayer* p, int voice, const MonInstrument* ins) {
@@ -134,8 +120,6 @@ void mon_run_vibrato(MonPlayer* p, int voice, const MonInstrument* ins) {
     v->vibrato_offset = (uint16_t)(depth * (int16_t)(v->period >> VIBRATO_SHIFT));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void mon_select_instrument(MonPlayer* p, int voice, uint8_t number) {
     const MonModule* m = &p->module;
     MonVoice* v = &p->voices[voice];
@@ -147,8 +131,6 @@ void mon_select_instrument(MonPlayer* p, int voice, uint8_t number) {
     v->arpeggio_list = ins.arpeggio;
     v->display_instrument = number;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void mon_start_note(MonPlayer* p, int voice, uint8_t note, const MonInstrument* ins) {
     const MonModule* m = &p->module;
@@ -169,7 +151,6 @@ void mon_start_note(MonPlayer* p, int voice, uint8_t note, const MonInstrument* 
     v->display_note = note;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample of an instrument of the sample kind: the DMA starts one tick after the note-on, the loop registers are
 // written one tick later. The loop starts at a word offset into the sample; MonVersion_Gyroscope adds it to the
 // address once, as a byte offset.
@@ -208,8 +189,6 @@ void mon_run_sample(MonPlayer* p, int voice, const MonInstrument* ins) {
     paula->lc = mon_sample(m, sample + skip_bytes);
     paula->len_words = (uint16_t)(ins->length_words - ins->loop_start);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool mon_step_voice(MonPlayer* p, int voice) {
     MonVoice* v = &p->voices[voice];

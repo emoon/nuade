@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ExtLoad: the sample file is the song's file name with its "dns." prefix changed to "smp.", in the song's directory.
 
 static bool load_samples(DnsSamples* samples, const char* path, const NuadeIo* io) {
@@ -39,8 +38,6 @@ static bool load_samples(DnsSamples* samples, const char* path, const NuadeIo* i
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 DnsCreateResult dns_create(const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
     DnsPlayer* player = calloc(1, sizeof(*player));
     if (player == nullptr) {
@@ -57,8 +54,6 @@ DnsCreateResult dns_create(const uint8_t* data, size_t size, const char* path, c
     return (DnsCreateResult) { .player = player, .status = DnsStatus_Ok };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void dns_destroy(DnsPlayer* player) {
     if (player == nullptr) {
         return;
@@ -68,13 +63,9 @@ void dns_destroy(DnsPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int dns_subsong_count(const DnsPlayer* player) {
     return (int)player->module.subsongs;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool dns_start(DnsPlayer* player, int subsong, NuadeVoices* voices) {
     if (player == nullptr || voices == nullptr || subsong < 0 || subsong >= dns_subsong_count(player)) {
@@ -87,8 +78,6 @@ bool dns_start(DnsPlayer* player, int subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 DnsTickResult dns_tick(DnsPlayer* player, NuadeVoices* voices) {
     dns_replayer_tick(player);
     for (int i = 0; i < DNS_VOICES; i++) {
@@ -100,16 +89,12 @@ DnsTickResult dns_tick(DnsPlayer* player, NuadeVoices* voices) {
     return (DnsTickResult) { .length = player->module.version.tick_length, .looped = looped };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t dns_grid_ticks(const DnsPlayer* player, int subsong) {
     if (player == nullptr || subsong < 0 || subsong >= dns_subsong_count(player)) {
         return 0;
     }
     return dns_read_song(&player->module, (unsigned)subsong).speed;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DnsVoiceState dns_voice_state(const DnsPlayer* player, int voice) {
     if (voice < 0 || voice >= DNS_VOICES) {

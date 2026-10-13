@@ -43,7 +43,6 @@ typedef enum KhCommand {
 #define TIE_DELAY 2u
 #define HOLD_ON 1u
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // lsl.l: the count is taken modulo 64 and moves every bit out past 31.
 
 static uint32_t shift_left_long(uint32_t value, uint32_t count) {
@@ -51,7 +50,6 @@ static uint32_t shift_left_long(uint32_t value, uint32_t count) {
     return count >= 32 ? 0 : value << count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume register: twice the voice's volume up to 64, then the low 7 bits.
 
 static uint8_t volume_register(uint16_t volume) {
@@ -62,15 +60,12 @@ static uint8_t volume_register(uint16_t volume) {
     return (uint8_t)(doubled & 0x7F);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void dma_off_all(KhPlayer* player) {
     for (uint32_t i = 0; i < KH_VOICES; i++) {
         nuade_paula_channel_dma_off(&player->voices[i].paula);
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Everything is switched off and the eagleplayer calls SongEnd. A division by zero ends the song the same way: UADE's
 // score answers the exception by switching off the interrupts and the DMA and reporting that it crashed.
 
@@ -81,7 +76,6 @@ static void end_song(KhPlayer* player) {
     player->tick.ended = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the audio interrupt handler does for one channel. The first interrupt comes when the DMA starts: it writes the
 // repeat of the sample (or, for a sample that plays once, only notes that) and the eagleplayer's patch then switches
 // the channel's interrupt off. The next one comes where the first block ends. Under the voice API a sample that plays
@@ -109,7 +103,6 @@ static void channel_interrupt(KhPlayer* player, KhVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The interrupt of a channel that has a request and has it enabled: the handler runs for the four channels, and
 // acknowledges every one of them, whether it handled it or not.
 
@@ -131,7 +124,6 @@ static void take_audio_interrupts(KhPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The requests the voices got since the last tick: one for every block the mixer started.
 
 static void request_audio_interrupts(KhPlayer* player, NuadeVoices* voices) {
@@ -145,7 +137,6 @@ static void request_audio_interrupts(KhPlayer* player, NuadeVoices* voices) {
     take_audio_interrupts(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tempo commands write the CIA timer, which the eagleplayer passes to DeliTracker.
 
 static void tempo_command(KhPlayer* player, KhCommand command, uint8_t value) {
@@ -174,7 +165,6 @@ typedef enum KhPitch {
     KhPitch_DivideByZero,
 } KhPitch;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period routine: octave and period of a pitch for the current instrument; the period goes to the register and
 // becomes the base of the vibrato, which is reset from the instrument. An octave span of 0 ends the routine at once in
 // the compact versions (`octave` stays as the caller left it) and divides by zero in the others, as a divisor of 0
@@ -209,7 +199,6 @@ static KhPitch set_pitch(KhPlayer* player, KhVoice* voice, uint16_t pitch, uint1
     return KhPitch_Set;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Start the DMA with the whole octave: the one-shot part and the repeat. The interrupt that follows writes the repeat.
 
 static void start_sample(KhPlayer* player, KhVoice* voice, uint16_t octave) {
@@ -234,7 +223,6 @@ static void start_sample(KhPlayer* player, KhVoice* voice, uint16_t octave) {
     take_audio_interrupts(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The durations of a note: the ticks it lasts and the tick where it is released.
 
 static void set_duration(const KhPlayer* player, KhVoice* voice, uint8_t byte) {
@@ -251,7 +239,6 @@ static void set_duration(const KhPlayer* player, KhVoice* voice, uint8_t byte) {
     voice->release_at = (uint16_t)((length & 0xFF00u) | ((length - kh_driver_u8(&player->module, entry + 1)) & 0xFFu));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note event: the two bytes and what the current list entry transposes by.
 
 static void note_event(KhPlayer* player, KhVoice* voice, uint8_t pitch_byte, uint8_t duration_byte) {
@@ -293,8 +280,6 @@ static void note_event(KhPlayer* player, KhVoice* voice, uint8_t pitch_byte, uin
     player->note_seen = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void stop_song(KhPlayer* player) {
     if (player->state != KhState_Idle) {
         dma_off_all(player);
@@ -302,7 +287,6 @@ static void stop_song(KhPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's flag for a track that started over; when all four have, it calls SongEnd.
 
 static void track_started_over(KhPlayer* player, KhVoice* voice) {
@@ -318,7 +302,6 @@ static void track_started_over(KhPlayer* player, KhVoice* voice) {
     player->tick.looped = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Instrument command: the record, with the addresses its IFF data got at the song start.
 
 static void select_instrument(KhPlayer* player, KhVoice* voice, uint8_t index) {
@@ -332,7 +315,6 @@ static void select_instrument(KhPlayer* player, KhVoice* voice, uint8_t index) {
     voice->instrument_index = index;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The events of a voice whose note is over, up to the next note (or the end of the track).
 
 static void voice_events(KhPlayer* player, KhVoice* voice) {
@@ -383,7 +365,6 @@ static void voice_events(KhPlayer* player, KhVoice* voice) {
     voice->active = false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note that has run its release time: the DMA stops unless the note is held or tied.
 
 static void release_note(KhVoice* voice) {
@@ -396,7 +377,6 @@ static void release_note(KhVoice* voice) {
     voice->block_state = KhBlock_Done;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The ticks of a note: the arpeggio steps the pitch, the vibrato moves the period between two limits.
 
 static void voice_running(KhPlayer* player, KhVoice* voice) {
@@ -437,8 +417,6 @@ static void voice_running(KhPlayer* player, KhVoice* voice) {
     voice->paula.period = voice->period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void voice_step(KhPlayer* player, KhVoice* voice) {
     if (!voice->active) {
         return;
@@ -450,7 +428,6 @@ static void voice_step(KhPlayer* player, KhVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The first tick after the song start: the tracks begin with their first pattern.
 
 static void start_tracks(KhPlayer* player) {
@@ -466,8 +443,6 @@ static void start_tracks(KhPlayer* player) {
     player->state = KhState_Playing;
     dma_off_all(player);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 KhTickResult kh_tick(KhPlayer* player, NuadeVoices* voices) {
     player->tick = (KhTickResult) { 0 };
@@ -511,7 +486,6 @@ KhTickResult kh_tick(KhPlayer* player, NuadeVoices* voices) {
     return player->tick;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitSound looks at the first bytes of the first track for the tempo: a lone command 0xDE is run, otherwise 0xDD
 // (after an instrument command) with an optional 0xDE after it gives the timer word.
 
@@ -535,8 +509,6 @@ static void initial_tempo(KhPlayer* player) {
     }
     player->timer = timer;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool kh_start(KhPlayer* player, uint32_t subsong, NuadeVoices* voices) {
     if (player == nullptr || subsong >= player->module.subsong_count) {
@@ -581,8 +553,6 @@ bool kh_start(KhPlayer* player, uint32_t subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 KhCreateResult kh_create(const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
     KhCreateResult result = { .status = KhStatus_InvalidData };
     KhPlayer* player = calloc(1, sizeof(*player));
@@ -603,8 +573,6 @@ KhCreateResult kh_create(const uint8_t* data, size_t size, const char* path, con
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void kh_destroy(KhPlayer* player) {
     if (player != nullptr) {
         kh_module_free(&player->module);
@@ -613,7 +581,6 @@ void kh_destroy(KhPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The probe loads the song; a song without a driver of its own is not checked against its driver file, which needs the
 // io.
 
@@ -624,19 +591,13 @@ bool kh_probe(const uint8_t* data, size_t size) {
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t kh_subsong_count(const KhPlayer* player) {
     return player->module.subsong_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t kh_voice_period(const KhPlayer* player, uint32_t voice) {
     return player->voices[voice].shown_period;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int32_t kh_voice_instrument(const KhPlayer* player, uint32_t voice) {
     return player->voices[voice].instrument_index;

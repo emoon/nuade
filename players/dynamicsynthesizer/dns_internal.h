@@ -17,7 +17,6 @@
 // Does the file name (without its directory) start with "dns."? The sample file's name is made from it.
 bool dns_has_module_prefix(const char* name);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module and the samples: bytes, zero beyond the end (a read past the end returns 0; the replayer would read
 // whatever follows in memory).
 
@@ -28,7 +27,6 @@ uint32_t dns_u32(const DnsMemory* m, int64_t offset);
 bool dns_samples_init(DnsSamples* samples, const uint8_t* data, size_t size);
 void dns_samples_free(DnsSamples* samples);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module's records
 
 typedef struct DnsSong {
@@ -62,7 +60,6 @@ DnsTrackRow dns_read_track_row(const DnsModule* module, unsigned track, uint16_t
 uint32_t dns_pattern_offset(const DnsModule* module, uint8_t pattern);
 uint16_t dns_read_pattern_word(const DnsModule* module, uint32_t pattern, int16_t step);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer's state
 
 void dns_replayer_start(DnsPlayer* player, unsigned song);

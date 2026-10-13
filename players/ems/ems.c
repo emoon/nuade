@@ -40,8 +40,6 @@
 // the Paula tail of nuade_paula_padded_copy.
 #define LOOP_REACH (2 * 0xFFFF)
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The periods Check2 accepts in the first pattern: C-1 down to B-3 plus the notes below.
 static const uint16_t k_periods[] = {
     1712, 1616, 1524, 1440, 1356, 1280, 1208, 1140, 1076, 1016, 960, 906, 856, 808, 762, 720,
@@ -49,16 +47,12 @@ static const uint16_t k_periods[] = {
     269,  254,  240,  226,  214,  202,  190,  180,  170,  160,  151, 143, 135, 127, 120, 113,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // What Check2 and InitPlayer read from the header.
 typedef struct Header {
     int position_count;
     int pattern_count;
     uint64_t image_size; // the file, or what the header says the patterns and samples take if that is more
 } Header;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool is_known_period(uint16_t period) {
     for (size_t i = 0; i < nuade_sizeof_array(k_periods); i++) {
@@ -69,8 +63,6 @@ static bool is_known_period(uint16_t period) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // One instrument record; the sample pointer is made by the loader.
 static EmsInstrument parse_instrument(const uint8_t* data, int index) {
     const uint8_t* r = data + INSTRUMENTS_OFFSET + index * INSTRUMENT_SIZE;
@@ -79,8 +71,6 @@ static EmsInstrument parse_instrument(const uint8_t* data, int index) {
                              .loop_length = nuade_read_be16(r + 8),
                              .volume = nuade_read_be16(r + 10) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Check2. The size InitPlayer wants of the file is not enforced: a file that is short of it plays, and its missing
 // samples read as zeros (UADE does the same).
@@ -125,14 +115,10 @@ static bool parse_header(const uint8_t* data, size_t size, Header* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The pattern at a position of the list, as an offset into the module.
 static uint32_t pattern_offset(const EmsModule* m, int position) {
     return PATTERNS_OFFSET + (uint32_t)m->positions[position] * PATTERN_SIZE;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A cell of the pattern at `pattern`. The row is the replayer's 16-bit row number times 16 as a signed word, so a
 // break row past the pattern reads whatever follows it, and one past the file reads zeros.
@@ -145,20 +131,14 @@ static EmsCell read_cell(const EmsModule* m, uint32_t pattern, uint16_t row, int
     return (EmsCell) { .period = nuade_read_be16(c), .instrument = c[2] >> 4, .effect = c[2] & 0x0F, .param = c[3] };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A volume through the master volume, as 16-bit arithmetic.
 static uint16_t scale_volume(uint16_t volume) {
     return (uint16_t)((uint16_t)(volume * MASTER_VOLUME) >> 6);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void write_period(EmsVoice* v, uint16_t period) {
     v->paula.period = period;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The cell's instrument: its sample is started at the end of the row, its volume is set now.
 static void select_instrument(EmsVoice* v, const EmsModule* m, int instrument) {
@@ -171,8 +151,6 @@ static void select_instrument(EmsVoice* v, const EmsModule* m, int instrument) {
     v->paula.volume = (uint8_t)v->volume;
     v->instrument = instrument;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A cell's effect on its row; the ones that act on every tick are kept for play_tick_effects.
 static void play_effect(EmsSong* s, EmsVoice* v, const EmsCell* cell) {
@@ -211,8 +189,6 @@ static void play_effect(EmsSong* s, EmsVoice* v, const EmsCell* cell) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void play_cell(EmsSong* s, EmsVoice* v, const EmsModule* m, const EmsCell* cell) {
     v->sample = nullptr;
     if (cell->instrument != 0) {
@@ -224,8 +200,6 @@ static void play_cell(EmsSong* s, EmsVoice* v, const EmsModule* m, const EmsCell
     }
     play_effect(s, v, cell);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Next row; a pattern ends after its 64th row, and the position list wraps after its last position.
 static void advance_row(EmsSong* s, const EmsModule* m) {
@@ -242,8 +216,6 @@ static void advance_row(EmsSong* s, const EmsModule* m) {
     }
     s->pattern_offset = pattern_offset(m, s->position);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void play_row(EmsPlayer* p) {
     EmsSong* s = &p->song;
@@ -280,8 +252,6 @@ static void play_row(EmsPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The tick after a row: the repeat of the samples that row started.
 static void write_repeats(EmsSong* s) {
     for (int i = 0; i < EMS_VOICES; i++) {
@@ -294,8 +264,6 @@ static void write_repeats(EmsSong* s) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void slide_volume(EmsVoice* v) {
     const int volume = (int16_t)v->volume - v->param;
     if (volume > 0) {
@@ -307,8 +275,6 @@ static void slide_volume(EmsVoice* v) {
     v->paula.volume = (uint8_t)v->volume;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A slide takes the new period only inside the limits. The period stays as the slide left it.
 static void slide_period(EmsVoice* v, int new_period) {
     const bool inside = v->effect == EmsEffect_SlideUp ? new_period >= PERIOD_MIN : new_period <= PERIOD_MAX;
@@ -317,8 +283,6 @@ static void slide_period(EmsVoice* v, int new_period) {
         write_period(v, v->period);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void play_tick_effects(EmsSong* s) {
     for (int i = 0; i < EMS_VOICES; i++) {
@@ -344,14 +308,10 @@ static void play_tick_effects(EmsSong* s) {
     s->tick++;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool ems_probe(const uint8_t* data, size_t size) {
     Header header;
     return parse_header(data, size, &header);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 EmsPlayer* ems_create(const uint8_t* data, size_t size) {
     Header header;
@@ -386,8 +346,6 @@ EmsPlayer* ems_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void ems_destroy(EmsPlayer* player) {
     if (player == nullptr) {
         return;
@@ -395,8 +353,6 @@ void ems_destroy(EmsPlayer* player) {
     free(player->module.data);
     free(player);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // InitSound
 bool ems_start(EmsPlayer* player, NuadeVoices* voices) {
@@ -410,8 +366,6 @@ bool ems_start(EmsPlayer* player, NuadeVoices* voices) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Interrupt
 EmsTickResult ems_tick(EmsPlayer* player, NuadeVoices* voices) {
@@ -432,27 +386,19 @@ EmsTickResult ems_tick(EmsPlayer* player, NuadeVoices* voices) {
     return (EmsTickResult) { .looped = s->looped };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 EmsPosition ems_position(const EmsPlayer* player) {
     const EmsSong* s = &player->song;
     return (EmsPosition) { .order = s->shown_position, .row = s->shown_row, .speed = s->speed + 1 };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int ems_order_count(const EmsPlayer* player) {
     return player->module.position_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 EmsVoiceState ems_voice_state(const EmsPlayer* player, int voice) {
     const EmsVoice* v = &player->song.voices[voice];
     return (EmsVoiceState) { .period = v->period, .instrument = v->instrument };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 EmsCell ems_pattern_cell(const EmsPlayer* player, int order, int voice, int row) {
     const EmsModule* m = &player->module;

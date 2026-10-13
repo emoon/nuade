@@ -5,8 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void nuade_paula_channel_dma_on(NuadePaulaChannel* c) {
     if (!c->dma) {
         c->dma = true;
@@ -16,14 +14,10 @@ void nuade_paula_channel_dma_on(NuadePaulaChannel* c) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void nuade_paula_channel_dma_off(NuadePaulaChannel* c) {
     c->dma = false;
     c->dma_started = false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeSample channel_sample(const int8_t* lc, uint16_t len_words) {
     const uint32_t bytes = len_words != 0 ? (uint32_t)len_words * 2u : NUADE_PAULA_MAX_SAMPLE_BYTES;
@@ -36,15 +30,11 @@ static NuadeSample channel_sample(const int8_t* lc, uint16_t len_words) {
     };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void channel_silence(NuadePaulaChannel* c, uint32_t voice, NuadeVoices* voices) {
     nuade_voice_stop(voices, voice);
     c->voice_on = false;
     c->sent_lc = nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void nuade_paula_channel_sync(NuadePaulaChannel* c, uint32_t voice, NuadeVoices* voices) {
     // Period 0 (never written, or written as 0) steps at Paula's longest period, ~54 samples a second
@@ -82,8 +72,6 @@ void nuade_paula_channel_sync(NuadePaulaChannel* c, uint32_t voice, NuadeVoices*
         c->sent_len_words = c->len_words;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint8_t* nuade_paula_padded_copy(const void* data, size_t size) {
     if (size > SIZE_MAX - NUADE_PAULA_MAX_SAMPLE_BYTES) {

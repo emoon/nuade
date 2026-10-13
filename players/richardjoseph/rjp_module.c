@@ -38,25 +38,18 @@
 #define FIX_OFFSET_B 0x4A8 // a long in the song table, 0x08050706 -> 0
 #define FIX_VALUE_B 0x08050706
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t rjp_u8(const RjpImage* image, uint64_t offset) {
     return offset < image->size ? image->data[offset] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t rjp_u16(const RjpImage* image, uint64_t offset) {
     return (uint16_t)(rjp_u8(image, offset) << 8 | rjp_u8(image, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t rjp_u32(const RjpImage* image, uint64_t offset) {
     return (uint32_t)rjp_u16(image, offset) << 16 | rjp_u16(image, offset + 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample file name that ExtLoad builds from the song's file name: "rjp.name" -> "smp.name", "name.sng" ->
 // "name.ins". Any other name loses its last character.
 
@@ -73,7 +66,6 @@ static bool sample_file_name(const char* base, char* out, size_t capacity) {
     return written >= 0 && (size_t)written < capacity;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer's walk over the seven sections. The sections must lie inside the file; the instrument section holds whole
 // records (the relocation loop of the original runs on otherwise), and the song table has an entry.
 
@@ -100,7 +92,6 @@ static bool parse_layout(const uint8_t* data, size_t size, RjpModule* module) {
            && module->subsong_count != 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2, and the layout that InitPlayer needs. Check2 also wants the first long of the first instrument record (its
 // sample offset) to be 0; the replayer does not need it, and `aquatic games` has 0x000A3340 there and plays (user
 // decision of 2026-10-11: the port plays it), so the probe leaves that test out.
@@ -113,8 +104,6 @@ bool rjp_probe(const uint8_t* data, size_t size) {
     return memcmp(data, "RJP", MODULE_MAGIC_LENGTH) == 0 && memcmp(data + SMOD_OFFSET, "SMOD", 4) == 0
            && parse_layout(data, size, &layout);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RjpInstrument rjp_read_instrument(const RjpModule* module, uint8_t number) {
     uint32_t record = (uint32_t)number * RJP_INSTRUMENT_SIZE;
@@ -142,13 +131,9 @@ RjpInstrument rjp_read_instrument(const RjpModule* module, uint8_t number) {
                              .volume_lfo_words = rjp_u16(m, at + 0x1E) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t rjp_envelope_block(const RjpModule* module, const RjpInstrument* instrument) {
     return module->envelopes.offset + (uint32_t)(int32_t)instrument->envelope;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RjpEnvelopeShape rjp_read_envelope(const RjpModule* module, uint32_t block) {
     const RjpImage* m = &module->image;
@@ -160,35 +145,26 @@ RjpEnvelopeShape rjp_read_envelope(const RjpModule* module, uint32_t block) {
                                 .release_ticks = rjp_u8(m, (uint64_t)block + 5) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t rjp_pattern_start(const RjpModule* module, uint8_t pattern) {
     const uint64_t entry = (uint64_t)module->pattern_offsets.offset + (uint64_t)pattern * PATTERN_ENTRY_SIZE;
     return module->patterns.offset + rjp_u32(&module->image, entry);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t rjp_sequence_start(const RjpModule* module, uint8_t sequence) {
     const uint64_t entry = (uint64_t)module->sequence_offsets.offset + (uint64_t)sequence * PATTERN_ENTRY_SIZE;
     return module->sequences.offset + rjp_u32(&module->image, entry);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t rjp_song_sequence(const RjpModule* module, uint32_t subsong, uint32_t voice) {
     const uint64_t entry = (uint64_t)module->songs.offset + (subsong & SUBSONG_MASK) * SONG_ENTRY_SIZE;
     return rjp_u8(&module->image, entry + voice);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void module_free(RjpModule* module) {
     free(module->image.data);
     module->image = (RjpImage) { 0 };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The two known broken modules are repaired in the copy.
 
 static void repair_known_modules(RjpModule* module) {
@@ -204,7 +180,6 @@ static void repair_known_modules(RjpModule* module) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The end of the furthest byte the module can make Paula or an LFO read from the sample file.
 
 static uint64_t samples_end(const RjpModule* module, uint32_t file_size) {
@@ -228,7 +203,6 @@ static uint64_t samples_end(const RjpModule* module, uint32_t file_size) {
     return end;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Reads `name` from the directory `dir` (any case). The data is copied to a zero padded buffer of `samples_end` bytes.
 
 static bool read_sample_file(RjpPlayer* player, const NuadeIo* io, const char* dir, const char* name) {
@@ -260,7 +234,6 @@ static bool read_sample_file(RjpPlayer* player, const NuadeIo* io, const char* d
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ExtLoad: the sample file next to the song (named as above), else "smp.set" there.
 
 static bool load_samples(RjpPlayer* player, const char* path, const NuadeIo* io) {
@@ -274,8 +247,6 @@ static bool load_samples(RjpPlayer* player, const char* path, const NuadeIo* io)
     }
     return read_sample_file(player, io, dir, name) || read_sample_file(player, io, dir, FALLBACK_SAMPLES);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RjpCreateResult rjp_create(const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
     RjpCreateResult result = { .status = RjpStatus_InvalidData };
@@ -306,8 +277,6 @@ RjpCreateResult rjp_create(const uint8_t* data, size_t size, const char* path, c
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void rjp_destroy(RjpPlayer* player) {
     if (player == nullptr) {
         return;
@@ -317,8 +286,6 @@ void rjp_destroy(RjpPlayer* player) {
     free(player->samples_original);
     free(player);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t rjp_subsong_count(const RjpPlayer* player) {
     return player->module.subsong_count;

@@ -12,14 +12,10 @@
 // Ticks one row of the display grid spans: the tracks run their own note lengths, so the grid is a display choice only.
 #define CD_GRID_TICKS 6
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe coredesign_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return cd_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult coredesign_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -38,20 +34,14 @@ static NuadePlayerOpenResult coredesign_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void coredesign_close(void* user_data) {
     cd_destroy((CdPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool coredesign_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return cd_start((CdPlayer*)user_data, (int)subsong, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult coredesign_tick(void* user_data, NuadeVoices* voices) {
     const CdTickResult tick = cd_tick((CdPlayer*)user_data, voices);
@@ -64,8 +54,6 @@ static NuadeTickResult coredesign_tick(void* user_data, NuadeVoices* voices) {
     }
     return (NuadeTickResult) { .length = CD_TICK_LENGTH, .flags = flags };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void coredesign_metadata(void* user_data, const NuadeMetadataSink* sink) {
     const CdInfo info = cd_info((const CdPlayer*)user_data);
@@ -81,8 +69,6 @@ static void coredesign_metadata(void* user_data, const NuadeMetadataSink* sink) 
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t coredesign_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const CdPlayer* player = (const CdPlayer*)user_data;
     const uint32_t count = cap < CD_VOICES ? cap : CD_VOICES;
@@ -93,15 +79,11 @@ static uint32_t coredesign_voice_info(void* user_data, NuadeVoiceInfo* out, uint
     return count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t coredesign_grid_ticks(void* user_data, uint32_t subsong) {
     (void)user_data;
     (void)subsong;
     return CD_GRID_TICKS;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_coredesign = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -118,8 +100,6 @@ const NuadePlayer nuade_player_coredesign = {
     .voice_info = coredesign_voice_info,
     .grid_ticks = coredesign_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CdPlayer* cd_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_coredesign) {

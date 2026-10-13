@@ -10,14 +10,10 @@
 // Period table index 12 (856) is C-1.
 #define MCMD_NOTE_BASE 0
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe mcmd_nuade_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return mcmd_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult mcmd_nuade_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -34,20 +30,14 @@ static NuadePlayerOpenResult mcmd_nuade_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void mcmd_nuade_close(void* user_data) {
     mcmd_destroy((McmdPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool mcmd_nuade_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return subsong == 0 && mcmd_start((McmdPlayer*)user_data, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult mcmd_nuade_tick(void* user_data, NuadeVoices* voices) {
     const McmdTickResult tick = mcmd_tick((McmdPlayer*)user_data, voices);
@@ -61,14 +51,10 @@ static NuadeTickResult mcmd_nuade_tick(void* user_data, NuadeVoices* voices) {
     return (NuadeTickResult) { .length = MCMD_TICK_LENGTH, .flags = flags };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void mcmd_nuade_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "MCMD");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t mcmd_nuade_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const McmdPlayer* player = (const McmdPlayer*)user_data;
@@ -80,15 +66,11 @@ static uint32_t mcmd_nuade_voice_info(void* user_data, NuadeVoiceInfo* out, uint
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The voices run their own patterns: one grid row is one sequencer step.
 static uint32_t mcmd_nuade_grid_ticks(void* user_data, uint32_t subsong) {
     (void)subsong;
     return (uint32_t)mcmd_speed((const McmdPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_mcmd = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -105,8 +87,6 @@ const NuadePlayer nuade_player_mcmd = {
     .voice_info = mcmd_nuade_voice_info,
     .grid_ticks = mcmd_nuade_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 McmdPlayer* mcmd_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_mcmd) {

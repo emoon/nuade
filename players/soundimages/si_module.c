@@ -31,7 +31,6 @@
 #define HEADER_PENDING_DMA 0x0C
 #define HEADER_PENDING_INTERRUPT 0x0E
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's Check2
 
 static bool check2(const uint8_t* data, size_t size) {
@@ -54,15 +53,12 @@ static bool check2(const uint8_t* data, size_t size) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The proof that the code is the image's: where the segments sit, and what the operands that leave them point to.
 
 typedef struct Placement {
     int64_t base[SI_MAX_SEGMENTS];
     bool placed[SI_MAX_SEGMENTS];
 } Placement;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool word_at(const uint8_t* data, size_t size, int64_t offset, uint16_t* word) {
     if (offset < 0 || (uint64_t)offset > (uint64_t)size - 2 || size < 2) {
@@ -72,7 +68,6 @@ static bool word_at(const uint8_t* data, size_t size, int64_t offset, uint16_t* 
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The place a hole's operand points to. False if the operand is outside the module.
 
 static bool hole_target(const SiHole* hole, const Placement* place, const uint8_t* data, size_t size, int64_t* target) {
@@ -98,8 +93,6 @@ static bool hole_target(const SiHole* hole, const Placement* place, const uint8_
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t hole_mask(SiHoleKind kind) {
     switch (kind) {
         case SiHole_Branch8:
@@ -113,13 +106,9 @@ static uint16_t hole_mask(SiHoleKind kind) {
     return 0xFFFF;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int64_t ref_offset(const SiRef* ref, const Placement* place) {
     return place->base[ref->segment] + ref->offset;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool place_segments(const SiImage* image, const uint8_t* data, size_t size, Placement* place) {
     memset(place, 0, sizeof(*place));
@@ -168,8 +157,6 @@ static bool place_segments(const SiImage* image, const uint8_t* data, size_t siz
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint64_t hash_segment(const SiImage* image, size_t segment, const Placement* place, const uint8_t* data,
                              size_t size) {
     const SiSegment* seg = &image->segments[segment];
@@ -195,7 +182,6 @@ static uint64_t hash_segment(const SiImage* image, size_t segment, const Placeme
     return hash;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Does the module's code have the image's segments, and does every operand that leaves a segment point where the image
 // says? The holes are zero in the hash, so the targets are what pins the data the code uses.
 
@@ -240,7 +226,6 @@ static bool match_image(const SiImage* image, const uint8_t* data, size_t size, 
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The data of the driver
 
 // A range of the module the port reads as data or keeps in a structure.
@@ -249,13 +234,10 @@ typedef struct Range {
     int64_t end;
 } Range;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool overlaps(Range a, Range b) {
     return a.start < b.end && b.start < a.end;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the eagleplayer does to the module (player.asm). InitPlayer takes the first bsr.w behind the tick entry for the
 // song start (when its displacement is at most $900), counts the songs from it and patches its `cmp.b`; it rewrites the
 // first rte word of the module (the audio handler's) to rts. EP_ModuleChange rewrites every match of its ten patterns
@@ -287,8 +269,6 @@ static const PatchPattern k_patch_patterns[] = {
     { 3, { 0x2B78, 0x0070, 0x000A } }, // move.l $70.w,$a(a5)
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool add_patched(SiLayout* layout, int64_t start, int64_t end) {
     if (layout->patched_count == SI_MAX_PATCHED || start < 0) {
         return false;
@@ -296,8 +276,6 @@ static bool add_patched(SiLayout* layout, int64_t start, int64_t end) {
     layout->patched[layout->patched_count++] = (SiRange) { (uint32_t)start, (uint32_t)end };
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool pattern_at(const SiModule* module, size_t at, const PatchPattern* pattern) {
     if (at + 2u * pattern->length > module->size) {
@@ -311,7 +289,6 @@ static bool pattern_at(const SiModule* module, size_t at, const PatchPattern* pa
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The place of the image's Parameter hole: the song count immediate of the driver's `cmp.b`. -1 if there is none.
 
 static int64_t parameter_offset(const SiImage* image, const Placement* place) {
@@ -323,14 +300,11 @@ static int64_t parameter_offset(const SiImage* image, const Placement* place) {
     return -1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool word_is(const SiModule* module, int64_t offset, uint16_t value) {
     uint16_t word = 0;
     return word_at(module->memory, module->size, offset, &word) && word == value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer finds the places it counts the songs and measures the samples from by scanning words from the song start
 // routine (player.asm $7ea, $840): the first `cmp.b #imm` ($B03C) holds the count, the first `lea` ($43FA / $43FB)
 // behind it the song table (three list words per entry if the word before the `lea` is not $0A, four if it is), and the
@@ -342,8 +316,6 @@ static bool word_is(const SiModule* module, int64_t offset, uint16_t value) {
 #define SCAN_LEA_PC 0x43FAu
 #define SCAN_LEA_FOUR_LISTS 0x000Au
 #define SCAN_SUBQ 0x532Du
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool check_scans(const SiImage* image, const Placement* place, const SiModule* module, size_t call) {
     const int64_t size = (int64_t)module->size;
@@ -380,8 +352,6 @@ static bool check_scans(const SiImage* image, const Placement* place, const SiMo
     return records + 2 <= size
            && records + (int16_t)nuade_read_be16(module->memory + records) == ref_offset(&image->record[0], place);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool check_eagleplayer(const SiImage* image, const Placement* place, SiModule* module) {
     const uint8_t* d = module->memory;
@@ -444,7 +414,6 @@ static bool check_eagleplayer(const SiImage* image, const Placement* place, SiMo
     return matches == image->patch_site_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The header of a module that was saved from a running game holds the DMACON and INTENA words of a note start that the
 // first tick writes: the voices of the DMACON word start (DMA on, interrupt on) at the first tick. Only the form the
 // driver itself writes is modelled: both words set the same voices.
@@ -469,7 +438,6 @@ static bool read_pending_starts(SiModule* module) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Where the tables and the voice records are. The image pins each place; this checks that it lies in the module and
 // that what the port assumes of it holds.
 
@@ -530,7 +498,6 @@ static bool resolve_layout(const SiImage* image, const Placement* place, SiModul
     return read_pending_starts(module);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer counts the songs of a module: the lowest non-zero list offset of the first `count` song table
 // entries (the count that the driver's own song check holds), divided by the size of an entry. The eagleplayer patches
 // the driver's check to what it counted, so the module has exactly that many songs.
@@ -577,7 +544,6 @@ static bool count_songs(const SiImage* image, const Placement* place, SiModule* 
     return add_patched(&module->layout, immediate, immediate + 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The driver writes its header and its voice records, which the port keeps in structures: no data the driver reads
 // may lie in them. The data it reads at fixed places: the tables (as far as an index can reach), the samples.
 
@@ -639,8 +605,6 @@ static bool check_data_ranges(const SiModule* module) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool si_module_open(SiModule* module, const uint8_t* data, size_t size) {
     memset(module, 0, sizeof(*module));
     if (!check2(data, size)) {
@@ -665,14 +629,11 @@ bool si_module_open(SiModule* module, const uint8_t* data, size_t size) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void si_module_close(SiModule* module) {
     free(module->memory);
     memset(module, 0, sizeof(*module));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The places the port does not read from the file: the driver's variables (kept in structures) and the words that the
 // eagleplayer rewrites (the driver sees its patches there).
 
@@ -694,8 +655,6 @@ static bool unreadable(const SiModule* module, int64_t offset) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool si_module_u8(const SiModule* module, int64_t offset, uint8_t* value) {
     if (offset < 0 || offset >= (int64_t)module->size || unreadable(module, offset)) {
         return false;
@@ -703,8 +662,6 @@ bool si_module_u8(const SiModule* module, int64_t offset, uint8_t* value) {
     *value = module->memory[offset];
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool si_module_u16(const SiModule* module, int64_t offset, uint16_t* value) {
     uint8_t high = 0;
@@ -716,7 +673,6 @@ bool si_module_u16(const SiModule* module, int64_t offset, uint16_t* value) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A song table entry: the offsets of the four voices' lists and the tempo, the high byte of the fifth word.
 
 bool si_module_song(const SiModule* module, uint32_t index, SiSong* song) {
@@ -729,7 +685,6 @@ bool si_module_song(const SiModule* module, uint32_t index, SiSong* song) {
     return si_module_u8(module, entry + 2 * SI_VOICES, &song->tempo);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample table entries hold offsets from the header, where the driver's address register points.
 
 SiSample si_module_sample(const SiModule* module, uint32_t index) {
@@ -742,25 +697,18 @@ SiSample si_module_sample(const SiModule* module, uint32_t index) {
     };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t record_u8(const SiModule* module, const uint8_t* record, uint32_t offset) {
     return record[module->layout.record_bytes == SI_RECORD_BYTES_NARROW && offset >= 0x20 ? offset - 2 : offset];
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t record_u16(const SiModule* module, const uint8_t* record, uint32_t offset) {
     return (uint16_t)((record_u8(module, record, offset) << 8) | record_u8(module, record, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t record_u32(const SiModule* module, const uint8_t* record, uint32_t offset) {
     return ((uint32_t)record_u16(module, record, offset) << 16) | record_u16(module, record, offset + 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The fields of a voice record; the offsets are those of the wide record.
 
 SiRecord si_module_record(const SiModule* module, uint32_t voice) {

@@ -103,8 +103,6 @@ static const uint16_t k_eagleplayer_periods[2 + MCO_PERIOD_WORDS_AFTER] = {
 // the volume matters (it plays until the first volume command).
 static const uint16_t k_eagleplayer_volumes[MCO_VOICES] = { 0x14, 0x14, 0x1C, 0x30 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 typedef enum McoCommand {
     McoCommand_Note = 0,
     McoCommand_Retune = 1,
@@ -123,33 +121,24 @@ typedef enum McoCommand {
     McoCommand_Count,
 } McoCommand;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Reads. A read outside the file gives 0.
 
 static uint8_t data_u8(const McoModule* m, uint32_t offset) {
     return offset < m->size ? m->data[offset] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t data_u16(const McoModule* m, uint32_t offset) {
     return (uint16_t)((data_u8(m, offset) << 8) | data_u8(m, offset + 1));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t data_u32(const McoModule* m, uint32_t offset) {
     return ((uint32_t)data_u16(m, offset) << 16) | data_u16(m, offset + 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The address `base` plus the sign-extended 16-bit distance `distance`.
 static uint32_t relative_target(uint32_t base, uint16_t distance) {
     return base + (uint32_t)(int32_t)(int16_t)distance;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The period word `bytes` bytes from the start of the period table; 0 outside the copy (and at an odd address, where
 // the 68000 would trap).
@@ -157,8 +146,6 @@ static uint16_t period_at(const McoModule* m, int bytes) {
     const int index = MCO_PERIOD_WORDS_BEFORE + bytes / 2;
     return (bytes & 1) == 0 && index >= 0 && index < MCO_PERIOD_WORDS ? m->periods[index] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The sample at data offset `offset`: a word count and the data; null if the offset is outside the file. The data
 // starts at most SAMPLE_HEADER_BYTES past the end of the file.
@@ -171,7 +158,6 @@ static const int8_t* sample_data(const McoModule* m, uint32_t offset, uint16_t* 
     return (const int8_t*)(m->data + offset + SAMPLE_HEADER_BYTES);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Probe
 
 // The replayer's Check2 for the data file: an ST executable whose text size agrees with the file size but for the low
@@ -183,8 +169,6 @@ static bool check_data(const uint8_t* data, size_t size) {
     return (nuade_read_be32(data + 2) & ~0xFFu) == (size & ~(size_t)0xFF) && data[DATA_CHECK_BYTE] == 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The target of the bra.w at `offset`; 0 if it is not one, goes backwards or is odd (Check2 accepts only forward even
 // branches).
 static uint32_t entry_target(const uint8_t* data, size_t size, size_t offset) {
@@ -195,13 +179,9 @@ static uint32_t entry_target(const uint8_t* data, size_t size, size_t offset) {
     return distance < 0 || (distance & 1) != 0 ? 0 : (uint32_t)(offset + 2 + (size_t)distance);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t driver_entry(const uint8_t* data, size_t size, int index) {
     return entry_target(data, size, ST_HEADER_SIZE + (uint32_t)(index * ENTRY_SIZE));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The replayer's Check2: an ST header, entries `bra.w` and an init that starts with movem.l d0/a0-a3,-(a7).
 static bool check_driver(const uint8_t* data, size_t size) {
@@ -226,14 +206,10 @@ static bool check_driver(const uint8_t* data, size_t size) {
     return init + 4 <= size && nuade_read_be32(data + init) == OP_MOVEM_D0_A0_A3;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A file name with the prefix `prefix` (PREFIX_LENGTH characters), any case.
 static bool has_prefix(const char* filename, const char* prefix) {
     return strncasecmp(nuade_path_basename(filename), prefix, PREFIX_LENGTH) == 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 McoKind mco_probe(const uint8_t* data, size_t size, const char* filename) {
     if (filename == nullptr) {
@@ -248,7 +224,6 @@ McoKind mco_probe(const uint8_t* data, size_t size, const char* filename) {
     return McoKind_None;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // McoModule
 
 static bool parse_data(McoModule* m) {
@@ -266,8 +241,6 @@ static bool parse_data(McoModule* m) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The target of the first instruction with the opcode `opcode` and a pc-relative operand in [from, from + span).
 static uint32_t find_pc_relative(const uint8_t* d, size_t size, uint32_t from, uint32_t span, uint16_t opcode) {
     for (uint32_t at = from; at + 4 <= size && at < from + span; at += 2) {
@@ -278,23 +251,17 @@ static uint32_t find_pc_relative(const uint8_t* d, size_t size, uint32_t from, u
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // What a voice's record in an mcr. replayer of version 1 holds at the start: the replayer's variables, a snapshot of
 // the state when the file was ripped. Only the volume matters (it plays until the first volume command).
 typedef struct DriverVoiceRecord {
     uint16_t volume;
 } DriverVoiceRecord;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static DriverVoiceRecord read_driver_voice_record(const uint8_t* d, size_t size, int voice) {
     enum { RECORDS = 0x2C, RECORD_SIZE = 0x42, VOLUME = 0x12 }; // offsets in the file
     const size_t at = RECORDS + (size_t)voice * RECORD_SIZE + VOLUME;
     return (DriverVoiceRecord) { .volume = at + 2 <= size ? nuade_read_be16(d + at) : 0 };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The period words around the table at `table` of the replayer file.
 static void copy_driver_periods(McoModule* m, const uint8_t* d, size_t size, uint32_t table) {
@@ -303,8 +270,6 @@ static void copy_driver_periods(McoModule* m, const uint8_t* d, size_t size, uin
         m->periods[i] = at >= 0 && (uint64_t)at + 2 <= size ? nuade_read_be16(d + at) : 0;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Reads what the replayer file holds that the data does not: the period table (the first lea d16(pc),a2 of the init),
 // and in version 2 (told by its longer entry table) the master volume (the operand of the mulu of the volume command)
@@ -333,8 +298,6 @@ static bool read_driver(McoModule* m, const uint8_t* d, size_t size) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The replayer in the eagleplayer.
 static void read_eagleplayer(McoModule* m) {
     memcpy(m->periods, k_eagleplayer_code_before_table, sizeof(k_eagleplayer_code_before_table));
@@ -345,8 +308,6 @@ static void read_eagleplayer(McoModule* m) {
     m->retune_sets_volume = true;
     m->reports_song_end = false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The data of the song: the file after its ST header, followed by zeros. A sample may run past the end of the file
 // into them.
@@ -362,8 +323,6 @@ static bool keep_data(McoModule* m, const uint8_t* file, size_t size) {
     memcpy(m->data, file + ST_HEADER_SIZE, m->size);
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // ExtLoad of the replayer: the file mcs.<name> next to mcr.<name>, any case. The data of an mcr. replayer is an ST
 // executable too.
@@ -398,16 +357,12 @@ static McoStatus load_data_file(McoModule* m, const char* path, const NuadeIo* i
     return status;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void mco_destroy(McoPlayer* player) {
     if (player != nullptr) {
         free(player->module.data);
     }
     free(player);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // `data` (the mco. or mcr. file) is not kept: everything the player needs is copied.
 McoCreateResult mco_create(const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
@@ -437,13 +392,10 @@ McoCreateResult mco_create(const uint8_t* data, size_t size, const char* path, c
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int mco_subsong_count(const McoPlayer* player) {
     return player->module.subsong_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Paula
 
 static void play_out(McoVoice* v) {
@@ -451,15 +403,12 @@ static void play_out(McoVoice* v) {
     v->paula.len_words = PLAYOUT_WORDS;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Commands
 
 // The stream of a sub-sequence: the table holds the distance of each sequence from the table.
 static uint32_t sequence_start(const McoModule* m, uint8_t index) {
     return relative_target(m->sequences, data_u16(m, m->sequences + index));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool push_frame(McoVoice* v, McoFrameKind kind, uint32_t position, uint16_t repeats) {
     const int size = kind == McoFrameKind_Loop ? STACK_FRAME_SIZE_LOOP : MCO_STACK_FRAME_SIZE_LONG;
@@ -471,22 +420,16 @@ static bool push_frame(McoVoice* v, McoFrameKind kind, uint32_t position, uint16
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void pop_frame(McoVoice* v) {
     v->depth--;
     v->stack_bytes -= v->stack[v->depth].kind == McoFrameKind_Loop ? STACK_FRAME_SIZE_LOOP : MCO_STACK_FRAME_SIZE_LONG;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 typedef enum StepResult {
     StepResult_Continue, // read the next command
     StepResult_Done,     // the voice is done for this tick
     StepResult_Broken,   // the stream cannot be played on: the voice stops
 } StepResult;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The sample goes to the Paula channel and plays once; then the channel repeats the playout block.
 static void start_note(const McoModule* m, McoVoice* v, uint16_t period) {
@@ -500,15 +443,11 @@ static void start_note(const McoModule* m, McoVoice* v, uint16_t period) {
     play_out(v);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The volume the volume command sets: its byte times 4, scaled by the master volume.
 static uint16_t command_volume(const McoModule* m, uint8_t value) {
     const uint16_t raw = (uint16_t)(value * VOLUME_UNIT);
     return (uint16_t)(((uint32_t)raw * m->volume_scale * 2) >> 16);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The end and goto commands call the eagleplayer; when all voices have reported one, the song has ended and the reports
 // start over.
@@ -527,8 +466,6 @@ static void report_end_command(McoPlayer* p, McoVoice* v) {
         p->voices[i].reached_end = false;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static StepResult step_command(McoPlayer* p, McoVoice* v) {
     const McoModule* m = &p->module;
@@ -635,7 +572,6 @@ static StepResult step_command(McoPlayer* p, McoVoice* v) {
     return StepResult_Broken;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tick
 
 static void run_voice(McoPlayer* p, McoVoice* v) {
@@ -655,8 +591,6 @@ static void run_voice(McoPlayer* p, McoVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 McoTickResult mco_tick(McoPlayer* player, NuadeVoices* voices) {
     bool running = false;
     player->song_ended = false;
@@ -667,8 +601,6 @@ McoTickResult mco_tick(McoPlayer* player, NuadeVoices* voices) {
     }
     return (McoTickResult) { .looped = player->song_ended, .ended = !running };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool mco_start(McoPlayer* player, int subsong, NuadeVoices* voices) {
     const McoModule* m = &player->module;
@@ -686,8 +618,6 @@ bool mco_start(McoPlayer* player, int subsong, NuadeVoices* voices) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 McoVoiceState mco_voice_state(const McoPlayer* player, int voice) {
     const McoVoice* v = &player->voices[voice];

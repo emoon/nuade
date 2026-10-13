@@ -33,13 +33,10 @@
 // The 68000 has 24 address lines: the replayer's addresses are taken modulo 16 MiB.
 #define WB_ADDRESS_MASK 0xFFFFFFu
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What differs between the builds of the replayer.
 
 extern const WbVersion wb_versions[];
 extern const uint32_t wb_version_count;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 typedef struct WbInstrument {
     uint8_t sample; // index into the sample table
@@ -60,13 +57,11 @@ typedef struct WbEnvelope {
     uint8_t flags;
 } WbEnvelope;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The voice records of the replayer: field f of voice v is byte f + v of the block, so each field is an array of four
 // bytes.
 
 _Static_assert(sizeof(WbVoiceBlock) == WB_VOICE_RECORD_BYTES, "the voice block is 0x84 bytes");
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The work an open may cost: the scans, the decoder, the patch search and the replay that proves the module safe all
 // charge their steps to one budget; a module that exhausts it is refused.
 

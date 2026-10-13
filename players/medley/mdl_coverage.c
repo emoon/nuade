@@ -91,13 +91,10 @@ typedef struct MdlCoverage {
     bool exhausted;
 } MdlCoverage;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t mdl_hash_slot(uint64_t low, uint64_t high, uint32_t capacity) {
     return (uint32_t)(((low ^ (high * 0xc2b2ae3d27d4eb4full)) * 0x9e3779b97f4a7c15ull) >> 32) & (capacity - 1);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Finds the entry of a key, adding it (value 0) if it is new. Null when the budget or memory is out.
 
 static MdlHashEntry* mdl_hash_entry(MdlCoverage* c, MdlHash* hash, uint64_t low, uint64_t high, bool* added) {
@@ -140,7 +137,6 @@ static MdlHashEntry* mdl_hash_entry(MdlCoverage* c, MdlHash* hash, uint64_t low,
     return &hash->entries[slot];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Makes room for one more element of an array that grows by doubling; the array (null when the budget or memory is
 // out).
 
@@ -158,21 +154,16 @@ static void* mdl_grow(MdlCoverage* c, void* array, uint32_t* capacity, uint32_t 
     return grown;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint64_t mdl_state_low(const MdlState* state) {
     return 1
            + ((uint64_t)state->position << 32 | (uint64_t)state->voice << 24 | (uint64_t)state->instrument << 16
               | (uint64_t)state->transpose << 8 | state->note);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint64_t mdl_state_high(const MdlState* state) {
     return (uint64_t)state->calls << 32 | state->loops;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Records a state; true if it is new or the step to it is longer than the longest seen (the state is explored again,
 // so a step that loops back on itself grows until it reaches the limit).
 
@@ -186,7 +177,6 @@ static bool mdl_record(MdlCoverage* c, const MdlState* state) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Queues a state to explore, if it is new.
 
 static void mdl_push(MdlCoverage* c, MdlState state) {
@@ -204,7 +194,6 @@ static void mdl_push(MdlCoverage* c, MdlState state) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The stack with `position` pushed on `parent`; the same frame every time. 0 (the empty stack) when the budget is out.
 
 static uint32_t mdl_frame_push(MdlCoverage* c, uint32_t parent, uint32_t position) {
@@ -225,7 +214,6 @@ static uint32_t mdl_frame_push(MdlCoverage* c, uint32_t parent, uint32_t positio
     return entry->value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A place a voice restarts at when its track ends with no call open: every state that ended so far goes there.
 
 static void mdl_add_restart(MdlCoverage* c, int voice, uint32_t position) {
@@ -248,7 +236,6 @@ static void mdl_add_restart(MdlCoverage* c, int voice, uint32_t position) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A state whose track ended with no call open: it restarts at every restart place of its voice, with the state it ended
 // in (a voice keeps its instrument, transpose, note and loop stack, and the step goes on).
 
@@ -272,7 +259,6 @@ static void mdl_add_end(MdlCoverage* c, const MdlState* state) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample range of a wave an instrument plays, at its worst: a looped window can start anywhere in either half.
 
 static bool mdl_wave_playable(const MdlModule* module, const MdlInstrument* instrument, const MdlWave* wave) {
@@ -297,7 +283,6 @@ static bool mdl_wave_playable(const MdlModule* module, const MdlInstrument* inst
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Reads an instrument record once and checks what does not depend on the note: the modulators' voice flags.
 
 static bool mdl_load_instrument(MdlCoverage* c, uint8_t number) {
@@ -321,7 +306,6 @@ static bool mdl_load_instrument(MdlCoverage* c, uint8_t number) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the replayer reads when instrument `number` plays the note value `value` (the note plus the transposes, as a
 // byte): the wave, its samples and the period table.
 
@@ -337,7 +321,6 @@ static bool mdl_value_covered(MdlCoverage* c, uint8_t number, uint8_t value) {
            && mdl_period_index_modelled(mdl_sample_period_index(value, instrument, &wave));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A step that reaches a pitch: the replayer forms the note plus the song's, the voice's and the instrument's
 // transposes.
 
@@ -357,7 +340,6 @@ static void mdl_check_pitch(MdlCoverage* c, const MdlState* state) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Command 4: the first `count` pairs after the command each name a track the voice can jump to.
 
 static void mdl_follow_choices(MdlCoverage* c, const MdlState* state, uint32_t pairs, uint8_t count) {
@@ -371,7 +353,6 @@ static void mdl_follow_choices(MdlCoverage* c, const MdlState* state, uint32_t p
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Command 0: a track end returns from the call that is open, else the voice restarts.
 
 static void mdl_explore_end(MdlCoverage* c, const MdlState* state) {
@@ -385,7 +366,6 @@ static void mdl_explore_end(MdlCoverage* c, const MdlState* state) {
     mdl_push(c, back);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Commands 5, 6 and 7. A call or a loop on a full stack does nothing; a loop end loops or leaves.
 
 static void mdl_explore_stack(MdlCoverage* c, MdlState next, uint8_t command, uint8_t param) {
@@ -418,7 +398,6 @@ static void mdl_explore_stack(MdlCoverage* c, MdlState next, uint8_t command, ui
     mdl_push(c, next);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One step of a state: the successors of the pair or command at its position.
 
 static void mdl_explore(MdlCoverage* c, const MdlState* state) {
@@ -471,7 +450,6 @@ static void mdl_explore(MdlCoverage* c, const MdlState* state) {
     mdl_push(c, next);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A voice's first state at `start`, and the place its track end goes back to.
 
 static void mdl_start_voice(MdlCoverage* c, int voice, uint32_t start, uint8_t instrument) {
@@ -483,7 +461,6 @@ static void mdl_start_voice(MdlCoverage* c, int voice, uint32_t start, uint8_t i
     mdl_push(c, (MdlState) { .position = start, .voice = (uint8_t)voice, .instrument = instrument });
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The states a subsong starts in: each used voice at its track with its instrument, a random voice at every track
 // its list names.
 
@@ -515,8 +492,6 @@ static void mdl_start_voices(MdlCoverage* c) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void mdl_release(MdlCoverage* c) {
     for (int voice = 0; voice < MDL_VOICES; voice++) {
         free(c->restarts[voice]);
@@ -527,8 +502,6 @@ static void mdl_release(MdlCoverage* c) {
     free(c->work);
     free(c->frames);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool mdl_song_covered(MdlCoverage* c, MdlModule* module, const MdlSong* song, MdlBudget* budget) {
     memset(c, 0, sizeof(*c));
@@ -556,7 +529,6 @@ static bool mdl_song_covered(MdlCoverage* c, MdlModule* module, const MdlSong* s
     return covered;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // True if an earlier subsong entry has the same song (its proof holds for this one).
 
 static bool mdl_song_seen(const MdlSong* seen, uint16_t count, const MdlSong* song) {
@@ -567,8 +539,6 @@ static bool mdl_song_seen(const MdlSong* seen, uint16_t count, const MdlSong* so
     }
     return false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool mdl_module_covered(MdlModule* module) {
     MdlCoverage* c = calloc(1, sizeof(*c));

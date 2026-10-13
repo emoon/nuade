@@ -40,8 +40,6 @@
 #define MODULE_PREFIX "ash."
 #define PREFIX_LENGTH 4
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool ah_memory_init(AhMemory* m, const uint8_t* data, size_t size, uint32_t capacity) {
     if (size > UINT32_MAX) {
         return false;
@@ -59,31 +57,22 @@ bool ah_memory_init(AhMemory* m, const uint8_t* data, size_t size, uint32_t capa
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t ah_u8(const AhMemory* m, uint32_t offset) {
     return offset < m->capacity ? m->data[offset] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t ah_u16(const AhMemory* m, uint32_t offset) {
     return (uint16_t)(ah_u8(m, offset) << 8 | ah_u8(m, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int16_t ah_s16(const AhMemory* m, uint32_t offset) {
     return (int16_t)ah_u16(m, offset);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t ah_u32(const AhMemory* m, uint32_t offset) {
     return (uint32_t)ah_u16(m, offset) << 16 | ah_u16(m, offset + 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Pattern scan
 
 static int parse_pattern(const char* pattern, uint16_t* words, uint16_t* masks) {
@@ -109,7 +98,6 @@ static int parse_pattern(const char* pattern, uint16_t* words, uint16_t* masks) 
     return count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The offset of the first match of `pattern` in [from, to), or AH_NOT_FOUND.
 
 static uint32_t find_pattern(const AhMemory* m, uint32_t from, uint32_t to, const char* pattern) {
@@ -128,7 +116,6 @@ static uint32_t find_pattern(const AhMemory* m, uint32_t from, uint32_t to, cons
     return AH_NOT_FOUND;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The table that the d16(pc) operand in word `operand` of a match refers to; AH_NOT_FOUND if there is no match.
 
 static uint32_t find_table16(const AhMemory* m, uint32_t from, uint32_t to, const char* pattern, uint32_t operand) {
@@ -140,7 +127,6 @@ static uint32_t find_table16(const AhMemory* m, uint32_t from, uint32_t to, cons
     return extension + (uint32_t)(int32_t)ah_s16(m, extension);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The same for a d8(pc,Xn) operand: the brief extension word carries the displacement in its low byte.
 
 static uint32_t find_table8(const AhMemory* m, uint32_t from, uint32_t to, const char* pattern, uint32_t operand) {
@@ -152,7 +138,6 @@ static uint32_t find_table8(const AhMemory* m, uint32_t from, uint32_t to, const
     return extension + (uint32_t)(int32_t)(int8_t)ah_u8(m, extension + 1);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A branch table entry: `bra.w` to a positive even offset. Returns the target or AH_NOT_FOUND.
 
 static uint32_t branch_target(const AhMemory* m, uint32_t entry) {
@@ -163,7 +148,6 @@ static uint32_t branch_target(const AhMemory* m, uint32_t entry) {
     return entry + 2 + (uint32_t)offset;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's Check2 for the new family: six branches, the last to `movem.l d0-d7/a0-a6,-(a7); bsr.w`, whose
 // target starts with `lea $dff000,a6`.
 
@@ -181,7 +165,6 @@ static bool probe_new(const AhMemory* m) {
     return ah_u16(m, target) == LEA_ABSOLUTE_A6 && ah_u32(m, target + 2) == CUSTOM_BASE;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2 for the old family: four branches, then `move.w #0,d0; bne.b +$22; move.w d0,xxx.l`. Stuntman Seymour's driver
 // has `cmp.w #0,d0` between the first two instructions, which the eagleplayer's check refuses (UADE plays the song
 // because of its name); the port accepts that form as well.
@@ -202,8 +185,6 @@ static bool probe_old(const AhMemory* m) {
     return check2 || stuntman;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool ah_probe(const uint8_t* data, size_t size) {
     if (data == nullptr || size < MIN_MODULE_SIZE || size > UINT32_MAX) {
         return false;
@@ -211,8 +192,6 @@ bool ah_probe(const uint8_t* data, size_t size) {
     const AhMemory m = { .data = (uint8_t*)data, .size = (uint32_t)size, .capacity = (uint32_t)size };
     return probe_new(&m) || probe_old(&m);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool tables_inside(const AhMemory* m, const uint32_t* offsets, size_t count) {
     for (size_t i = 0; i < count; i++) {
@@ -223,7 +202,6 @@ static bool tables_inside(const AhMemory* m, const uint32_t* offsets, size_t cou
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The furthest AUDxLC of the old family: the attack or the loop of an instrument (the Paula tail covers the lengths).
 
 uint64_t ah_old_samples_end(const AhOld* old, const AhMemory* module) {
@@ -250,7 +228,6 @@ uint64_t ah_old_samples_end(const AhOld* old, const AhMemory* module) {
     return end;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer of the old family: the table addresses and the version of the driver.
 
 bool ah_old_locate(AhOld* old, const AhMemory* m) {
@@ -291,7 +268,6 @@ bool ah_old_locate(AhOld* old, const AhMemory* m) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer of the new family: the table addresses.
 
 bool ah_new_locate(AhNew* modern, const AhMemory* m) {
@@ -311,7 +287,6 @@ bool ah_new_locate(AhNew* modern, const AhMemory* m) {
     return t->subsong_count != 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The furthest AUDxLC of the new family (the Paula tail covers the lengths). The sample records are at the start of the
 // file.
 
@@ -331,7 +306,6 @@ uint64_t ah_new_samples_end(const AhMemory* samples) {
     return end;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ExtLoad: the sample file is the song's file name with its "ash." prefix changed to "smp.", in the song's directory.
 
 static bool load_samples(AhNew* modern, const char* path, const NuadeIo* io) {
@@ -362,8 +336,6 @@ static bool load_samples(AhNew* modern, const char* path, const NuadeIo* io) {
     nuade_file_index_destroy(index);
     return ok;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 AhCreateResult ah_create(const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
     AhCreateResult result = { .status = AhStatus_InvalidData };
@@ -409,8 +381,6 @@ AhCreateResult ah_create(const uint8_t* data, size_t size, const char* path, con
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void ah_destroy(AhPlayer* player) {
     if (player == nullptr) {
         return;
@@ -419,8 +389,6 @@ void ah_destroy(AhPlayer* player) {
     free(player->new_family.samples.data);
     free(player);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int ah_subsong_count(const AhPlayer* player) {
     return (int)(player->family == AhFamily_New ? player->new_family.tables.subsong_count

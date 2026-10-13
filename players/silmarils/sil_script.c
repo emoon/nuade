@@ -58,19 +58,13 @@ typedef enum SilTarget {
     SilTarget_ModuleByte = 0x1E,
 } SilTarget;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void sil_script_init(SilScript* script, SilMemory* memory, const SilImage* song, uint32_t* steps_left) {
     *script = (SilScript) { .memory = memory, .song = song, .blocks = song, .steps_left = steps_left };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void fail(SilScript* s) {
     s->failed = true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t fetch8(SilScript* s) {
     if (!sil_in_memory(s->memory, s->pc, 1)) {
@@ -80,14 +74,11 @@ static uint8_t fetch8(SilScript* s) {
     return s->memory->data[s->pc++];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t fetch16(SilScript* s) {
     const uint16_t high = fetch8(s);
     return (uint16_t)((high << 8) | fetch8(s));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A signed 24-bit operand: the sign extends through the top byte.
 
 static int32_t fetch24(SilScript* s) {
@@ -96,20 +87,15 @@ static int32_t fetch24(SilScript* s) {
     return (int32_t)(value | ((high & 0x80) != 0 ? 0xFF000000u : 0));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void branch(SilScript* s, int32_t displacement) {
     s->pc = (uint32_t)((int64_t)s->pc + displacement);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Word operands and tables sit on even addresses: a script that is at an odd address skips one byte first.
 
 static void align(SilScript* s) {
     s->pc += s->pc & 1;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static int16_t variable_read(SilScript* s, uint8_t index, uint32_t width) {
     if (index + width > SIL_VARIABLES) {
@@ -118,8 +104,6 @@ static int16_t variable_read(SilScript* s, uint8_t index, uint32_t width) {
     }
     return width == 1 ? (int8_t)s->variables[index] : (int16_t)nuade_read_be16(&s->variables[index]);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void variable_write(SilScript* s, uint8_t index, uint32_t width, int16_t value) {
     if (index + width > SIL_VARIABLES) {
@@ -134,7 +118,6 @@ static void variable_write(SilScript* s, uint8_t index, uint32_t width, int16_t 
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Module-relative accesses count from the song's base and stay inside the song file.
 
 static bool module_address(SilScript* s, uint16_t offset, uint32_t* address) {
@@ -148,19 +131,14 @@ static bool module_address(SilScript* s, uint16_t offset, uint32_t* address) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void evaluate(SilScript* s);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The expression after the accumulator was saved: a binary expression's left operand.
 
 static void evaluate_operand(SilScript* s) {
     s->left = s->value;
     evaluate(s);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void evaluate(SilScript* s) {
     if (s->nesting >= SIL_MAX_NESTING) {
@@ -220,8 +198,6 @@ static void evaluate(SilScript* s) {
     s->nesting--;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void assign(SilScript* s) {
     switch (fetch8(s)) {
         case SilTarget_VariableByte:
@@ -243,8 +219,6 @@ static void assign(SilScript* s) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void add_to_variable(SilScript* s) {
     if (fetch8(s) != SilTarget_VariableWord) {
         fail(s);
@@ -253,8 +227,6 @@ static void add_to_variable(SilScript* s) {
     const uint8_t index = fetch8(s);
     variable_write(s, index, 2, (int16_t)(variable_read(s, index, 2) + s->value));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void call(SilScript* s, int32_t displacement) {
     if (s->depth >= SIL_CALL_DEPTH) {
@@ -265,8 +237,6 @@ static void call(SilScript* s, int32_t displacement) {
     branch(s, displacement);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void return_from_call(SilScript* s) {
     if (s->depth == 0) {
         fail(s);
@@ -275,7 +245,6 @@ static void return_from_call(SilScript* s) {
     s->pc = s->calls[--s->depth];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Search: the value against a sorted table of (value, displacement) pairs. The table starts on an even address; a
 // match jumps, a value below an entry ends the search and skips the entries left, a value above all of them falls
 // through.
@@ -305,7 +274,6 @@ static void search(SilScript* s) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Index: the value plus a base against a count; in range it picks one of the displacements that follow, else the
 // statement skips the table.
 
@@ -323,8 +291,6 @@ static void index_jump(SilScript* s) {
     branch(s, displacement);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool block_of(SilScript* s, int16_t index, uint32_t* block) {
     if (index < 0 || !sil_image_block(s->memory, s->blocks, (uint32_t)index, block)) {
         fail(s);
@@ -333,7 +299,6 @@ static bool block_of(SilScript* s, int16_t index, uint32_t* block) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Sample: slot, block, note base. A block that is not a sample leaves the slot as it is; a negative block empties it.
 
 static void define_sample(SilScript* s) {
@@ -363,7 +328,6 @@ static void define_sample(SilScript* s) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Music: the block, then five values: the first is of no use to the player, the second is the tempo.
 
 static void choose_music(SilScript* s) {
@@ -389,7 +353,6 @@ static void choose_music(SilScript* s) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One statement. Returns false when the script has ended.
 
 static bool statement(SilScript* s) {
@@ -470,8 +433,6 @@ static bool statement(SilScript* s) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool run(SilScript* s) {
     while (!s->failed) {
         if (*s->steps_left == 0) {
@@ -486,16 +447,12 @@ static bool run(SilScript* s) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool run_at(SilScript* s, uint32_t pc) {
     s->pc = pc;
     s->depth = 0;
     s->value = 0;
     return run(s);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sil_script_run_song(SilScript* s, uint16_t flag, uint16_t subsong) {
     memset(s->variables, 0, sizeof(s->variables));
@@ -509,21 +466,15 @@ bool sil_script_run_song(SilScript* s, uint16_t flag, uint16_t subsong) {
     return run_at(s, pc);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sil_script_run_main(SilScript* s, const SilImage* main) {
     s->blocks = main;
     return run_at(s, sil_image_base(main) + SIL_SCRIPT_START);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sil_script_continue(SilScript* s) {
     s->value = 0;
     return run(s);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sil_script_slots_unset(const SilScript* s) {
     for (uint32_t i = 1; i < SIL_SLOTS; i++) {
@@ -534,8 +485,6 @@ bool sil_script_slots_unset(const SilScript* s) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void sil_script_note_parameters(SilScript* s) {
     s->slot_parameters = false;
     for (uint32_t i = 0; i < SIL_SLOTS; i++) {
@@ -544,8 +493,6 @@ void sil_script_note_parameters(SilScript* s) {
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sil_script_starts_with_sample(const SilScript* s) {
     const uint32_t at = s->song->start + SIL_SCRIPT_START;

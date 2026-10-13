@@ -105,8 +105,6 @@ static const struct {
     uint8_t info;
 } k_initial_row[MCMD_VOICES] = { { 0x4B, 0 }, { 0, 0 }, { 0x0C, 1 }, { 0, 0 } };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A track row's entry for one voice
 typedef struct TrackEntry {
     uint8_t pattern;
@@ -121,45 +119,33 @@ typedef struct SampleEntry {
     uint16_t loop_length; // words
 } SampleEntry;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t mod_byte(const McmdModule* m, uint32_t offset) {
     return offset < m->size ? m->data[offset] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t mod_word(const McmdModule* m, uint32_t offset) {
     return (uint16_t)(mod_byte(m, offset) << 8 | mod_byte(m, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t mod_long(const McmdModule* m, uint32_t offset) {
     return (uint32_t)mod_word(m, offset) << 16 | mod_word(m, offset + 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A word offset added to a pointer sign-extended (adda.w)
 
 static uint32_t add_word(uint32_t base, uint16_t offset) {
     return base + (uint32_t)(int32_t)(int16_t)offset;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static McmdSequence module_sequence(const McmdModule* m, uint32_t offset) {
     return (McmdSequence) { .data = m->data, .size = m->size, .origin = offset };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t seq_byte(McmdSequence s, uint32_t at) {
     const uint32_t address = s.origin + at;
     return address < s.size ? s.data[address] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The read pointer the replayer builds from a position word
 
 static uint32_t seq_address(uint16_t pos) {
@@ -173,8 +159,6 @@ typedef struct SampleRange {
     uint16_t len_words;
 } SampleRange;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static SampleRange sample_range(const McmdModule* m, uint32_t at, uint16_t len_words) {
     if (at <= m->size) {
         return (SampleRange) { .lc = (const int8_t*)m->data + at, .len_words = len_words };
@@ -182,7 +166,6 @@ static SampleRange sample_range(const McmdModule* m, uint32_t at, uint16_t len_w
     return (SampleRange) { .lc = k_silence, .len_words = sizeof(k_silence) / 2 };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The header
 
 typedef struct Header {
@@ -195,8 +178,6 @@ typedef struct Header {
     uint16_t sample_count;
 } Header;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static Header read_header(const uint8_t* data) {
     return (Header) { .fseq_count = nuade_read_be16(data + 4),
                       .vseq_count = nuade_read_be16(data + 6),
@@ -207,8 +188,6 @@ static Header read_header(const uint8_t* data) {
                       .sample_count = nuade_read_be16(data + 16) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static McmdSubsong read_subsong(const McmdModule* m) {
     return (McmdSubsong) { .first = mod_word(m, m->subsongs),
                            .last = mod_word(m, m->subsongs + 2),
@@ -216,7 +195,6 @@ static McmdSubsong read_subsong(const McmdModule* m) {
                            .loop = mod_word(m, m->subsongs + 6) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The table offsets the replayer computes, in the order it adds them. The module is accepted when no table size
 // reaches the sign bit of the word the replayer adds it with, the tables lie inside the module and the first subsong
 // is a range of track rows it can walk. The replayer takes anything with the magic and reads whatever memory its
@@ -262,22 +240,17 @@ static bool layout_module(McmdModule* m, const uint8_t* data, size_t size) {
            && (subsong.last + 1u) * TRACK_ROW_SIZE <= MAX_TABLE_SIZE;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool mcmd_probe(const uint8_t* data, size_t size) {
     McmdModule m = { 0 };
     return layout_module(&m, data, size);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Paula
 
 static void dma_off(McmdVoice* v) {
     nuade_paula_channel_dma_off(&v->paula);
     v->dma_restart = true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static SampleEntry sample_entry(const McmdModule* m, uint8_t number) {
     const uint32_t at = m->samples + (uint32_t)number * SAMPLE_SIZE;
@@ -287,7 +260,6 @@ static SampleEntry sample_entry(const McmdModule* m, uint8_t number) {
                            .loop_length = mod_word(m, at + 0x1A) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Point the channel at a sample (AUDxLC/AUDxLEN) and set up its repeat.
 
 static void load_sample(const McmdModule* m, McmdVoice* v, uint8_t number) {
@@ -300,14 +272,11 @@ static void load_sample(const McmdModule* m, McmdVoice* v, uint8_t number) {
     v->loop_length = loop.len_words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void restart_volume(McmdVoice* v) {
     v->vseq_pos = 0;
     v->vseq_counter = 1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A new sample with the channel's DMA stopped; the tick starts it again
 
 static void restart_sample(const McmdModule* m, McmdVoice* v, uint8_t number) {
@@ -315,7 +284,6 @@ static void restart_sample(const McmdModule* m, McmdVoice* v, uint8_t number) {
     load_sample(m, v, number);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Read the frequency sequence until it yields a value or holds. A command behind the jump table lands in the code
 // behind it (see FSEQ_SKIP_COMMAND).
 
@@ -398,13 +366,9 @@ static void run_fseq(McmdPlayer* p, McmdVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool is_vseq_note_command(uint8_t c) {
     return c == VSEQ_NOTE_COMMAND_FIRST || c == VSEQ_NOTE_COMMAND_SECOND || c == VSEQ_NOTE_COMMAND_THIRD;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void run_vseq(McmdSong* s, McmdVoice* v) {
     if (v->vseq_wait != 0) {
@@ -455,13 +419,9 @@ static void run_vseq(McmdSong* s, McmdVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t period_at(uint8_t index) {
     return index == HIP_PERIOD_COUNT ? PERIOD_AFTER_TABLE : hip_note_period(index);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t note_period(const McmdVoice* v) {
     uint8_t note = v->fseq_value;
@@ -471,7 +431,6 @@ static uint16_t note_period(const McmdVoice* v) {
     return period_at(note & NOTE_MASK);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The parameter byte is the speed, negative for a slide down; the period moves by the high word of the accumulator.
 
 static uint16_t apply_portamento(McmdVoice* v, uint16_t period) {
@@ -487,7 +446,6 @@ static uint16_t apply_portamento(McmdVoice* v, uint16_t period) {
     return (uint16_t)(period + (v->porta >> 16));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One voice's tick: sequences and effects. Sets AUDxPER and AUDxVOL.
 
 static void run_voice(McmdPlayer* p, McmdVoice* v) {
@@ -501,7 +459,6 @@ static void run_voice(McmdPlayer* p, McmdVoice* v) {
     v->paula.volume = hip_scaled_volume(v->volume, v->channel_volume);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Sequencer
 
 static TrackEntry track_entry(const McmdModule* m, uint32_t at) {
@@ -510,7 +467,6 @@ static TrackEntry track_entry(const McmdModule* m, uint32_t at) {
                           .command = mod_byte(m, at + 2) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The voice's next track row entry: its pattern, note transpose, and the instrument transpose or a command.
 
 static void read_track_row(McmdSong* s, McmdVoice* v, const McmdModule* m) {
@@ -536,8 +492,6 @@ static void read_track_row(McmdSong* s, McmdVoice* v, const McmdModule* m) {
     v->track_offset = (uint16_t)(v->track_offset + TRACK_ROW_SIZE);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void start_instrument(const McmdModule* m, McmdVoice* v) {
     const uint8_t instrument = (uint8_t)((v->info & INFO_INSTRUMENT) + v->instrument_transpose);
     const uint32_t header = m->vseqs + ((uint32_t)instrument << 6);
@@ -557,7 +511,6 @@ static void start_instrument(const McmdModule* m, McmdVoice* v) {
     v->fseq_wait = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One row of a voice's pattern. A row whose note is 0 does nothing.
 
 static void step_voice(McmdPlayer* p, McmdVoice* v) {
@@ -594,7 +547,6 @@ static void step_voice(McmdPlayer* p, McmdVoice* v) {
     start_instrument(m, v);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Play
 
 static void silence(McmdSong* s, NuadeVoices* voices) {
@@ -605,8 +557,6 @@ static void silence(McmdSong* s, NuadeVoices* voices) {
         nuade_paula_channel_sync(&v->paula, (uint32_t)i, voices);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 McmdTickResult mcmd_tick(McmdPlayer* player, NuadeVoices* voices) {
     McmdSong* s = &player->song;
@@ -657,8 +607,6 @@ McmdTickResult mcmd_tick(McmdPlayer* player, NuadeVoices* voices) {
     return (McmdTickResult) { .looped = s->looped };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 McmdPlayer* mcmd_create(const uint8_t* data, size_t size) {
     McmdModule layout = { 0 };
     if (!layout_module(&layout, data, size)) {
@@ -677,16 +625,12 @@ McmdPlayer* mcmd_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void mcmd_destroy(McmdPlayer* player) {
     if (player != nullptr) {
         free(player->module.data);
         free(player);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The replayer's init: every voice reads the first track row of the subsong as its first pattern, without decoding the
 // command byte, and starts on the start sequences with the sample unset.
@@ -728,13 +672,9 @@ bool mcmd_start(McmdPlayer* player, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int mcmd_speed(const McmdPlayer* player) {
     return player->song.subsong.speed;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 McmdVoiceState mcmd_voice_state(const McmdPlayer* player, int voice) {
     const McmdVoice* v = &player->song.voices[voice];

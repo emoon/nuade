@@ -22,7 +22,6 @@
 #define E6_SEQUENCER_HZ 50                                // interrupts per second the DMA position model counts
 #define E6_READ_POS_MASK ((E6_RING_SIZE << 8) - 1)        // the position model is 24.8 fixed point
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module
 
 uint8_t e6_module_u8(const Ems6Module* m, uint32_t offset);
@@ -69,7 +68,6 @@ PatternCommand e6_module_pattern_command(const Ems6Module* m, uint32_t offset);
 // is one note below the first.
 uint16_t e6_period_table(int finetune, int note);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The mixer: 32 voices summed into two 16-bit buffers (even tracks left, odd right), each split into a high and a low
 // byte stream in the four Paula ring buffers.
 
@@ -86,7 +84,6 @@ uint16_t e6_mixer_room(const Ems6Mixer* mx);
 // The tempo: samples per sequencer tick for `bpm`.
 uint16_t e6_mixer_ticks_for_bpm(uint32_t bpm);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sequencer
 
 void e6_sequencer_init(Ems6Sequencer* s, const Ems6Subsong* subsong);

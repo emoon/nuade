@@ -27,28 +27,24 @@ static const uint16_t period_table[PERIOD_LEAD_IN + UFO_PERIOD_ENTRIES] = {
     0x00C7, 0x00BC, 0x00B2, 0x00A8, 0x009E, 0x0095, 0x008D, 0x0086,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The table entry of a note index; -2 and -1 are the two words in front of it.
 
 static uint16_t period_of(int index) {
     return period_table[PERIOD_LEAD_IN + index];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Notes below the table's lowest wrap up into its first octave.
 
 static unsigned note_index(uint8_t note) {
     return note >= NOTE_BASE ? (unsigned)note - NOTE_BASE : (unsigned)note % OCTAVE;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxLC ignores its lowest bit.
 
 static const int8_t* chip_address(const int8_t* p) {
     return (const int8_t*)((uintptr_t)p & ~(uintptr_t)1);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period of a note with the channel's bend: towards a higher pitch for a positive bend (the replayer's u5a8e).
 
 static uint16_t bent_period(const UfoState* state, unsigned channel, unsigned voice) {
@@ -65,7 +61,6 @@ static uint16_t bent_period(const UfoState* state, unsigned channel, unsigned vo
     return (uint16_t)base;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A release: the envelope of the voice that plays this note on this channel starts falling.
 
 static void release_note(UfoState* state, unsigned channel, unsigned index) {
@@ -77,8 +72,6 @@ static void release_note(UfoState* state, unsigned channel, unsigned index) {
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void start_note(const UfoSong* song, UfoState* state, unsigned channel, unsigned index, uint8_t volume) {
     UfoChannel* chan = &state->channels[channel];
@@ -116,7 +109,6 @@ static void start_note(const UfoSong* song, UfoState* state, unsigned channel, u
     v->display_instrument = chan->instrument;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note event (the replayer's u5b02); a volume of 0 (a note off, or a velocity that scales to 0) releases the note
 // instead.
 
@@ -133,7 +125,6 @@ void ufo_voice_note(const UfoSong* song, UfoState* state, unsigned channel, uint
     start_note(song, state, channel, index, volume);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A new bend value changes the period of the voice at once (u608c).
 
 void ufo_voice_update_bend(UfoState* state, unsigned channel) {
@@ -141,7 +132,6 @@ void ufo_voice_update_bend(UfoState* state, unsigned channel) {
     state->voices[voice].paula.period = bent_period(state, channel, voice);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume pass of the interrupt (u5cda): the envelope of every voice.
 
 void ufo_voices_update_volumes(UfoState* state) {

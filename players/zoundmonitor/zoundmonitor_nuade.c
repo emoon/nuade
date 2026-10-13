@@ -12,14 +12,10 @@
 #define ZM_NOTE_BASE 11
 #define ZM_NOTE_REST 0x3F
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe zoundmonitor_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return zm_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult zoundmonitor_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -48,27 +44,19 @@ static NuadePlayerOpenResult zoundmonitor_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void zoundmonitor_close(void* user_data) {
     zm_destroy((ZmPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool zoundmonitor_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return subsong == 0 && zm_start((ZmPlayer*)user_data, voices);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult zoundmonitor_tick(void* user_data, NuadeVoices* voices) {
     const ZmTickResult tick = zm_tick((ZmPlayer*)user_data, voices);
     return (NuadeTickResult) { .length = ZM_TICK_LENGTH, .flags = tick.looped ? NuadeTick_Looped : NuadeTick_None };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void zoundmonitor_metadata(void* user_data, const NuadeMetadataSink* sink) {
     const ZmPlayer* player = (const ZmPlayer*)user_data;
@@ -81,8 +69,6 @@ static void zoundmonitor_metadata(void* user_data, const NuadeMetadataSink* sink
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadePositionResult zoundmonitor_position(void* user_data) {
     const ZmPosition p = zm_position((const ZmPlayer*)user_data);
     return (NuadePositionResult) { .valid = true,
@@ -93,16 +79,12 @@ static NuadePositionResult zoundmonitor_position(void* user_data) {
                                                  .speed = (uint32_t)p.speed } };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int32_t zoundmonitor_note(int note) {
     if (note == 0) {
         return NUADE_CELL_EMPTY;
     }
     return note == ZM_NOTE_REST ? NUADE_NOTE_CUT : note + ZM_NOTE_BASE;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t zoundmonitor_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const ZmPlayer* player = (const ZmPlayer*)user_data;
@@ -119,8 +101,6 @@ static uint32_t zoundmonitor_voice_info(void* user_data, NuadeVoiceInfo* out, ui
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTrackerInfoResult zoundmonitor_tracker_info(void* user_data, const NuadePosition* at) {
     const ZmPlayer* player = (const ZmPlayer*)user_data;
     if ((int)at->order >= zm_order_count(player)) {
@@ -136,8 +116,6 @@ static NuadeTrackerInfoResult zoundmonitor_tracker_info(void* user_data, const N
                                                              { "vol", NuadeColumn_Hex, 2, 0 },
                                                              { "arg", NuadeColumn_Hex, 2, 0 } } } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePatternCell zoundmonitor_cell(const void* ctx, uint32_t order, uint32_t channel, uint32_t row) {
     NuadePatternCell cell = nuade_cell_empty();
@@ -158,8 +136,6 @@ static NuadePatternCell zoundmonitor_cell(const void* ctx, uint32_t order, uint3
     return cell;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t zoundmonitor_tracker_cells(void* user_data, const NuadePosition* at, uint32_t channel, int32_t row_lo,
                                            int32_t row_hi, NuadePatternCell* out, uint32_t cap) {
     const ZmPlayer* player = (const ZmPlayer*)user_data;
@@ -168,8 +144,6 @@ static uint32_t zoundmonitor_tracker_cells(void* user_data, const NuadePosition*
     }
     return nuade_tracker_fill(at, ZM_VOICES, ZM_ROWS, channel, row_lo, row_hi, out, cap, zoundmonitor_cell, user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_zoundmonitor = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -188,8 +162,6 @@ const NuadePlayer nuade_player_zoundmonitor = {
     .tracker_info = zoundmonitor_tracker_info,
     .tracker_cells = zoundmonitor_tracker_cells,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ZmPlayer* zm_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_zoundmonitor) {

@@ -15,8 +15,6 @@
 // A bsr or lea with a displacement word, an address and so on
 #define WORD_BYTES 2u
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The address of a voice record: a lea of its address or the load of a pointer to it. Returns the address after the
 // instruction, 0 if there is no such instruction at `at`. The play routine only calls the voice routine with it.
 static uint32_t skip_record_load(const BthModule* m, uint32_t at) {
@@ -30,8 +28,6 @@ static uint32_t skip_record_load(const BthModule* m, uint32_t at) {
             return 0;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The play routine: save the registers, then for every voice load its record into a0 and run the voice routine (a
 // bsr; the last voice may be a bra, or the routine itself follows). A module's play routine may test a word of the
@@ -83,8 +79,6 @@ static uint32_t locate_play(const BthModule* m, uint32_t play, BthReplayer* out)
     return routine;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The operand of an instruction that takes an immediate word, a word at a pc-relative address or a word at an
 // absolute address, depending on the opcode word at `at`
 static bool read_word_operand(const BthModule* m, uint32_t at, uint16_t immediate, uint16_t pc_relative,
@@ -102,8 +96,6 @@ static bool read_word_operand(const BthModule* m, uint32_t at, uint16_t immediat
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The first multiplication in the routine scales a note command's length: mulu.w tempo,d0
 static bool locate_tempo(const BthModule* m, uint32_t routine, BthReplayer* out) {
     for (uint32_t at = routine; at < routine + ROUTINE_SPAN; at += WORD_BYTES) {
@@ -114,15 +106,11 @@ static bool locate_tempo(const BthModule* m, uint32_t routine, BthReplayer* out)
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // An address in the code that the loader relocated; one it did not relocate is chip memory outside the module, which
 // reads as zeros (a module ripped from another address)
 static uint32_t code_pointer(const BthImage* image, uint32_t at) {
     return bthi_is_pointer(image, at) ? bthm_u32(&image->module, at) : image->module.size;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The note handler: subq.w #1,d0; add.w note_base(a0),d0; [add the note offset]; lsl.w #1,d0; lea.l period_table,a2
 static bool locate_note_handler(const BthImage* image, uint32_t routine, BthReplayer* out) {
@@ -157,8 +145,6 @@ static bool locate_note_handler(const BthImage* image, uint32_t routine, BthRepl
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A slide that overshoots its target is clamped: the comparison after adding the step is signed in some replayers
 static bool locate_slide(const BthModule* m, uint32_t routine, BthReplayer* out) {
     static const uint32_t add_step[] = { OP_ADD_REC_D0, RECORD_SLIDE_STEP };
@@ -175,8 +161,6 @@ static bool locate_slide(const BthModule* m, uint32_t routine, BthReplayer* out)
     out->slide_signed = branch == OP_BLT || branch == OP_BLE || branch == OP_BGE || branch == OP_BGT;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The sample a held voice repeats: written to the channel's address register early in the routine, as an immediate
 // pointer, or one read from a word of the module. An address that is not a relocated pointer is chip memory outside
@@ -196,8 +180,6 @@ static uint32_t locate_silent(const BthImage* image, uint32_t routine) {
     return m->size;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The instrument command loads the sample address with move.l $8(a2),d0; NEW replayers add a base to it
 static uint32_t locate_sample_base(const BthModule* m, uint32_t routine) {
     static const uint32_t load[] = { OP_MOVE_L_REC_A2_D0, BTH_INSTRUMENT_SAMPLE_FIELD };
@@ -207,8 +189,6 @@ static uint32_t locate_sample_base(const BthModule* m, uint32_t routine) {
     }
     return 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The replayer's first instructions tell the engines apart: clr.b d2 then btst.b #2 (a note command with no hold or
 // arpeggio), or move.b flags,d0 / andi.b #$c,d0 (the extended replayer); one module sets a4 first.
@@ -237,14 +217,11 @@ static bool locate_engine(const BthModule* m, uint32_t routine, BthReplayer* out
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // What the BEATHOVEN100 hardware routine does with a channel: move.w #1,4(a6); move.l #silent,(a6). The play routine
 // of most modules does it for all four channels first (after lea.l hw,a6), and the routine after it has started a
 // sample.
 static const uint32_t k_silence_channel[] = { OP_MOVE_W_IMM_REC_A6, 1, 4, OP_MOVE_L_IMM_IND_A6 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // BEATHOVEN100. Some play routines point the four channels at the silent sample first. Then the voice routine runs for
 // each voice: [move.l #offset,d7;] lea.l record,a0; bsr routine (d7 is the voice's note offset). Returns the voice
 // routine's address.
@@ -277,15 +254,11 @@ static uint32_t locate_legacy_play(const BthModule* m, uint32_t play, BthReplaye
     return out->voice_count == 0 ? NOT_FOUND : routine;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The silent sample is the one the replayer's hardware routine sets the repeat registers to after it started a sample
 static uint32_t locate_legacy_silent(const BthModule* m) {
     const uint32_t at = BTH_FIND(m, 0, m->size, k_silence_channel);
     return at == NOT_FOUND ? m->size : bthm_u32(m, at + 2 * nuade_sizeof_array(k_silence_channel));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A note number is turned into an index of the period table: the voice's note base is added, the module's note offset
 // (add.l d7,d0) may be, the origin is subtracted (subi.l #1,d0) and the index is scaled to a byte offset with a 16 bit
@@ -295,8 +268,6 @@ typedef struct LegacyIndex {
     uint32_t origin;
     bool scaled_unsigned;
 } LegacyIndex;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The instructions after the note base is added, at `at`; the registers are those of the note handler or the arpeggio
 static bool read_legacy_index(const BthModule* m, uint32_t at, uint16_t add_offset, uint16_t subtract_origin,
@@ -310,8 +281,6 @@ static bool read_legacy_index(const BthModule* m, uint32_t at, uint16_t add_offs
     out->scaled_unsigned = bthm_u16(m, at + 6) == OP_MULU_IMM_D0 || bthm_u16(m, at + 6) == OP_MULU_IMM_D1;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The legacy replayers differ in the index of the period table (see above) and in whether lengths are scaled. The
 // period table is loaded right before the note handler adds the note base.
@@ -337,8 +306,6 @@ static bool locate_legacy_features(const BthImage* image, uint32_t routine, BthR
     out->durations_scaled = BTH_FIND(m, routine, routine + ROUTINE_SPAN, scale_lengths) != NOT_FOUND;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool bth_locate(const BthImage* image, const BthHeader* header, BthReplayer* out) {
     const BthModule* m = &image->module;

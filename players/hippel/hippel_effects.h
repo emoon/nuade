@@ -14,7 +14,6 @@
 // The voice volume in percent of the full volume
 #define HIP_VOLUME_FULL 100
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period of a note (index & 0x7F), 0 for an index past the table.
 
 static inline uint16_t hip_note_period(uint8_t index) {
@@ -27,7 +26,6 @@ static inline uint16_t hip_note_period(uint8_t index) {
     return index < HIP_PERIOD_COUNT ? periods[index] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note starts the vibrato from its full depth.
 
 static inline void hip_vibrato_start(HipVibrato* vibrato, uint8_t speed, uint8_t depth, uint8_t delay) {
@@ -38,7 +36,6 @@ static inline void hip_vibrato_start(HipVibrato* vibrato, uint8_t speed, uint8_t
     vibrato->rising = false; // a new note starts falling from the full depth
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One tick of the vibrato: the value moves between 0 and the depth, the period changes by (value - depth / 2) / 1024 of
 // itself.
 
@@ -67,7 +64,6 @@ static inline uint16_t hip_vibrato_apply(HipVibrato* vibrato, uint16_t period) {
     return (uint16_t)(period + (offset >> 10));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One tick of the portamento: `accumulator` grows by the speed (a byte, negative = slide down) and the period changes
 // by accumulator / 1024 of itself.
 
@@ -80,14 +76,12 @@ static inline uint16_t hip_portamento_apply(uint16_t* accumulator, uint8_t speed
     return (uint16_t)(period + (((uint32_t)*accumulator * period) >> 10));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The voice volume level a track entry sets (0 = full, 1..15 quieter in steps of 6 %).
 
 static inline uint8_t hip_level_percent(uint8_t level) {
     return level == 0 ? HIP_VOLUME_FULL : (uint8_t)((16 - level) * 6);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A volume sequence value scaled to a voice's percentage.
 
 static inline uint8_t hip_scaled_volume(uint8_t volume, uint8_t percent) {

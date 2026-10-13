@@ -11,7 +11,6 @@
 #define RJP_ZERO_LENGTH_WORDS 65536 // what AUDxLEN 0 plays
 #define RJP_SAMPLE_BASE 4 // the sample file's first long is not sample data; all sample offsets count from after it
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A module or sample file in memory. Every read past its end gives 0 (the original reads whatever lies in memory
 // there; no song does).
 
@@ -19,7 +18,6 @@ uint8_t rjp_u8(const RjpImage* image, uint64_t offset);
 uint16_t rjp_u16(const RjpImage* image, uint64_t offset);
 uint32_t rjp_u32(const RjpImage* image, uint64_t offset);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module: "RJP?" "SMOD", then seven sections, each a size long and its data.
 
 // The instrument with this number; one past the last record is instrument 0, as the driver treats it.

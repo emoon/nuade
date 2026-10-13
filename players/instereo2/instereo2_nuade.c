@@ -18,15 +18,11 @@
 #define INSTEREO2_NOTE_NONE 0x80
 #define INSTEREO2_OCTAVE_SHIFT (-3)
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The module mark is specific enough to be sure.
 static NuadeProbe instereo2_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return is2_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult instereo2_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -46,20 +42,14 @@ static NuadePlayerOpenResult instereo2_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void instereo2_close(void* user_data) {
     is2_destroy((Is2Module*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool instereo2_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return is2_start((Is2Module*)user_data, (int)subsong, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult instereo2_tick(void* user_data, NuadeVoices* voices) {
     (void)voices;
@@ -68,20 +58,14 @@ static NuadeTickResult instereo2_tick(void* user_data, NuadeVoices* voices) {
     return (NuadeTickResult) { .length = is2_tick_length(module), .flags = looped ? NuadeTick_Looped : NuadeTick_None };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool instereo2_dump_state(void* user_data, const char* path) {
     return is2_set_dump_file((Is2Module*)user_data, path);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void instereo2_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "InStereo! 2.0");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePositionResult instereo2_position(void* user_data) {
     const Is2Position p = is2_position((const Is2Module*)user_data);
@@ -92,8 +76,6 @@ static NuadePositionResult instereo2_position(void* user_data) {
                                                  .rows = (uint32_t)p.rows,
                                                  .speed = (uint32_t)p.speed } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t instereo2_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const Is2Module* module = (const Is2Module*)user_data;
@@ -108,8 +90,6 @@ static uint32_t instereo2_voice_info(void* user_data, NuadeVoiceInfo* out, uint3
     }
     return n;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTrackerInfoResult instereo2_tracker_info(void* user_data, const NuadePosition* at) {
     const Is2Module* module = (const Is2Module*)user_data;
@@ -126,8 +106,6 @@ static NuadeTrackerInfoResult instereo2_tracker_info(void* user_data, const Nuad
                                                              { "fx", NuadeColumn_Hex, 1, 0 },
                                                              { "arg", NuadeColumn_Hex, 2, 0 } } } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePatternCell instereo2_cell(const void* ctx, uint32_t order, uint32_t channel, uint32_t row) {
     NuadePatternCell cell = nuade_cell_empty();
@@ -150,16 +128,12 @@ static NuadePatternCell instereo2_cell(const void* ctx, uint32_t order, uint32_t
     return cell;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t instereo2_tracker_cells(void* user_data, const NuadePosition* at, uint32_t channel, int32_t row_lo,
                                         int32_t row_hi, NuadePatternCell* out, uint32_t cap) {
     const uint32_t rows = at->rows != 0 ? at->rows : (uint32_t)is2_default_rows((const Is2Module*)user_data);
     return nuade_tracker_fill(at, INSTEREO2_NUADE_VOICES, rows, channel, row_lo, row_hi, out, cap, instereo2_cell,
                               user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_instereo2 = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -179,8 +153,6 @@ const NuadePlayer nuade_player_instereo2 = {
     .tracker_cells = instereo2_tracker_cells,
     .dump_state = instereo2_dump_state,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Is2Module* is2_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_instereo2) {

@@ -56,7 +56,6 @@
 // dividend when the quotient does not fit in 16 bits. The divisor is not 0.
 int16_t aps_divs16(int32_t dividend, int16_t divisor);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module
 
 // Split a module into its sections; false when InitPlayer would refuse it.
@@ -66,7 +65,6 @@ bool aps_module_parse(ApsModule* module, const uint8_t* data, size_t size, const
 uint8_t aps_u8(const ApsModule* module, uint32_t address);
 uint16_t aps_u16(const ApsModule* module, uint32_t address);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Records
 
 typedef enum ApsOrderCommand {
@@ -181,7 +179,6 @@ typedef struct ApsSampleRecord {
 
 ApsSampleRecord aps_sample_record(const ApsModule* module, uint32_t record);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The wave generator
 
 typedef struct ApsWaveJob {
@@ -200,7 +197,6 @@ void aps_wave_build(const ApsWaveJob* job);
 // Offset (in words) that moves the start of a window-kind sample; `record` is the window record.
 int32_t aps_window_offset(const ApsSampleRecord* record, const int16_t levels[APS_ENVELOPES]);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The player
 
 // The period of a note: the table past the end reads the 68k player's data block

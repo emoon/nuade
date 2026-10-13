@@ -33,51 +33,36 @@
 #define RESTART_FIRST_IMMEDIATE 9 // the first one starts 6 bytes behind the compare; its immediate byte is at +9
 #define RESTART_SEARCH_SPAN (RESTART_FIRST_IMMEDIATE + RESTART_INIT_STRIDE * (JT_VOICES - 1) + 1)
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t jt_u8(const JtModule* m, uint32_t offset) {
     return offset < m->size ? m->data[offset] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t jt_u16(const JtModule* m, uint32_t offset) {
     return (uint16_t)(jt_u8(m, offset) << 8 | jt_u8(m, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t jt_u32(const JtModule* m, uint32_t offset) {
     return (uint32_t)jt_u16(m, offset) << 16 | jt_u16(m, offset + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t jt_offset_of(const JtModule* m, uint32_t address) {
     const uint32_t offset = address - m->load_address;
     return offset < m->size ? offset : JT_NO_OFFSET;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t jt_table_entry(const JtModule* m, uint32_t table, uint32_t byte_offset) {
     return jt_offset_of(m, jt_u32(m, table + byte_offset));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const int8_t* jt_sample_at(const JtModule* m, uint32_t address) {
     const uint32_t offset = jt_offset_of(m, address);
     return offset != JT_NO_OFFSET ? (const int8_t*)(m->data + (offset & ~1u)) : nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t jt_period(const JtModule* m, unsigned index) {
     return index < JT_PERIOD_COUNT ? jt_u16(m, m->period_table + 2 * index) : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A song table entry as stored: the absolute addresses of the four track lists, the number 12 and the speed.
 
 typedef struct SongEntry {
@@ -86,8 +71,6 @@ typedef struct SongEntry {
     uint8_t speed;
 } SongEntry;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static SongEntry read_song_entry(const JtModule* m, uint32_t at) {
     SongEntry entry = { .voice_slot = jt_u8(m, at + 0x10), .speed = jt_u8(m, at + 0x11) };
     for (int i = 0; i < JT_VOICES; i++) {
@@ -95,8 +78,6 @@ static SongEntry read_song_entry(const JtModule* m, uint32_t at) {
     }
     return entry;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool jt_read_song(const JtModule* m, uint32_t number, JtSong* out) {
     if (number >= m->song_count) {
@@ -109,8 +90,6 @@ bool jt_read_song(const JtModule* m, uint32_t number, JtSong* out) {
     out->speed = entry.speed;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 JtInstrument jt_read_instrument(const JtModule* m, uint32_t offset) {
     if (offset == JT_NO_OFFSET) {
@@ -133,7 +112,6 @@ JtInstrument jt_read_instrument(const JtModule* m, uint32_t offset) {
                             .sweep = jt_u16(m, offset + 0x20) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The first bytes of the eagleplayer: moveq #-1,d0 / rts, "DELIRIUM", a pointer, "$VER: Jeroen Tel player ...". The
 // instrument pointer of a voice that has not been given one points at them.
 
@@ -155,7 +133,6 @@ JtInstrument jt_default_instrument(void) {
                             .sweep = 0x2070 };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The scans of InitPlayer walk the module a word at a time and read on into memory when the pattern is not there. A
 // scan that does not find its pattern inside the module fails the open.
 
@@ -168,8 +145,6 @@ static bool scan_word(const uint8_t* data, uint32_t size, uint32_t* pos, uint16_
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool scan_long_either(const uint8_t* data, uint32_t size, uint32_t* pos, uint32_t a, uint32_t b) {
     for (; size >= 4 && *pos <= size - 4; *pos += 2) {
         const uint32_t value = nuade_read_be32(data + *pos);
@@ -180,13 +155,10 @@ static bool scan_long_either(const uint8_t* data, uint32_t size, uint32_t* pos, 
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool scan_long(const uint8_t* data, uint32_t size, uint32_t* pos, uint32_t value) {
     return scan_long_either(data, size, pos, value, value);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2: the code starts within CHECK_WINDOW bytes with `andi.b #1,abs.l; bne.s x; rts`, and what the branch leads to
 // is either `moveq #0,d4; move.b abs.l,d4` or four `tst.b abs.l` blocks (voice enable flags) before it.
 
@@ -219,7 +191,6 @@ static bool check_code(const uint8_t* data, uint32_t size) {
     return target <= size - 4 && nuade_read_be32(data + target) == INSTRUCTION_MOVEQ_0_D4_MOVE_B_ABS;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The songs of the table: entries of SONG_ENTRY_SIZE bytes that have the voice slot 12, up to the first one whose four
 // track lists are the same.
 
@@ -237,7 +208,6 @@ static uint32_t count_songs(const JtModule* m) {
     return count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The offset of a table from the absolute address that the code loads it from; false when it is not in the module.
 
 static bool table_offset(const JtModule* m, uint32_t address, uint32_t* out) {
@@ -245,7 +215,6 @@ static bool table_offset(const JtModule* m, uint32_t address, uint32_t* out) {
     return *out != JT_NO_OFFSET;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The voices restart at the track positions of the code's four `move.b #pos,abs.l`, if it has them behind the compare.
 
 static bool read_restart_positions(JtModule* m, uint32_t compare) {
@@ -265,7 +234,6 @@ static bool read_restart_positions(JtModule* m, uint32_t compare) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer: every table is found by the instruction that loads it, the later scans continuing behind the earlier
 // matches.
 
@@ -320,8 +288,6 @@ static bool locate_tables(JtModule* m) {
     return m->song_count > 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool jt_probe(const uint8_t* data, size_t size) {
     if (size > INT32_MAX || !check_code(data, (uint32_t)size)) {
         return false;
@@ -330,7 +296,6 @@ bool jt_probe(const uint8_t* data, size_t size) {
     return locate_tables(&m);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer clears the first byte of the branch target behind the first rts of the code (a branch that is not the
 // usual `bne.s` over the rts).
 
@@ -348,8 +313,6 @@ static void patch_first_branch_target(JtModule* m) {
         m->data[target] = 0;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 JtPlayer* jt_create(const uint8_t* data, size_t size) {
     if (!jt_probe(data, size)) {
@@ -369,8 +332,6 @@ JtPlayer* jt_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void jt_destroy(JtPlayer* player) {
     if (player == nullptr) {
         return;
@@ -379,13 +340,9 @@ void jt_destroy(JtPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int jt_subsong_count(const JtPlayer* player) {
     return (int)player->module.song_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int jt_ticks_per_step(const JtPlayer* player, int subsong) {
     JtSong song;

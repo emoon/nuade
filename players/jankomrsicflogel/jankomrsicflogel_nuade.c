@@ -10,14 +10,10 @@
 
 #define JMF_TEXT_BYTES 256
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe jankomrsicflogel_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return jmf_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult jankomrsicflogel_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -35,27 +31,19 @@ static NuadePlayerOpenResult jankomrsicflogel_open(const NuadeSongSource* source
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void jankomrsicflogel_close(void* user_data) {
     jmf_destroy((JmfPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool jankomrsicflogel_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return jmf_start((JmfPlayer*)user_data, subsong, voices);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult jankomrsicflogel_tick(void* user_data, NuadeVoices* voices) {
     const JmfTickResult tick = jmf_tick((JmfPlayer*)user_data, voices);
     return (NuadeTickResult) { .length = JMF_TICK_LENGTH, .flags = tick.looped ? NuadeTick_Looped : NuadeTick_None };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void jankomrsicflogel_metadata(void* user_data, const NuadeMetadataSink* sink) {
     const JmfPlayer* player = (const JmfPlayer*)user_data;
@@ -75,8 +63,6 @@ static void jankomrsicflogel_metadata(void* user_data, const NuadeMetadataSink* 
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t jankomrsicflogel_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const JmfPlayer* player = (const JmfPlayer*)user_data;
     const uint32_t n = cap < JMF_VOICES ? cap : JMF_VOICES;
@@ -86,14 +72,10 @@ static uint32_t jankomrsicflogel_voice_info(void* user_data, NuadeVoiceInfo* out
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t jankomrsicflogel_grid_ticks(void* user_data, uint32_t subsong) {
     (void)subsong;
     return jmf_grid_ticks((const JmfPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_jankomrsicflogel = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -110,8 +92,6 @@ const NuadePlayer nuade_player_jankomrsicflogel = {
     .voice_info = jankomrsicflogel_voice_info,
     .grid_ticks = jankomrsicflogel_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 JmfPlayer* jmf_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_jankomrsicflogel) {

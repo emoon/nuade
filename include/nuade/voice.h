@@ -1,10 +1,9 @@
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // nuade voice interface: what a tick player tells the framework. Plain units, nothing here is Amiga hardware.
 //
 // A player calls these from `start` and `tick`. The framework mixes the voices between ticks, so a call takes effect at
 // the output frame where its tick starts. Voice state (pitch, volume, pan) stays until it is set again, like Paula's
 // registers.
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 

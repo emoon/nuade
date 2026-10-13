@@ -82,32 +82,23 @@ static const uint8_t k_idle_script_16[] = { 0x00, 0x0F, 0x00, 0x00, 0x00, 0x13, 
 static const uint8_t k_idle_script_realms[]
     = { 0x00, 0x18, 0x00, 0x00, 0x00, 0x48, 0x00, 0x1C, 0x00, 0x00, 0x00, 0x00 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Memory image
 
 uint8_t jp_u8(const JpMemory* mem, uint32_t address) {
     return address < mem->size ? mem->data[address] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t jp_u16(const JpMemory* mem, uint32_t address) {
     return (uint16_t)(jp_u8(mem, address) << 8 | jp_u8(mem, address + 1));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int16_t jp_s16(const JpMemory* mem, uint32_t address) {
     return (int16_t)jp_u16(mem, address);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t jp_u32(const JpMemory* mem, uint32_t address) {
     return (uint32_t)jp_u16(mem, address) << 16 | jp_u16(mem, address + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool jp_store_u8(JpMemory* mem, uint32_t address, uint8_t value) {
     if (address >= mem->size) {
@@ -117,19 +108,14 @@ bool jp_store_u8(JpMemory* mem, uint32_t address, uint8_t value) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool jp_store_u16(JpMemory* mem, uint32_t address, uint16_t value) {
     return jp_store_u8(mem, address, (uint8_t)(value >> 8)) && jp_store_u8(mem, address + 1, (uint8_t)value);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool jp_store_u32(JpMemory* mem, uint32_t address, uint32_t value) {
     return jp_store_u16(mem, address, (uint16_t)(value >> 16)) && jp_store_u16(mem, address + 2, (uint16_t)value);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Table entries. Realms keeps absolute 32-bit pointers and whole words; the other two keep signed 16-bit offsets from a
 // base and use the low byte of a word.
 
@@ -140,14 +126,11 @@ uint32_t jp_table_pointer(const JpPlayer* player, uint32_t table, uint32_t base,
     return base + (uint32_t)(int32_t)jp_s16(&player->mem, table + index * WORD_SIZE);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t jp_table_value(const JpPlayer* player, uint32_t table, uint32_t index) {
     const uint16_t value = jp_u16(&player->mem, table + index * WORD_SIZE);
     return player->format == JpFormat_Realms ? value : (uint16_t)(value & JP_BYTE_MASK);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module as the eagleplayer's check and InitPlayer see it: a copy with the repairs applied and its layout.
 
 typedef struct Module {
@@ -156,7 +139,6 @@ typedef struct Module {
     JpLayout layout;
 } Module;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The header of a Graftgold or Virocop module.
 
 typedef struct Header {
@@ -172,7 +154,6 @@ typedef struct Header {
     uint16_t length; // the module's length
 } Header;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // DTP_Check2 for the first two formats: reads the header and applies the eagleplayer's checks. The eagleplayer compares
 // the words as signed numbers; a word with the top bit set would be a negative offset, which no module has, so the
 // check refuses those.
@@ -210,15 +191,12 @@ static bool read_header(const JpMemory* mem, Header* header) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool realms_header_ok(const JpMemory* mem) {
     return mem->size >= REALMS_MIN_SIZE && jp_u16(mem, 0) == 0 && jp_u32(mem, REALMS_ZERO_LONG) == 0
            && jp_u32(mem, REALMS_INSTRUMENT_TABLE) == REALMS_FIRST_SCRIPT
            && jp_u32(mem, REALMS_MAGIC_1_AT) == REALMS_MAGIC_1 && jp_u32(mem, REALMS_MAGIC_2_AT) == REALMS_MAGIC_2;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Graftgold patterns start with a byte whose low nibble is F, the Virocop ones do not.
 
 static JpFormat detect_format(const JpMemory* mem, const Header* header) {
@@ -229,7 +207,6 @@ static JpFormat detect_format(const JpMemory* mem, const Header* header) {
     return flagged ? JpFormat_Graftgold : JpFormat_Virocop;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer's repairs of known modules. Every write is bounded; a module too short for it is left alone.
 
 static void repair_byte(JpMemory* mem, uint32_t module_length, uint32_t length, uint32_t offset) {
@@ -238,7 +215,6 @@ static void repair_byte(JpMemory* mem, uint32_t module_length, uint32_t length, 
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Realms "ingame" has one track list per voice and subsong with several loop words in it; the eagleplayer cuts every
 // such list at the loop words and gives each cut a subsong of its own: the end word goes in place of the loop word and
 // the next subsong's table entries point behind it.
@@ -269,7 +245,6 @@ static void repair_realms_ingame(JpMemory* mem) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tables of the Graftgold / Virocop header.
 
 static bool layout_graftgold(const JpMemory* mem, const Header* header, JpLayout* layout) {
@@ -298,8 +273,6 @@ static bool layout_graftgold(const JpMemory* mem, const Header* header, JpLayout
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool layout_realms(const JpMemory* mem, JpLayout* layout) {
     layout->instrument_table = REALMS_INSTRUMENT_TABLE;
     layout->speed_table = REALMS_SPEED_TABLE;
@@ -323,8 +296,6 @@ static bool layout_realms(const JpMemory* mem, JpLayout* layout) {
     layout->subsongs = subsongs;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool module_read(Module* module, const uint8_t* data, size_t size) {
     if (size > MAX_MODULE_SIZE) {
@@ -358,14 +329,10 @@ static bool module_read(Module* module, const uint8_t* data, size_t size) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void module_free(Module* module) {
     free(module->mem.data);
     *module = (Module) { 0 };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool jp_module_probe(const uint8_t* data, size_t size) {
     Module module = { 0 };
@@ -374,7 +341,6 @@ bool jp_module_probe(const uint8_t* data, size_t size) {
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ExtLoad: the sample file has the song's name with its "jpn" prefix replaced by "smp" ("jpn.name" -> "smp.name"), or
 // "jpnd.name" -> "jpns.name", in the song's directory. The suffix forms are handled the same way: "name.jpn" ->
 // "name.smp", "name.jpnd" -> "name.jpns".
@@ -411,8 +377,6 @@ static bool sample_file_name(const char* path, char* name, size_t name_size) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeIoReadResult read_sample_file(const char* path, const NuadeIo* io) {
     NuadeIoReadResult none = { 0 };
     char dir[1024] = { 0 };
@@ -431,7 +395,6 @@ static NuadeIoReadResult read_sample_file(const char* path, const NuadeIo* io) {
     return file;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Where every sample starts. Graftgold and Virocop cut the sample file by the module's table of lengths (Virocop uses
 // the first 32); Realms has the offsets of the samples in the module, relative to the first.
 
@@ -456,7 +419,6 @@ static bool resolve_samples(const JpMemory* module, JpFormat format, JpLayout* l
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The image: module, the idle script and the silent word (the replayer's own memory, out of reach of any sample
 // address), then the sample file. Returns false when memory is out (the sample file is at most MAX_SAMPLE_FILE_SIZE).
 
@@ -482,8 +444,6 @@ static bool build_image(JpPlayer* player, const Module* module, const NuadeIoRea
     player->empty_buffer = empty_at;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 JpStatus jp_module_load(JpPlayer* player, const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
     Module module = { 0 };
@@ -521,15 +481,11 @@ JpStatus jp_module_load(JpPlayer* player, const uint8_t* data, size_t size, cons
     return status;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void jp_module_free(JpPlayer* player) {
     free(player->mem.data);
     free(player->pristine);
     free(player->layout.sample_start);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void jp_module_reset(JpPlayer* player) {
     memcpy(player->mem.data, player->pristine, player->mem.size);

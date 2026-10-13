@@ -7,14 +7,10 @@
 #include <nuade/players/dariuszendeh.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe dariuszendeh_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return dz_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult dariuszendeh_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -32,20 +28,14 @@ static NuadePlayerOpenResult dariuszendeh_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void dariuszendeh_close(void* user_data) {
     dz_destroy((DzPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool dariuszendeh_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return dz_start((DzPlayer*)user_data, (int)subsong, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult dariuszendeh_tick(void* user_data, NuadeVoices* voices) {
     const DzTickResult tick = dz_tick((DzPlayer*)user_data, voices);
@@ -59,15 +49,11 @@ static NuadeTickResult dariuszendeh_tick(void* user_data, NuadeVoices* voices) {
     return (NuadeTickResult) { .length = DZ_TICK_LENGTH, .flags = flags };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void dariuszendeh_metadata(void* user_data, const NuadeMetadataSink* sink) {
     char format[48];
     snprintf(format, sizeof(format), "Darius Zendeh Mod - type: %c", dz_version((const DzPlayer*)user_data));
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, format);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t dariuszendeh_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const DzPlayer* player = (const DzPlayer*)user_data;
@@ -79,15 +65,11 @@ static uint32_t dariuszendeh_voice_info(void* user_data, NuadeVoiceInfo* out, ui
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t dariuszendeh_grid_ticks(void* user_data, uint32_t subsong) {
     (void)user_data;
     (void)subsong;
     return DZ_TICKS_PER_ROW;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_dariuszendeh = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -104,8 +86,6 @@ const NuadePlayer nuade_player_dariuszendeh = {
     .voice_info = dariuszendeh_voice_info,
     .grid_ticks = dariuszendeh_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DzPlayer* dz_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_dariuszendeh) {

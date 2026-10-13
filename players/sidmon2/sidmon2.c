@@ -9,9 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tables
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static const uint16_t s_periods[]
     = { 0,    5760, 5424, 5120, 4832, 4560, 4304, 4064, 3840, 3616, 3424, 3232, 3048, 2880, 2712,
@@ -22,9 +20,7 @@ static const uint16_t s_periods[]
 
 #define PERIODS_COUNT (sizeof(s_periods) / sizeof(s_periods[0]))
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Types
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // One row of a track: note 0 = none, instrument 0 = keep the voice's, effect 0 = none.
 typedef struct TrackRow {
@@ -34,15 +30,11 @@ typedef struct TrackRow {
     uint16_t effect_arg;
 } TrackRow;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Byte-reading helpers
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t read_u8(const uint8_t* data, size_t* pos) {
     return data[(*pos)++];
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t read_be16(const uint8_t* data, size_t* pos) {
     uint16_t val = (uint16_t)((data[*pos] << 8) | data[*pos + 1]);
@@ -50,13 +42,9 @@ static uint16_t read_be16(const uint8_t* data, size_t* pos) {
     return val;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int16_t read_be16_signed(const uint8_t* data, size_t* pos) {
     return (int16_t)read_be16(data, pos);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t read_be32(const uint8_t* data, size_t* pos) {
     uint32_t val = ((uint32_t)data[*pos] << 24) | ((uint32_t)data[*pos + 1] << 16) | ((uint32_t)data[*pos + 2] << 8)
@@ -65,15 +53,11 @@ static uint32_t read_be32(const uint8_t* data, size_t* pos) {
     return val;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int32_t read_be32_signed(const uint8_t* data, size_t* pos) {
     return (int32_t)read_be32(data, pos);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Module parsing
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // True when [offset, offset + length) lies inside a buffer of `size` bytes (no 32-bit wrap).
 static bool range_in_bounds(uint32_t offset, uint32_t length, size_t size) {
@@ -87,8 +71,6 @@ bool sd2_probe(const uint8_t* data, size_t size) {
     // Check "SIDMON II - THE MIDI VERSION" at offset 58
     return memcmp(data + 58, "SIDMON II - THE MIDI VERSION", 28) == 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool load_single_list_u8(const uint8_t* data, size_t size, uint32_t offset, uint32_t length, uint8_t*** out_list,
                                 int32_t* out_count) {
@@ -117,8 +99,6 @@ static bool load_single_list_u8(const uint8_t* data, size_t size, uint32_t offse
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool load_single_list_i8(const uint8_t* data, size_t size, uint32_t offset, uint32_t length, int8_t*** out_list,
                                 int32_t* out_count) {
     if ((length % 16) != 0 || !range_in_bounds(offset, length, size)) {
@@ -145,8 +125,6 @@ static bool load_single_list_i8(const uint8_t* data, size_t size, uint32_t offse
     *out_count = (int32_t)count;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool load_sequences(const uint8_t* data, size_t size, uint32_t pos_offset, uint32_t pos_length,
                            uint32_t note_offset, uint32_t note_length, uint32_t inst_offset, uint32_t inst_length,
@@ -181,8 +159,6 @@ static bool load_sequences(const uint8_t* data, size_t size, uint32_t pos_offset
     *out_sequences = seqs;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool load_tracks(const uint8_t* data, size_t size, uint32_t table_offset, uint32_t table_length,
                         uint32_t tracks_offset, uint32_t tracks_length, Sd2Track** out_tracks, int32_t* out_count,
@@ -251,8 +227,6 @@ static bool load_tracks(const uint8_t* data, size_t size, uint32_t table_offset,
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 #define INSTRUMENT_SIZE 32
 
 static Sd2Instrument parse_instrument(const uint8_t* b) {
@@ -281,8 +255,6 @@ static Sd2Instrument parse_instrument(const uint8_t* b) {
     };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool load_instruments(const uint8_t* data, size_t size, uint32_t offset, uint32_t length,
                              Sd2Instrument** out_instruments, int32_t* out_count) {
     if ((length % INSTRUMENT_SIZE) != 0) {
@@ -306,8 +278,6 @@ static bool load_instruments(const uint8_t* data, size_t size, uint32_t offset, 
     *out_count = (int32_t)count;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool load_samples(const uint8_t* data, size_t size, uint32_t sample_offset, uint16_t num_samples,
                          uint32_t info_offset, uint32_t info_length, Sd2Sample** out_samples,
@@ -395,8 +365,6 @@ static bool load_samples(const uint8_t* data, size_t size, uint32_t sample_offse
     *out_negate = negates;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool sd2_parse(Sd2Module* mod, const uint8_t* data, size_t size) {
     if (!sd2_probe(data, size)) {
@@ -501,9 +469,7 @@ static bool sd2_parse(Sd2Module* mod, const uint8_t* data, size_t size) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Voice rendering helpers
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeSample s8_sample(const int8_t* data, uint32_t length, uint32_t loop_start, uint32_t loop_length) {
     return (NuadeSample) { .data = data,
@@ -512,8 +478,6 @@ static NuadeSample s8_sample(const int8_t* data, uint32_t length, uint32_t loop_
                            .loop_start = loop_start,
                            .loop_length = loop_length };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Restarts the channel; a loop of two bytes or less is no loop.
 static void voice_render_play_sample(Sd2VoiceRender* vr, const int8_t* sample_data, uint32_t length,
@@ -535,8 +499,6 @@ static void voice_render_play_sample(Sd2VoiceRender* vr, const int8_t* sample_da
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Takes over at the end of the playing sample, starting at `offset`, and loops there when longer than two bytes.
 static void voice_render_set_sample(Sd2VoiceRender* vr, const int8_t* sample_data, uint32_t offset, uint32_t length) {
     static const int8_t silence[1] = { 0 };
@@ -546,8 +508,6 @@ static void voice_render_set_sample(Sd2VoiceRender* vr, const int8_t* sample_dat
     vr->queue_pending = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void voice_render_mute(Sd2VoiceRender* vr) {
     vr->active = false;
     vr->volume = 0;
@@ -555,9 +515,7 @@ static void voice_render_mute(Sd2VoiceRender* vr) {
     vr->queue_pending = false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Player state init
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The player indexes the instrument table with a byte and does not check it; past the table it reads the rest
 // of the module and, past that, zeros.
@@ -574,8 +532,6 @@ static Sd2Instrument* select_instrument(Sd2Module* mod, Sd2VoiceInfo* vi, uint8_
     vi->unmapped_instrument = parse_instrument(raw);
     return &vi->unmapped_instrument;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The bytes of a sequence entry's track as the player reads them; none for a track that does not exist.
 static void track_bytes(const Sd2Module* mod, const Sd2Sequence* seq, const uint8_t** data, uint32_t* length) {
@@ -594,8 +550,6 @@ static void track_bytes(const Sd2Module* mod, const Sd2Sequence* seq, const uint
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void find_note(Sd2Module* mod, Sd2VoiceInfo* vi) {
     Sd2Sequence* seq = &mod->sequences[0]; // base for this channel
     // Find correct sequence for this channel
@@ -610,8 +564,6 @@ static void find_note(Sd2Module* mod, Sd2VoiceInfo* vi) {
     vi->instrument_transpose = seq->instrument_transpose;
     vi->empty_notes_counter = 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void init_sound(Sd2Module* mod) {
     mod->current_position = 0;
@@ -658,9 +610,7 @@ static void init_sound(Sd2Module* mod) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Note and voice processing
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // One row of a track as the player reads it. `empty_notes` counts the empty rows still owed by a run.
 static TrackRow read_track_row(const uint8_t* track_data, int32_t length, int32_t* position, uint16_t* empty_notes) {
@@ -730,7 +680,6 @@ static TrackRow read_track_row(const uint8_t* track_data, int32_t length, int32_
     }
     return row;
 }
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void get_note2(Sd2VoiceInfo* vi) {
     const TrackRow row = read_track_row(vi->current_track, (int32_t)vi->current_track_length, &vi->track_position,
@@ -741,8 +690,6 @@ static void get_note2(Sd2VoiceInfo* vi) {
     vi->current_effect_arg = row.effect_arg;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void get_note(Sd2VoiceInfo* vi) {
     get_note2(vi);
 
@@ -750,8 +697,6 @@ static void get_note(Sd2VoiceInfo* vi) {
         vi->current_note = (uint16_t)(vi->current_note + vi->note_transpose);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void play_voice(Sd2Module* mod, Sd2VoiceInfo* vi, Sd2VoiceRender* vr) {
     vi->pitch_bend_value = 0;
@@ -817,9 +762,7 @@ static void play_voice(Sd2Module* mod, Sd2VoiceInfo* vi, Sd2VoiceRender* vr) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Effect processing
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void do_adsr_curve(Sd2VoiceInfo* vi, Sd2VoiceRender* vr) {
     Sd2Instrument* inst = vi->instrument;
@@ -875,8 +818,6 @@ static void do_adsr_curve(Sd2VoiceInfo* vi, Sd2VoiceRender* vr) {
     vr->volume = vol;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void do_waveform(Sd2Module* mod, Sd2VoiceInfo* vi, Sd2VoiceRender* vr) {
     Sd2Instrument* inst = vi->instrument;
 
@@ -915,8 +856,6 @@ static void do_waveform(Sd2Module* mod, Sd2VoiceInfo* vi, Sd2VoiceRender* vr) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void do_arpeggio(Sd2Module* mod, Sd2VoiceInfo* vi) {
     Sd2Instrument* inst = vi->instrument;
 
@@ -943,8 +882,6 @@ static void do_arpeggio(Sd2Module* mod, Sd2VoiceInfo* vi) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void do_vibrato(Sd2Module* mod, Sd2VoiceInfo* vi) {
     Sd2Instrument* inst = vi->instrument;
 
@@ -968,8 +905,6 @@ static void do_vibrato(Sd2Module* mod, Sd2VoiceInfo* vi) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void do_pitch_bend(Sd2VoiceInfo* vi) {
     Sd2Instrument* inst = vi->instrument;
 
@@ -981,8 +916,6 @@ static void do_pitch_bend(Sd2VoiceInfo* vi) {
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void do_note_slide(Sd2VoiceInfo* vi) {
     if (vi->current_effect != 0 && vi->current_effect < 0x70 && vi->current_effect_arg != 0) {
@@ -1020,8 +953,6 @@ static void do_note_slide(Sd2VoiceInfo* vi) {
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void do_sound_tracker(Sd2Module* mod, Sd2VoiceInfo* vi, Sd2VoiceRender* vr) {
     uint16_t effect = vi->current_effect;
@@ -1117,8 +1048,6 @@ static void do_sound_tracker(Sd2Module* mod, Sd2VoiceInfo* vi, Sd2VoiceRender* v
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void do_effect(Sd2Module* mod, Sd2VoiceInfo* vi, Sd2VoiceRender* vr) {
     do_adsr_curve(vi, vr);
     do_waveform(mod, vi, vr);
@@ -1140,16 +1069,13 @@ static void do_effect(Sd2Module* mod, Sd2VoiceInfo* vi, Sd2VoiceRender* vr) {
     vr->period = vi->sample_period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Sd2Sample negation
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // A 32-bit add that wraps, as the 68000 add.l does (a damaged file can start the position near INT32_MAX).
 
 static int32_t add_wrapping(int32_t a, int32_t b) {
     return (int32_t)((uint32_t)a + (uint32_t)b);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void do_negation(Sd2Module* mod) {
     Sd2SampleNegateInfo* working[4];
@@ -1212,9 +1138,7 @@ static void do_negation(Sd2Module* mod) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tick function
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool player_tick(Sd2Module* mod) {
     bool looped = false;
@@ -1267,9 +1191,7 @@ static bool player_tick(Sd2Module* mod) {
     return looped;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Voices
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Hand the registers the tick wrote to the voice. Paula channels 0 and 3 are left, 1 and 2 right.
 static void sync_voice(Sd2Module* mod, uint32_t channel) {
@@ -1296,8 +1218,6 @@ static void sync_voice(Sd2Module* mod, uint32_t channel) {
     nuade_voice_set_pan(mod->nuade_voices, channel, (channel == 0 || channel == 3) ? -1.0f : 1.0f);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sd2_tick(Sd2Module* mod) {
     if (mod == nullptr || mod->nuade_voices == nullptr) {
         return false;
@@ -1317,9 +1237,7 @@ bool sd2_tick(Sd2Module* mod) {
     return looped;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Player create/destroy
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Sd2Module* sd2_create(const uint8_t* data, size_t size) {
     if (data == nullptr || size == 0) {
@@ -1343,8 +1261,6 @@ Sd2Module* sd2_create(const uint8_t* data, size_t size) {
     init_sound(mod);
     return mod;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void sd2_destroy(Sd2Module* mod) {
     if (mod == nullptr) {
@@ -1389,9 +1305,7 @@ void sd2_destroy(Sd2Module* mod) {
     free(mod);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Public API
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int sd2_subsong_count(const Sd2Module* mod) {
     if (mod == nullptr) {
@@ -1399,8 +1313,6 @@ int sd2_subsong_count(const Sd2Module* mod) {
     }
     return 1;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sd2_start(Sd2Module* mod, int subsong, NuadeVoices* voices) {
     if (mod == nullptr || voices == nullptr || subsong != 0) {
@@ -1411,8 +1323,6 @@ bool sd2_start(Sd2Module* mod, int subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int sd2_channel_count(const Sd2Module* mod) {
     if (mod == nullptr) {
         return 0;
@@ -1420,9 +1330,7 @@ int sd2_channel_count(const Sd2Module* mod) {
     return 4;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Sd2Track editing API
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Decoded cell for internal use
 typedef struct DecodedCell {
@@ -1693,9 +1601,7 @@ void sd2_set_cell(Sd2Module* mod, int track_idx, int row, int note, int instrume
     trk->edited = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Sd2Instrument preview API
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int sd2_get_instrument_count(const Sd2Module* mod) {
     if (mod == nullptr)
@@ -1791,9 +1697,7 @@ void sd2_preview_note_off(Sd2Module* mod) {
     voice_render_mute(vr);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Serialize module to binary
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void write_u8(uint8_t* buf, uint32_t* pos, uint8_t val) {
     buf[(*pos)++] = val;
@@ -2092,9 +1996,7 @@ uint32_t sd2_serialize(const Sd2Module* mod, uint8_t** out_data) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Display
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The note column value of a period table index (semitones from C-0, less the column's octave shift); -1 outside the
 // table.

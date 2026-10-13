@@ -9,7 +9,6 @@
 #include <nuade/players/kimchristensen.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer finds its songs by the "kim" prefix or suffix only: the data check is too loose to claim a file.
 
 static NuadeProbe kimchristensen_probe(const uint8_t* data, size_t size, const char* filename) {
@@ -23,8 +22,6 @@ static NuadeProbe kimchristensen_probe(const uint8_t* data, size_t size, const c
     kim_destroy(player);
     return NuadeProbe_Supported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult kimchristensen_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -41,13 +38,9 @@ static NuadePlayerOpenResult kimchristensen_open(const NuadeSongSource* source) 
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void kimchristensen_close(void* user_data) {
     kim_destroy((KimPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool kimchristensen_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)subsong;
@@ -55,21 +48,15 @@ static bool kimchristensen_start(void* user_data, uint32_t subsong, uint32_t sam
     return kim_start((KimPlayer*)user_data, voices);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult kimchristensen_tick(void* user_data, NuadeVoices* voices) {
     const KimTickResult tick = kim_tick((KimPlayer*)user_data, voices);
     return (NuadeTickResult) { .length = KIM_TICK_LENGTH, .flags = tick.looped ? NuadeTick_Looped : NuadeTick_None };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void kimchristensen_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Kim Christensen");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t kimchristensen_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const KimPlayer* player = (const KimPlayer*)user_data;
@@ -81,14 +68,10 @@ static uint32_t kimchristensen_voice_info(void* user_data, NuadeVoiceInfo* out, 
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t kimchristensen_grid_ticks(void* user_data, uint32_t subsong) {
     (void)subsong;
     return kim_grid_ticks((const KimPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_kimchristensen = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -105,8 +88,6 @@ const NuadePlayer nuade_player_kimchristensen = {
     .voice_info = kimchristensen_voice_info,
     .grid_ticks = kimchristensen_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 KimPlayer* kim_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_kimchristensen) {

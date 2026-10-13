@@ -18,7 +18,6 @@
 #define SDR_WAVE_WORDS (SDR_WAVE_BYTES / 2)
 #define SDR_WAVE_PRESETS 16
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The memory the replayer addresses. UADE loads the module at SDR_MODULE_BASE and the sample file behind it; the rest
 // of the chip memory the song can reach is zero, except UADE's own data below the module. A read there is something
 // this port does not model: it sets `stray`, and a module whose playback does that is refused.
@@ -34,7 +33,6 @@ uint32_t sdr_u32(SdrMemory* memory, uint32_t offset);
 // Memory outside the sample file is zero.
 const int8_t* sdr_sample_pointer(SdrMemory* memory, uint32_t offset, uint16_t length_words);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Module records (sdr_module.c)
 
 SdrHeader sdr_read_header(SdrMemory* memory);
@@ -66,7 +64,6 @@ bool sdr_load_samples(SdrMemory* memory, const char* path, const NuadeIo* io);
 bool sdr_check_module(SdrMemory* memory);
 uint32_t sdr_sample_base(uint32_t module_size);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer's tables (sdr_tables.c)
 
 typedef enum SdrRomTable {
@@ -81,7 +78,6 @@ uint16_t sdr_rom_word(SdrRomTable table, int32_t offset, bool* stray);
 // A byte of waveform preset `index`: presets 0..15 are pulse waves.
 int8_t sdr_wave_preset_byte(uint32_t index, uint32_t position, bool* stray);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tick of one voice, and the proof (sdr_proof.c) that the whole song only reads memory the port models.
 
 void sdr_voice_tick(SdrPlayer* player, int voice);

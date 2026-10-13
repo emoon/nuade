@@ -7,8 +7,6 @@
 #define MAX_SUBSONGS 256 // the driver takes the subsong number as a byte
 #define MAX_STRING 255
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 CdCreateResult cd_create(const uint8_t* data, size_t size) {
     CdPlayer* player = calloc(1, sizeof(*player));
     if (player == nullptr) {
@@ -21,8 +19,6 @@ CdCreateResult cd_create(const uint8_t* data, size_t size) {
     return (CdCreateResult) { .player = player, .status = CdStatus_Ok };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void cd_destroy(CdPlayer* player) {
     if (player == nullptr) {
         return;
@@ -31,14 +27,10 @@ void cd_destroy(CdPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int cd_subsong_count(const CdPlayer* player) {
     const uint32_t count = player->module.header.subsongs;
     return (int)(count < MAX_SUBSONGS ? count : MAX_SUBSONGS);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool cd_start(CdPlayer* player, int subsong, NuadeVoices* voices) {
     if (player == nullptr || voices == nullptr || subsong < 0 || subsong >= cd_subsong_count(player)) {
@@ -51,8 +43,6 @@ bool cd_start(CdPlayer* player, int subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 CdTickResult cd_tick(CdPlayer* player, NuadeVoices* voices) {
     cd_driver_tick(player);
     bool any_active = false;
@@ -62,8 +52,6 @@ CdTickResult cd_tick(CdPlayer* player, NuadeVoices* voices) {
     }
     return (CdTickResult) { .looped = player->looped, .ended = !player->song_playing && !any_active };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void read_string(const CdMemory* m, uint32_t offset, char* out, size_t capacity) {
     size_t length = 0;
@@ -77,8 +65,6 @@ static void read_string(const CdMemory* m, uint32_t offset, char* out, size_t ca
     out[length] = '\0';
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 CdInfo cd_info(const CdPlayer* player) {
     CdInfo info = { 0 };
     const CdMemory* m = &player->module.memory;
@@ -88,8 +74,6 @@ CdInfo cd_info(const CdPlayer* player) {
     read_string(m, h->notice, info.notice, sizeof(info.notice));
     return info;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CdVoiceState cd_voice_state(const CdPlayer* player, int voice) {
     if (voice < 0 || voice >= CD_VOICES) {

@@ -36,8 +36,6 @@ typedef struct DlNewHeader {
     uint32_t marker;
 } DlNewHeader;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static DlNewHeader read_header(const DlImage* image) {
     DlCursor cursor = { .image = image, .address = 0 };
     DlNewHeader h;
@@ -48,22 +46,16 @@ static DlNewHeader read_header(const DlImage* image) {
     return h;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A list offset: a long whose high word is 0 and whose low word is positive, non-zero and even
 static bool is_list_offset(const DlImage* image, uint32_t at) {
     const uint16_t low = dli_u16(image, at + 2);
     return dli_u16(image, at) == 0 && low != 0 && (low & 0x8001) == 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The modules' sample records all have the looping state
 static bool is_looping_record(const DlImage* image, uint32_t record) {
     return dl_read_sample_record(image, record).state == DlSampleState_Looping;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The first pattern of a list starts with an envelope and a sample command (after an optional filter command): the
 // eagleplayer finds the first sample record there. Returns its address, or 0 if the pattern starts otherwise.
@@ -82,8 +74,6 @@ static uint32_t sample_record_of_pattern(const DlImage* image, uint32_t pattern)
     return dlc_u32(&cursor);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The eagleplayer's check walks the lists of the first subsong; if none starts with an envelope and a sample command it
 // goes on reading the longs after them as list offsets. Fails on the first malformed list.
 static bool find_first_sample_record(const DlImage* image, uint32_t lists, uint32_t* record) {
@@ -100,8 +90,6 @@ static bool find_first_sample_record(const DlImage* image, uint32_t lists, uint3
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The sample records of a module follow each other (looping state). The table starts at the lowest record of the run
 // that holds the one the check found; a record after a word other than the next pattern command (the end of a pattern)
 // and 0 is not part of it.
@@ -116,8 +104,6 @@ static uint32_t first_record_of_table(const DlImage* image, uint32_t found) {
     return before == DlCommandWord_NextPattern || before == 0 ? start : start + DL_SAMPLE_RECORD_SIZE;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t count_sample_records(const DlImage* image, uint32_t first) {
     uint32_t count = 0;
     for (uint32_t at = first; is_looping_record(image, at) && at < image->module_size; at += DL_SAMPLE_RECORD_SIZE) {
@@ -125,8 +111,6 @@ static uint32_t count_sample_records(const DlImage* image, uint32_t first) {
     }
     return count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The patched module (Beneath a Steel Sky) gets its fifth subsong to end: an end marker in the pattern lists of three
 // voices, each followed by a long 1
@@ -138,14 +122,10 @@ static void shorten_lists(DlImage* image) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Where the list offsets of the first subsong start
 static uint32_t first_lists(const DlNewHeader* header) {
     return header->table == HEADER_TABLE_FIRST && header->engine_flag != 0 ? HEADER_TABLE_FIRST : HEADER_TABLE_SECOND;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Subsongs of the first engine: the table is a run of longs below 0x10000 that are even and not 0, four per subsong
 static uint32_t count_first_engine_subsongs(const DlImage* image, uint32_t table) {
@@ -159,8 +139,6 @@ static uint32_t count_first_engine_subsongs(const DlImage* image, uint32_t table
     }
     return entries / DL_VOICES;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool dl_new_locate(DlImage* image, DlNewModule* module) {
     const DlNewHeader header = read_header(image);
@@ -195,8 +173,6 @@ bool dl_new_locate(DlImage* image, DlNewModule* module) {
     return module->subsong_count != 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 DlSubsong dl_new_subsong(const DlImage* image, const DlNewModule* module, uint32_t index) {
     DlSubsong subsong = { 0 };
     DlCursor cursor = { .image = image,
@@ -210,8 +186,6 @@ DlSubsong dl_new_subsong(const DlImage* image, const DlNewModule* module, uint32
     }
     return subsong;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DlVariant dl_new_variant(const DlNewModule* module) {
     static const DlCommand s_commands[]

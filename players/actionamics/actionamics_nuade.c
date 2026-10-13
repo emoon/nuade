@@ -16,15 +16,11 @@
 #define ACTIONAMICS_NOTE_BASE 2
 #define ACTIONAMICS_NOTE_SHIFT (-2)
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The signature string is specific enough to be sure.
 static NuadeProbe actionamics_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return act_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult actionamics_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -49,28 +45,20 @@ static NuadePlayerOpenResult actionamics_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void actionamics_close(void* user_data) {
     act_destroy((ActModule*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool actionamics_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return act_start((ActModule*)user_data, (int)subsong, voices);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult actionamics_tick(void* user_data, NuadeVoices* voices) {
     (void)voices;
     return (NuadeTickResult) { .length = ACT_TICK_LENGTH,
                                .flags = act_tick((ActModule*)user_data) ? NuadeTick_Looped : NuadeTick_None };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void actionamics_metadata(void* user_data, const NuadeMetadataSink* sink) {
     const ActModule* module = (const ActModule*)user_data;
@@ -84,8 +72,6 @@ static void actionamics_metadata(void* user_data, const NuadeMetadataSink* sink)
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadePositionResult actionamics_position(void* user_data) {
     const ActPosition p = act_position((const ActModule*)user_data);
     return (NuadePositionResult) { .valid = true,
@@ -96,8 +82,6 @@ static NuadePositionResult actionamics_position(void* user_data) {
                                                  .tick = (uint32_t)p.tick,
                                                  .speed = (uint32_t)p.speed } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t actionamics_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const ActModule* module = (const ActModule*)user_data;
@@ -113,8 +97,6 @@ static uint32_t actionamics_voice_info(void* user_data, NuadeVoiceInfo* out, uin
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The rows of the pattern a position asks for: the count it carries, else the initial one; none outside the song.
 static uint32_t actionamics_rows(const ActModule* module, const NuadePosition* at) {
     if ((int)at->order >= act_position_count(module)) {
@@ -122,8 +104,6 @@ static uint32_t actionamics_rows(const ActModule* module, const NuadePosition* a
     }
     return at->rows != 0 ? at->rows : ACTIONAMICS_ROWS;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTrackerInfoResult actionamics_tracker_info(void* user_data, const NuadePosition* at) {
     const uint32_t rows = actionamics_rows((const ActModule*)user_data, at);
@@ -139,8 +119,6 @@ static NuadeTrackerInfoResult actionamics_tracker_info(void* user_data, const Nu
                                                              { "fx", NuadeColumn_Hex, 2 },
                                                              { "arg", NuadeColumn_Hex, 2 } } } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePatternCell actionamics_cell(const void* ctx, uint32_t order, uint32_t channel, uint32_t row) {
     NuadePatternCell cell = nuade_cell_empty();
@@ -158,16 +136,12 @@ static NuadePatternCell actionamics_cell(const void* ctx, uint32_t order, uint32
     return cell;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t actionamics_tracker_cells(void* user_data, const NuadePosition* at, uint32_t channel, int32_t row_lo,
                                           int32_t row_hi, NuadePatternCell* out, uint32_t cap) {
     const ActModule* module = (const ActModule*)user_data;
     return nuade_tracker_fill(at, ACTIONAMICS_NUADE_VOICES, actionamics_rows(module, at), channel, row_lo, row_hi, out,
                               cap, actionamics_cell, module);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_actionamics = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -186,8 +160,6 @@ const NuadePlayer nuade_player_actionamics = {
     .tracker_info = actionamics_tracker_info,
     .tracker_cells = actionamics_tracker_cells,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ActModule* act_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_actionamics) {

@@ -214,21 +214,16 @@ typedef struct PnCpu {
 #define PN_STATUS_OVERFLOW 0x40u
 #define PN_STATUS_NEGATIVE 0x80u
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void pn_machine_reset(PnMachine* machine) {
     memset(machine, 0, sizeof(*machine));
     machine->random_sum = PN_RANDOM_SUM_SEED;
     machine->random_mix = PN_RANDOM_MIX_SEED;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t file_byte(const uint8_t* file, size_t size, size_t at) {
     return at < size ? file[at] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The segment loop of the eagleplayer: an optional 0xFFFF marker, the first and the last address, then the bytes; a
 // last address below the first one still loads one byte, and the address counter wraps at 64 KB. It stops when the file
 // is used up, which it only checks before a byte, so the header of a segment can run past the end.
@@ -256,13 +251,10 @@ void pn_machine_load(PnMachine* machine, const uint8_t* file, size_t size) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t pn_machine_u16(const PnMachine* machine, uint16_t address) {
     return (uint16_t)(machine->ram[address] | (machine->ram[(uint16_t)(address + 1)] << 8));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // RANDOM: one step of the eagleplayer's generator. The word it mixes in from $DFF014 is 0xFFFF on every read.
 
 static uint32_t random_step(PnMachine* machine) {
@@ -276,13 +268,10 @@ static uint32_t random_step(PnMachine* machine) {
     return value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t pn_machine_random_byte(PnMachine* machine) {
     return (uint8_t)random_step(machine);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A read of the hardware area $D000..$D7FF: RANDOM and VCOUNT are answered, the rest is the memory.
 
 static uint8_t hardware_read(PnMachine* machine, uint16_t address) {
@@ -299,13 +288,9 @@ static uint8_t hardware_read(PnMachine* machine, uint16_t address) {
     return machine->ram[address];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool is_hardware(uint16_t address) {
     return address >= PN_HW_FIRST && address <= PN_HW_LAST;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t fetch(const PnMachine* machine, PnCpu* cpu) {
     const uint8_t value = machine->ram[cpu->pc];
@@ -313,15 +298,12 @@ static uint8_t fetch(const PnMachine* machine, PnCpu* cpu) {
     return value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t fetch_word(const PnMachine* machine, PnCpu* cpu) {
     const uint8_t low = fetch(machine, cpu);
     const uint8_t high = fetch(machine, cpu);
     return (uint16_t)(low | (high << 8));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The address an instruction works on. The pointer of the indirect modes is read without the page wrap of the 6502.
 
 static uint16_t effective_address(const PnMachine* machine, PnCpu* cpu, PnMode mode) {
@@ -354,7 +336,6 @@ static uint16_t effective_address(const PnMachine* machine, PnCpu* cpu, PnMode m
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Loads from the absolute and indirect modes see RANDOM and VCOUNT; the zero page and immediate modes do not.
 
 static bool load_reads_hardware(PnMode mode) {
@@ -362,16 +343,12 @@ static bool load_reads_hardware(PnMode mode) {
            || mode == PnMode_IndirectY;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t read_operand(PnMachine* machine, PnCpu* cpu, PnMode mode) {
     if (mode == PnMode_Immediate) {
         return fetch(machine, cpu);
     }
     return machine->ram[effective_address(machine, cpu, mode)];
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t read_load_operand(PnMachine* machine, PnCpu* cpu, PnMode mode) {
     if (mode == PnMode_Immediate) {
@@ -384,14 +361,11 @@ static uint8_t read_load_operand(PnMachine* machine, PnCpu* cpu, PnMode mode) {
     return machine->ram[address];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void set_negative_zero(PnCpu* cpu, uint8_t value) {
     cpu->negative = (value & 0x80) != 0;
     cpu->zero = value == 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ADC and SBC: binary arithmetic. A zero result leaves Z as the last flag-setting instruction had it (see above).
 
 static void add_with_carry(PnCpu* cpu, uint8_t operand) {
@@ -405,8 +379,6 @@ static void add_with_carry(PnCpu* cpu, uint8_t operand) {
     cpu->zero = cpu->adc_zero;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void subtract_with_borrow(PnCpu* cpu, uint8_t operand) {
     const int32_t difference = (int32_t)cpu->a - operand - (cpu->carry ? 0 : 1);
     const uint8_t result = (uint8_t)difference;
@@ -418,7 +390,6 @@ static void subtract_with_borrow(PnCpu* cpu, uint8_t operand) {
     cpu->zero = cpu->adc_zero;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Flags of a compare, a shift or a rotate: N and Z of the result, and Z is what a later ADC or SBC falls back on.
 
 static void set_flags_with_snapshot(PnCpu* cpu, uint8_t result) {
@@ -426,22 +397,17 @@ static void set_flags_with_snapshot(PnCpu* cpu, uint8_t result) {
     cpu->adc_zero = cpu->zero;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void compare(PnCpu* cpu, uint8_t reg, uint8_t operand) {
     cpu->carry = reg >= operand;
     set_flags_with_snapshot(cpu, (uint8_t)(reg - operand));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // CMP, CPX and CPY with an absolute address also see RANDOM and VCOUNT.
 
 static void compare_absolute(PnMachine* machine, PnCpu* cpu, uint8_t reg) {
     const uint16_t address = fetch_word(machine, cpu);
     compare(cpu, reg, is_hardware(address) ? hardware_read(machine, address) : machine->ram[address]);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t shift(PnCpu* cpu, PnOp op, uint8_t value) {
     uint8_t result;
@@ -467,8 +433,6 @@ static uint8_t shift(PnCpu* cpu, PnOp op, uint8_t value) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void branch(const PnMachine* machine, PnCpu* cpu, bool taken) {
     const int8_t offset = (int8_t)fetch(machine, cpu);
     if (taken) {
@@ -476,7 +440,6 @@ static void branch(const PnMachine* machine, PnCpu* cpu, bool taken) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The stack. A push writes before it checks for the overflow, so the fault leaves the byte behind.
 
 static bool push(PnMachine* machine, PnCpu* cpu, uint8_t value) {
@@ -485,15 +448,11 @@ static bool push(PnMachine* machine, PnCpu* cpu, uint8_t value) {
     return cpu->sp >= PN_STACK_LOWEST;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t pop_byte(const PnMachine* machine, PnCpu* cpu) {
     const uint8_t value = machine->ram[(uint16_t)(PN_STACK_PAGE + 1 + cpu->sp)];
     cpu->sp++;
     return value;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // PHP also overwrites the original's snapshot of the condition codes, so Z in it is the Z of the moment.
 
@@ -503,7 +462,6 @@ static uint8_t status_byte(const PnCpu* cpu) {
                      | (cpu->zero ? PN_STATUS_ZERO : 0) | (cpu->carry ? PN_STATUS_CARRY : 0));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // PLP and RTI: bit 5 is always set; Z is the Z of the next ADC or SBC with a zero result as well.
 
 static void set_status(PnCpu* cpu, uint8_t status) {
@@ -518,14 +476,11 @@ static void set_status(PnCpu* cpu, uint8_t status) {
     cpu->adc_zero = cpu->zero;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void finish(PnCpu* cpu, PnRunResult result) {
     cpu->finished = true;
     cpu->result = result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A call of SETVBV with A = 6 or 7: X and Y are the high and low byte of the vector.
 
 static void set_vertical_blank(PnMachine* machine, const PnCpu* cpu) {
@@ -538,7 +493,6 @@ static void set_vertical_blank(PnMachine* machine, const PnCpu* cpu) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // RTS. The routine is finished when the stack holds less than a return address: there is nothing to return to.
 
 static void return_from_subroutine(const PnMachine* machine, PnCpu* cpu) {
@@ -551,8 +505,6 @@ static void return_from_subroutine(const PnMachine* machine, PnCpu* cpu) {
     cpu->pc = (uint16_t)(target + 1);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void return_from_interrupt(const PnMachine* machine, PnCpu* cpu) {
     set_status(cpu, pop_byte(machine, cpu));
     const uint16_t target = pn_machine_u16(machine, (uint16_t)(PN_STACK_PAGE + 1 + cpu->sp));
@@ -564,7 +516,6 @@ static void return_from_interrupt(const PnMachine* machine, PnCpu* cpu) {
     cpu->pc = target;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // JMP absolute. The operating system's vertical blank exits end the routine; SETVBV sets the vector and returns to the
 // caller of the routine.
 
@@ -580,7 +531,6 @@ static void jump_absolute(PnMachine* machine, PnCpu* cpu) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // JMP (pointer). The high byte of a pointer at the end of a page is read from the start of the same page.
 
 static void jump_indirect(PnMachine* machine, PnCpu* cpu) {
@@ -594,7 +544,6 @@ static void jump_indirect(PnMachine* machine, PnCpu* cpu) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // JSR pushes the address of its last byte. A call of SETVBV does what it does for the song and goes on.
 
 static void jump_subroutine(PnMachine* machine, PnCpu* cpu) {
@@ -614,15 +563,12 @@ static void jump_subroutine(PnMachine* machine, PnCpu* cpu) {
     cpu->pc = target;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void push_checked(PnMachine* machine, PnCpu* cpu, uint8_t value) {
     if (!push(machine, cpu, value)) {
         finish(cpu, PnRun_Fault);
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // PLA and PLP: popping past the stack's top is a fault, popping the one byte below it is not.
 
 static bool pop_checked(const PnMachine* machine, PnCpu* cpu, uint8_t* value) {
@@ -634,7 +580,6 @@ static bool pop_checked(const PnMachine* machine, PnCpu* cpu, uint8_t* value) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The operations that read an operand and combine it with the accumulator.
 
 static void accumulator_operation(PnMachine* machine, PnCpu* cpu, PnOp op, PnMode mode) {
@@ -659,8 +604,6 @@ static void accumulator_operation(PnMachine* machine, PnCpu* cpu, PnOp op, PnMod
     set_negative_zero(cpu, cpu->a);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void compare_operation(PnMachine* machine, PnCpu* cpu, PnOp op, PnMode mode) {
     const uint8_t reg = op == PnOp_Cmp ? cpu->a : (op == PnOp_Cpx ? cpu->x : cpu->y);
     if (mode == PnMode_Absolute) {
@@ -671,7 +614,6 @@ static void compare_operation(PnMachine* machine, PnCpu* cpu, PnOp op, PnMode mo
     compare(cpu, reg, operand);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ASL, LSR, ROL and ROR on the accumulator or on memory; INC and DEC on memory.
 
 static void memory_operation(PnMachine* machine, PnCpu* cpu, PnOp op, PnMode mode) {
@@ -694,8 +636,6 @@ static void memory_operation(PnMachine* machine, PnCpu* cpu, PnOp op, PnMode mod
     machine->ram[address] = result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void bit_test(PnMachine* machine, PnCpu* cpu, PnMode mode) {
     const uint8_t value = read_operand(machine, cpu, mode);
     cpu->overflow = (value & 0x40) != 0;
@@ -703,15 +643,11 @@ static void bit_test(PnMachine* machine, PnCpu* cpu, PnMode mode) {
     cpu->zero = (value & cpu->a) == 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void store(PnMachine* machine, PnCpu* cpu, PnOp op, PnMode mode) {
     const uint16_t address = effective_address(machine, cpu, mode);
     const uint8_t value = op == PnOp_Sta ? cpu->a : (op == PnOp_Stx ? cpu->x : cpu->y);
     machine->ram[address] = value;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void load(PnMachine* machine, PnCpu* cpu, PnOp op, PnMode mode) {
     const uint8_t value = read_load_operand(machine, cpu, mode);
@@ -720,14 +656,10 @@ static void load(PnMachine* machine, PnCpu* cpu, PnOp op, PnMode mode) {
     set_negative_zero(cpu, value);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void step_register(PnCpu* cpu, uint8_t* reg, int delta) {
     *reg = (uint8_t)(*reg + delta);
     set_negative_zero(cpu, *reg);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void transfer(PnCpu* cpu, PnOp op) {
     switch (op) {
@@ -756,8 +688,6 @@ static void transfer(PnCpu* cpu, PnOp op) {
             break;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void execute(PnMachine* machine, PnCpu* cpu, PnOpcode opcode) {
     const PnOp op = opcode.op;
@@ -907,7 +837,6 @@ static void execute(PnMachine* machine, PnCpu* cpu, PnOpcode opcode) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A routine starts with all flags clear, bit 5 of the status set, and the stack empty.
 
 PnRunResult pn_machine_run(PnMachine* machine, uint16_t pc, uint8_t a, uint8_t x, uint8_t y) {

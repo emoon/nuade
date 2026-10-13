@@ -67,7 +67,6 @@ typedef enum PshOldPatternCommand {
 
 const PshLayout* psh_layout(PshKind kind);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module as the player keeps it. `chip` is one allocation from nuade_paula_padded_copy: the module bytes, the two
 // bytes the voices' idle streams read, the replayer's own data hunk, and the zeros after them. Offsets name bytes of
 // it; a read of the module returns 0 outside the module and the idle stream bytes.
@@ -95,14 +94,12 @@ bool psh_order_action(const PshLayout* layout, uint16_t word, PshOrderAction* ac
 // The static walk of the song (psh_check.c): false when a voice reaches something the replayer does not define.
 bool psh_check_song(const PshModule* m);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer's state
 
 // One tick of one voice (psh_sequencer.c for PshKind_Short and PshKind_Long, psh_old.c for PshKind_Old).
 void psh_step_voice(PshPlayer* p, uint32_t channel);
 void psh_step_voice_old(PshPlayer* p, uint32_t channel);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the two sequencers do alike (psh_voice.c)
 
 void psh_volume_slide(PshVoice* v);

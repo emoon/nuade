@@ -24,7 +24,6 @@
 #define AH_MAX_VOLUME 64
 #define AH_VOLUME_MASK 0x7F // the eagleplayer's volume patch keeps 7 bits
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Bytes of the module or of the sample file: a read past the end is 0 (the driver would read whatever follows in
 // memory). `capacity` can be larger than `size`, so that a sample may start past the end of the file; the allocation
 // is a nuade_paula_padded_copy of `capacity` bytes, so any length can play from an AUDxLC up to `capacity`.
@@ -44,14 +43,12 @@ void ah_set_sample(const AhMemory* m, NuadePaulaChannel* paula, uint32_t offset,
 // AUDxVOL of a driver volume: the eagleplayer keeps 7 bits (the channel applies Paula's rule to them).
 uint8_t ah_paula_volume(unsigned volume);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Old family
 
 #define OLD_INSTRUMENT_SIZE 0x2C
 #define OLD_SONG_ENTRY_SIZE 16
 #define OLD_DEFAULT_MASTER 0x3F
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The instrument record at `offset` of the module.
 
 static inline AhOldInstrument ah_old_read_instrument(const AhMemory* m, uint32_t offset) {
@@ -84,7 +81,6 @@ static inline AhOldInstrument ah_old_read_instrument(const AhMemory* m, uint32_t
     };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // New family
 
 #define NEW_PERIOD_ROW_SIZE 0x48
@@ -92,7 +88,6 @@ static inline AhOldInstrument ah_old_read_instrument(const AhMemory* m, uint32_t
 #define NEW_DEFAULT_PHASE_LIMIT 6
 #define NEW_MAX_SUBSONG 0xFD // song numbers from 0xFE on are special modes of the driver, not songs
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Sample number `number` of the smp file.
 
 static inline AhNewSample ah_new_read_sample(const AhMemory* samples, uint8_t number) {
@@ -106,8 +101,6 @@ static inline AhNewSample ah_new_read_sample(const AhMemory* samples, uint8_t nu
         .period_row = ah_u16(samples, at + 14),
     };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Loader (ah_module.c)
 bool ah_old_locate(AhOld* old, const AhMemory* module);

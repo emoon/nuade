@@ -15,7 +15,6 @@
 #include "beathoven_internal.h"
 #include "nuade_tracker.h"
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Commands
 
 typedef enum CommandKind {
@@ -34,8 +33,6 @@ typedef struct Command {
     CommandKind kind;
     BthCommandWords words;
 } Command;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The command at the voice's stream position. Hold and arpeggio commands exist in the extended replayers, the note
 // offset command in one more; to the others they are notes.
@@ -63,14 +60,10 @@ static Command read_command(const BthPlayer* p, const BthVoice* v) {
     return c;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The value of a word the replayer uses
 static uint16_t word_value(const BthPlayer* p, const BthWord* word) {
     return word->in_module ? bthm_u16(&p->work, word->address) : word->constant;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The repeat registers: where a playing sample loops to. A voice that plays its instrument once or holds a note
 // repeats the silent sample.
@@ -84,8 +77,6 @@ static void write_repeat_registers(const BthPlayer* p, BthVoice* v) {
     bth_set_address(p, v, start, (uint16_t)((end - start) >> 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The command stream ended: the next track entry's stream. The entry whose stream address is 0 ends the track list.
 static void next_stream(const BthPlayer* p, BthVoice* v) {
     v->track += TRACK_ENTRY_BYTES;
@@ -96,8 +87,6 @@ static void next_stream(const BthPlayer* p, BthVoice* v) {
     v->command = entry.stream;
     v->note_base = entry.note_base;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The instrument command: the record's volume, sample and lengths
 static void set_instrument(const BthPlayer* p, BthVoice* v, const Command* command) {
@@ -114,14 +103,10 @@ static void set_instrument(const BthPlayer* p, BthVoice* v, const Command* comma
     v->instrument = bth_instrument_index(p, command->words.record, BTH_INSTRUMENT_BYTES);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The length of a note or command: its length word times the tempo, as a 16 bit product
 static uint16_t note_duration(const BthPlayer* p, const Command* command) {
     return (uint16_t)((uint32_t)command->words.operand * word_value(p, &p->replayer.tempo));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The period table entry of a note number: the table is indexed by the note, the track's note offset and the
 // module's, in 16 bits
@@ -132,8 +117,6 @@ static uint16_t table_period(const BthPlayer* p, const BthVoice* v, uint16_t not
     return bth_table_word(p, r->period_table + (uint32_t)(int32_t)(int16_t)(uint16_t)(index << 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void start_note(const BthPlayer* p, BthVoice* v, const Command* command) {
     v->target_period = table_period(p, v, command->words.word);
     v->duration = note_duration(p, command);
@@ -141,15 +124,11 @@ static void start_note(const BthPlayer* p, BthVoice* v, const Command* command) 
     v->note = nuade_period_to_note(v->target_period);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // What the commands of a row leave for the rest of the voice routine
 typedef struct RowOutcome {
     bool restart; // the commands switched the voice's DMA off: it has to be switched on again
     bool hold;    // a hold command ended the row: the sample registers keep their value
 } RowOutcome;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // DMACON set right after a DMACON clear, with no wait in between: Paula has not seen the channel go off, so a voice
 // that was playing at the start of the tick plays on (the registers written meanwhile are its next repeat). A voice
@@ -163,8 +142,6 @@ static void dma_on_after_off(BthVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The slide command sets the step; a step of 0 ends the slide
 static void set_slide(BthVoice* v, const Command* command) {
     v->slide_step = command->words.operand;
@@ -175,8 +152,6 @@ static void set_slide(BthVoice* v, const Command* command) {
     v->command += BTH_COMMAND_SHORT_BYTES;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The legato command switches legato on or off
 static void set_legato(BthVoice* v, const Command* command) {
     v->legato = command->words.operand != 0;
@@ -185,8 +160,6 @@ static void set_legato(BthVoice* v, const Command* command) {
     }
     v->command += BTH_COMMAND_SHORT_BYTES;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The commands of the basic replayer
 static RowOutcome read_commands_basic(const BthPlayer* p, BthVoice* v) {
@@ -218,8 +191,6 @@ static RowOutcome read_commands_basic(const BthPlayer* p, BthVoice* v) {
     return outcome;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The hold command: the note is held at its end. The voice repeats the silent sample from the end of the loop on.
 static void hold_note(const BthPlayer* p, BthVoice* v, const Command* command, RowOutcome* outcome) {
     v->hold = true;
@@ -235,8 +206,6 @@ static void hold_note(const BthPlayer* p, BthVoice* v, const Command* command, R
     outcome->hold = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The arpeggio command: a count and that many note numbers that the voice cycles through
 static void start_arpeggio(const BthPlayer* p, BthVoice* v, const Command* command) {
     v->arpeggio = true;
@@ -248,8 +217,6 @@ static void start_arpeggio(const BthPlayer* p, BthVoice* v, const Command* comma
     const uint16_t bytes = (uint16_t)(2u * command->words.count + BTH_COMMAND_ARPEGGIO_HEADER_BYTES);
     v->command += (uint32_t)(int32_t)(int16_t)bytes;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The commands of the extended replayer: every command but the hold switches the voice's DMA off, so the voice restarts
 // at the end of the routine
@@ -295,8 +262,6 @@ static RowOutcome read_commands_extended(const BthPlayer* p, BthVoice* v) {
     return outcome;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The registers a new note starts the sample with, unless the voice is legato or sliding
 static void write_start_registers(const BthPlayer* p, BthVoice* v) {
     if (!v->slide && !v->legato) {
@@ -304,14 +269,10 @@ static void write_start_registers(const BthPlayer* p, BthVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Whether period `a` is below `b`: the comparison after a slide step is unsigned or signed
 static bool period_below(const BthPlayer* p, uint16_t a, uint16_t b) {
     return p->replayer.slide_signed ? (int16_t)a < (int16_t)b : a < b;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The slide moves the period one step toward the note's and stops there
 static void slide_period(const BthPlayer* p, BthVoice* v) {
@@ -333,8 +294,6 @@ static void slide_period(const BthPlayer* p, BthVoice* v) {
     v->period = period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The arpeggio takes the period of the next table entry on every tick
 static void arpeggio_period(const BthPlayer* p, BthVoice* v) {
     const uint32_t offset = (uint32_t)(int32_t)(int16_t)v->arpeggio_index << 1;
@@ -342,8 +301,6 @@ static void arpeggio_period(const BthPlayer* p, BthVoice* v) {
     bth_advance_arpeggio(v);
     v->period = v->target_period;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void bth_update_voice(BthPlayer* p, BthVoice* v) {
     const bool extended = p->replayer.engine == BthEngine_Extended;

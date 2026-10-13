@@ -12,20 +12,17 @@ bool mm8_start(Mm8* e, const MmSong* song, const MmInstruments* inst, NuadeVoice
 void mm8_stop(Mm8* e);
 MmTickResult mm8_tick(Mm8* e, NuadeVoices* voices);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The two voices of a channel's pair: A (the odd voice, which the mixer reads first) and B.
 typedef enum Mm8PairVoice {
     MM8_VOICE_A = 0,
     MM8_VOICE_B = 1,
 } Mm8PairVoice;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The number of the voice (track) that plays as `voice` of channel `channel`'s pair.
 static inline uint32_t mm8_pair_voice_index(uint32_t channel, int voice) {
     return 2 * channel + 1 - (uint32_t)voice;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The length of a silent block (words): a quarter of the tempo.
 static inline uint16_t mm8_silent_words(uint16_t tempo) {
     return tempo >> 2;

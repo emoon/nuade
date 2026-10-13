@@ -73,8 +73,6 @@ struct NuadeSong {
 // The rate of the scan behind the row grid; only its tick count is used.
 #define GRID_SCAN_RATE 48000
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeSongResult fail(NuadeStatus status, const char* fmt, ...) {
     NuadeSongResult result = { 0 };
     result.error.status = status;
@@ -85,7 +83,6 @@ static NuadeSongResult fail(NuadeStatus status, const char* fmt, ...) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Metadata sink: the player pushes tags and instrument names once after open; the song keeps copies.
 
 static void sink_set_tag(void* ctx, const char* key, const char* value) {
@@ -117,8 +114,6 @@ static void sink_set_tag(void* ctx, const char* key, const char* value) {
     song->tags[song->tag_count++] = tag;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void sink_add_instrument(void* ctx, uint32_t index, const char* name) {
     NuadeSong* song = (NuadeSong*)ctx;
     if (name == nullptr) {
@@ -140,8 +135,6 @@ static void sink_add_instrument(void* ctx, uint32_t index, const char* name) {
     song->instruments[song->instrument_count++] = (NuadeInstrument) { .index = index, .name = copy };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void free_meter_buffers(NuadeSong* song) {
     if (song->meter_voices != nullptr) {
         free(song->meter_voices[0]);
@@ -150,8 +143,6 @@ static void free_meter_buffers(NuadeSong* song) {
     song->meter_voices = nullptr;
     song->meter_frames = 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void free_song(NuadeSong* song) {
     for (u32 i = 0; i < song->tag_count; i++) {
@@ -172,8 +163,6 @@ static void free_song(NuadeSong* song) {
     free(song->data);
     free(song);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // True when the file name carries one of the player's extensions, as a "ext.name" prefix or a ".ext" suffix.
 static bool name_matches(const NuadePlayer* player, const char* path) {
@@ -220,8 +209,6 @@ static const NuadePlayer* probe_players(const u8* data, size_t size, const char*
     return sure ? sure : unsure;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Copy the song into memory the song owns: from params->data, or read through io.
 static bool load_data(NuadeSong* song, const NuadeOpenParams* params, const NuadeIo* io) {
     if (params->data != nullptr) {
@@ -246,8 +233,6 @@ static bool load_data(NuadeSong* song, const NuadeOpenParams* params, const Nuad
     NuadeIo_free_url_to_memory(io, r.data);
     return song->data != nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 NuadeSongResult nuade_open_ex(const NuadeOpenParams* params) {
     if (params == nullptr || (params->data == nullptr && params->path == nullptr)) {
@@ -329,13 +314,9 @@ NuadeSongResult nuade_open_ex(const NuadeOpenParams* params) {
     return (NuadeSongResult) { .song = song };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 NuadeSongResult nuade_open(const char* path) {
     return nuade_open_ex(&(NuadeOpenParams) { .path = path });
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 NuadeSongResult nuade_open_memory(const void* data, size_t size, const char* path) {
     if (data == nullptr) {
@@ -343,8 +324,6 @@ NuadeSongResult nuade_open_memory(const void* data, size_t size, const char* pat
     }
     return nuade_open_ex(&(NuadeOpenParams) { .path = path, .data = data, .size = size });
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void nuade_close(NuadeSong* song) {
     if (song == nullptr) {
@@ -354,25 +333,17 @@ void nuade_close(NuadeSong* song) {
     free_song(song);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const NuadeSongInfo* nuade_info(const NuadeSong* song) {
     return song ? &song->info : nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer* nuade_player(const NuadeSong* song) {
     return song ? song->player : nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void* nuade_player_data(NuadeSong* song) {
     return song ? song->user_data : nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool nuade_start(NuadeSong* song, uint32_t subsong, uint32_t sample_rate) {
     if (song == nullptr || subsong >= song->info.subsong_count || sample_rate == 0) {
@@ -395,8 +366,6 @@ bool nuade_start(NuadeSong* song, uint32_t subsong, uint32_t sample_rate) {
     }
     return song->player->start(song->user_data, subsong, sample_rate, song->voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A tick that returns no frames to mix is fine (several steps at one instant), but a player that never advances time
 // would hang the render.
@@ -461,8 +430,6 @@ static NuadeRenderResult render_ticked(NuadeSong* song, float* stereo, float* co
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A raw player reports a loop only per call, so a call is cut into slices: when the slice that crosses the loop
 // point ends the song, nothing past it is rendered, and every loop crossing is counted. The loop is therefore
 // located to within one slice (a few ms): a raw player reports no crossing offset.
@@ -502,8 +469,6 @@ static NuadeRenderResult render_raw_sliced(NuadeSong* song, float* stereo, float
     return total;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Per-voice buffers for the meters when the caller wants no voice output of its own; 0 if memory ran out.
 static float* const* meter_buffers(NuadeSong* song, u32 frames) {
     const u32 n = song->info.voice_count;
@@ -528,8 +493,6 @@ static float* const* meter_buffers(NuadeSong* song, u32 frames) {
     return song->meter_voices;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Stereo separation for a self-rendering player, on its finished mix: keeps the mid (L + R) and scales the side
 // (L - R). For voices panned hard left or right this is the same as scaling their pans, as the mixer does.
 static void narrow_stereo(float* stereo, u32 frames, f32 separation) {
@@ -543,8 +506,6 @@ static void narrow_stereo(float* stereo, u32 frames, f32 separation) {
         stereo[i * 2 + 1] = mid - side;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 NuadeRenderResult nuade_render(NuadeSong* song, float* stereo, float* const* voices, uint32_t frames) {
     if (song == nullptr || stereo == nullptr || song->ended) {
@@ -573,16 +534,12 @@ NuadeRenderResult nuade_render(NuadeSong* song, float* stereo, float* const* voi
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 NuadeSnapshotResult nuade_snapshot(const NuadeSong* song, uint64_t frame, NuadeVoiceView* voices, uint32_t cap) {
     if (song == nullptr) {
         return (NuadeSnapshotResult) { 0 };
     }
     return nuade_viz_find(song->viz, frame, voices, cap);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t nuade_events(NuadeSong* song, uint32_t voice, uint32_t track_pos, uint32_t before, uint32_t after,
                       NuadeEvent* out, uint32_t cap) {
@@ -591,8 +548,6 @@ uint32_t nuade_events(NuadeSong* song, uint32_t voice, uint32_t track_pos, uint3
     }
     return song->player->events(song->user_data, voice, track_pos, before, after, out, cap);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The scan of the current subsong for the row grid, made when none fits the subsong. nullptr if the
 // player has no grid or the scan failed.
@@ -612,8 +567,6 @@ static const NuadeScan* grid_scan(NuadeSong* song) {
     return song->grid_scan;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 NuadeTrackerInfoResult nuade_tracker_info(NuadeSong* song, const NuadePosition* at) {
     if (song == nullptr || at == nullptr) {
         return (NuadeTrackerInfoResult) { 0 };
@@ -628,8 +581,6 @@ NuadeTrackerInfoResult nuade_tracker_info(NuadeSong* song, const NuadePosition* 
     }
     return song->player->tracker_info(song->user_data, at);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t nuade_tracker_cells(NuadeSong* song, const NuadePosition* at, uint32_t channel, int32_t row_lo, int32_t row_hi,
                              NuadePatternCell* out, uint32_t cap) {
@@ -646,8 +597,6 @@ uint32_t nuade_tracker_cells(NuadeSong* song, const NuadePosition* at, uint32_t 
     return song->player->tracker_cells(song->user_data, at, channel, row_lo, row_hi, out, cap);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t nuade_vu(NuadeSong* song, float* out, uint32_t cap) {
     if (song == nullptr || out == nullptr) {
         return 0;
@@ -655,8 +604,6 @@ uint32_t nuade_vu(NuadeSong* song, float* out, uint32_t cap) {
     nuade_viz_enable_meters(song->viz);
     return nuade_viz_meters_on(song->viz) ? nuade_viz_vu(song->viz, out, cap) : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t nuade_scope(NuadeSong* song, uint32_t voice, float* out, uint32_t cap) {
     if (song == nullptr || out == nullptr) {
@@ -666,13 +613,9 @@ uint32_t nuade_scope(NuadeSong* song, uint32_t voice, float* out, uint32_t cap) 
     return nuade_viz_meters_on(song->viz) ? nuade_viz_scope(song->viz, voice, out, cap) : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint64_t nuade_position(const NuadeSong* song) {
     return song ? song->position : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define SKIP_FRAMES 4096
 
@@ -694,8 +637,6 @@ bool nuade_seek(NuadeSong* song, uint64_t frame) {
     nuade_viz_clear_meters(song->viz); // the skipped audio was never heard
     return song->position == frame;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool nuade_duration(NuadeSong* song, uint32_t subsong, uint32_t sample_rate, uint64_t max_frames, NuadeDuration* out) {
     if (out == nullptr || !nuade_start(song, subsong, sample_rate)) {
@@ -728,8 +669,6 @@ bool nuade_duration(NuadeSong* song, uint32_t subsong, uint32_t sample_rate, uin
     return nuade_start(song, subsong, sample_rate);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void song_observer(const NuadeVoiceEvent* event, void* user) {
     NuadeSong* song = (NuadeSong*)user;
     nuade_trace_event(song->trace, event);
@@ -738,15 +677,11 @@ static void song_observer(const NuadeVoiceEvent* event, void* user) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The mixer calls song_observer while anything watches it.
 static void update_mixer_observer(NuadeSong* song) {
     const bool watched = song->observer != nullptr || song->trace != nullptr;
     nuade_mixer_set_observer(song->voices, watched ? song_observer : nullptr, song);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void nuade_set_voice_observer(NuadeSong* song, NuadeVoiceObserver observer, void* user) {
     if (song != nullptr && song->voices != nullptr) {
@@ -755,8 +690,6 @@ void nuade_set_voice_observer(NuadeSong* song, NuadeVoiceObserver observer, void
         update_mixer_observer(song);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Silent scan
 
@@ -785,8 +718,6 @@ static void scan_record(ScanCtx* ctx, u64 frame, u32 voice) {
         = (NuadeScanEvent) { .tick = ctx->tick, .frame = frame, .voice = voice, .note = -1, .instrument = -1 };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void scan_observer(const NuadeVoiceEvent* event, void* user) {
     ScanCtx* ctx = (ScanCtx*)user;
     if (ctx->failed) {
@@ -813,8 +744,6 @@ static void scan_observer(const NuadeVoiceEvent* event, void* user) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // After a tick: give the events recorded since `first` the note and instrument their voice reports now. With display
 // voices of the player's own, record the notes it counted in the tick instead.
 static void scan_annotate(const NuadeSong* song, NuadeVoiceInfo* info, ScanCtx* ctx, u32 first) {
@@ -837,8 +766,6 @@ static void scan_annotate(const NuadeSong* song, NuadeVoiceInfo* info, ScanCtx* 
         e->instrument = info[e->voice].instrument;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void scan_run(NuadeSong* scratch, u32 max_ticks, ScanCtx* ctx, NuadeVoiceInfo* info) {
     NuadeScan* scan = ctx->scan;
@@ -863,8 +790,6 @@ static void scan_run(NuadeSong* scratch, u32 max_ticks, ScanCtx* ctx, NuadeVoice
         scan->frames += frames;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 NuadeScan* nuade_scan(const NuadeSong* song, uint32_t subsong, uint32_t sample_rate, uint32_t max_ticks) {
     if (song == nullptr || song->voices == nullptr || subsong >= song->info.subsong_count || sample_rate == 0) {
@@ -905,16 +830,12 @@ NuadeScan* nuade_scan(const NuadeSong* song, uint32_t subsong, uint32_t sample_r
     return scan;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void nuade_scan_free(NuadeScan* scan) {
     if (scan != nullptr) {
         free(scan->events);
         free(scan);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool nuade_set_paula_trace(NuadeSong* song, const char* path, bool with_bytes) {
     if (song == nullptr || song->voices == nullptr) {
@@ -938,8 +859,6 @@ bool nuade_set_paula_trace(NuadeSong* song, const char* path, bool with_bytes) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool nuade_set_dump_state(NuadeSong* song, const char* path) {
     if (song == nullptr || path == nullptr || song->player->dump_state == nullptr) {
         return false;
@@ -947,15 +866,11 @@ bool nuade_set_dump_state(NuadeSong* song, const char* path) {
     return song->player->dump_state(song->user_data, path);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void nuade_set_repeat_count(NuadeSong* song, uint32_t count) {
     if (song != nullptr) {
         song->repeat_count = count;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool nuade_set_stereo_separation(NuadeSong* song, float separation) {
     if (song == nullptr || !(separation >= 0.0f && separation <= 1.0f)) {
@@ -967,8 +882,6 @@ bool nuade_set_stereo_separation(NuadeSong* song, float separation) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const char* nuade_meta(const NuadeSong* song, const char* key) {
     if (song == nullptr || key == nullptr) {
@@ -982,13 +895,9 @@ const char* nuade_meta(const NuadeSong* song, const char* key) {
     return nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t nuade_instrument_count(const NuadeSong* song) {
     return song ? song->instrument_count : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const char* nuade_instrument_name(const NuadeSong* song, uint32_t n, uint32_t* index) {
     if (song == nullptr || n >= song->instrument_count) {

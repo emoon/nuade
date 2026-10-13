@@ -13,15 +13,11 @@ typedef struct DigmugNuade {
     DmModule* module;
 } DigmugNuade;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The module mark is specific enough to be sure.
 static NuadeProbe digmug_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return dm_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult digmug_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -48,22 +44,16 @@ static NuadePlayerOpenResult digmug_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void digmug_close(void* user_data) {
     DigmugNuade* state = (DigmugNuade*)user_data;
     dm_destroy(state->module);
     free(state);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool digmug_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return dm_start(((DigmugNuade*)user_data)->module, (int)subsong, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult digmug_tick(void* user_data, NuadeVoices* voices) {
     (void)voices;
@@ -71,8 +61,6 @@ static NuadeTickResult digmug_tick(void* user_data, NuadeVoices* voices) {
     const bool looped = dm_tick(module);
     return (NuadeTickResult) { .length = dm_tick_length(module), .flags = looped ? NuadeTick_Looped : NuadeTick_None };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void digmug_metadata(void* user_data, const NuadeMetadataSink* sink) {
     const DigmugNuade* state = (const DigmugNuade*)user_data;
@@ -82,8 +70,6 @@ static void digmug_metadata(void* user_data, const NuadeMetadataSink* sink) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 #define DIGMUG_TRACK_ROWS 64
 // Note 23 is the period 853 (C-1 in ProTracker terms); note n shows as semitone n + 1 with the octave one lower.
 #define DIGMUG_OCTAVE_SHIFT (-1)
@@ -91,8 +77,6 @@ static void digmug_metadata(void* user_data, const NuadeMetadataSink* sink) {
 static const DmModule* digmug_module(const void* user_data) {
     return ((const DigmugNuade*)user_data)->module;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePositionResult digmug_position(void* user_data) {
     const DmPosition p = dm_position(digmug_module(user_data));
@@ -103,8 +87,6 @@ static NuadePositionResult digmug_position(void* user_data) {
                                                  .rows = (uint32_t)p.rows,
                                                  .speed = (uint32_t)p.speed } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t digmug_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const DmModule* module = digmug_module(user_data);
@@ -121,8 +103,6 @@ static uint32_t digmug_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTrackerInfoResult digmug_tracker_info(void* user_data, const NuadePosition* at) {
     const DmModule* module = digmug_module(user_data);
     if ((int)at->order >= dm_position_count(module)) {
@@ -137,8 +117,6 @@ static NuadeTrackerInfoResult digmug_tracker_info(void* user_data, const NuadePo
                                                              { "fx", NuadeColumn_Hex, 2 },
                                                              { "arg", NuadeColumn_Hex, 2 } } } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePatternCell digmug_cell(const void* ctx, uint32_t order, uint32_t channel, uint32_t row) {
     NuadePatternCell cell = nuade_cell_empty();
@@ -156,8 +134,6 @@ static NuadePatternCell digmug_cell(const void* ctx, uint32_t order, uint32_t ch
     return cell;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t digmug_tracker_cells(void* user_data, const NuadePosition* at, uint32_t channel, int32_t row_lo,
                                      int32_t row_hi, NuadePatternCell* out, uint32_t cap) {
     const DmModule* module = digmug_module(user_data);
@@ -167,8 +143,6 @@ static uint32_t digmug_tracker_cells(void* user_data, const NuadePosition* at, u
     return nuade_tracker_fill(at, (uint32_t)dm_channel_count(module), at->rows != 0 ? at->rows : DIGMUG_TRACK_ROWS,
                               channel, row_lo, row_hi, out, cap, digmug_cell, module);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_digmug = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -187,8 +161,6 @@ const NuadePlayer nuade_player_digmug = {
     .tracker_info = digmug_tracker_info,
     .tracker_cells = digmug_tracker_cells,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DmModule* dm_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_digmug) {

@@ -32,14 +32,11 @@
 #define PN_INFO_SUFFIX ".info"
 #define PN_INFO_MAX_SIZE (1u << 20)
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool pn_probe(const uint8_t* data, size_t size, const char* filename) {
     return size >= PN_MIN_SIZE && data[0] == 0xFF && data[1] == 0xFF && filename != nullptr
            && strncasecmp(nuade_path_basename(filename), PN_PREFIX, sizeof(PN_PREFIX) - 1) == 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The ".info" file is the song's file name with ".info" appended, in the song's directory.
 
 static bool load_info(PnPlayer* player, const char* path, const NuadeIo* io) {
@@ -75,8 +72,6 @@ static bool load_info(PnPlayer* player, const char* path, const NuadeIo* io) {
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 PnPlayer* pn_create(const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
     if (!pn_probe(data, size, path) || io == nullptr) {
         return nullptr;
@@ -105,8 +100,6 @@ PnPlayer* pn_create(const uint8_t* data, size_t size, const char* path, const Nu
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void pn_destroy(PnPlayer* player) {
     if (player == nullptr) {
         return;
@@ -117,25 +110,17 @@ void pn_destroy(PnPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t pn_subsong_count(const PnPlayer* player) {
     return (uint32_t)player->range.last - player->range.first + 1;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t pn_default_subsong(const PnPlayer* player) {
     return (uint32_t)player->range.default_song - player->range.first;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void reset_voice(PnVoice* voice) {
     *voice = (PnVoice) { .wave = PN_SILENT_WAVE, .length_words = PN_SILENT_WORDS, .wave_changed = true };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool pn_start(PnPlayer* player, uint32_t subsong, NuadeVoices* voices) {
     if (player == nullptr || subsong >= pn_subsong_count(player)) {
@@ -158,7 +143,6 @@ bool pn_start(PnPlayer* player, uint32_t subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The jiffy clock counts up in three bytes, high byte first.
 
 static void advance_clock(PnMachine* machine) {
@@ -169,7 +153,6 @@ static void advance_clock(PnMachine* machine) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What a new sound changes in the voice record: a different waveform restarts the channel (and with it the period).
 
 static void record_sound(PnVoice* voice, PnSound sound) {
@@ -188,7 +171,6 @@ static void record_sound(PnVoice* voice, PnSound sound) {
     voice->volume = sound.volume;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The channel's registers for the record. A new waveform stops the channel's DMA, loads the registers and starts it
 // again; the repeat is the same waveform.
 
@@ -213,8 +195,6 @@ static void write_voice(const PnPlayer* player, PnVoice* voice) {
     paula->volume = voice->volume;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 PnTickResult pn_tick(PnPlayer* player, NuadeVoices* voices) {
     advance_clock(&player->machine);
     const PnRunResult result = pn_machine_run(&player->machine, player->play_address, 0, 0, 0);
@@ -233,8 +213,6 @@ PnTickResult pn_tick(PnPlayer* player, NuadeVoices* voices) {
     }
     return (PnTickResult) { .length = PN_TICK_LENGTH };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PnVoiceState pn_voice_state(const PnPlayer* player, uint32_t voice) {
     const PnVoice* v = &player->voices[voice];

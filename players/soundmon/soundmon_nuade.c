@@ -11,15 +11,11 @@
 #define SOUNDMON_NUADE_VOICES 4
 #define SOUNDMON_INSTRUMENTS 15
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The module mark is specific enough to be sure.
 static NuadeProbe soundmon_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return sm_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult soundmon_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -36,28 +32,20 @@ static NuadePlayerOpenResult soundmon_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void soundmon_close(void* user_data) {
     sm_destroy((SmModule*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool soundmon_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return sm_start((SmModule*)user_data, (int)subsong, voices);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult soundmon_tick(void* user_data, NuadeVoices* voices) {
     (void)voices;
     return (NuadeTickResult) { .length = 1,
                                .flags = sm_tick((SmModule*)user_data) ? NuadeTick_Looped : NuadeTick_None };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void soundmon_metadata(void* user_data, const NuadeMetadataSink* sink) {
     const SmModule* module = (const SmModule*)user_data;
@@ -73,8 +61,6 @@ static void soundmon_metadata(void* user_data, const NuadeMetadataSink* sink) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The track notes count from C-1 = 1; NuadeColumn_Note counts semitones from C-0.
 #define SOUNDMON_NOTE_BASE 11
 
@@ -86,8 +72,6 @@ static NuadePositionResult soundmon_position(void* user_data) {
         = { .mode = NuadeScroll_Rows, .order = (uint32_t)p.step, .row = (uint32_t)p.row, .speed = (uint32_t)p.speed }
     };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t soundmon_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const SmModule* module = (const SmModule*)user_data;
@@ -103,8 +87,6 @@ static uint32_t soundmon_voice_info(void* user_data, NuadeVoiceInfo* out, uint32
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTrackerInfoResult soundmon_tracker_info(void* user_data, const NuadePosition* at) {
     if ((int)at->order >= sm_step_count((const SmModule*)user_data)) {
         return (NuadeTrackerInfoResult) { 0 };
@@ -118,8 +100,6 @@ static NuadeTrackerInfoResult soundmon_tracker_info(void* user_data, const Nuade
                                                              { "fx", NuadeColumn_Hex, 1 },
                                                              { "arg", NuadeColumn_Hex, 2 } } } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePatternCell soundmon_cell(const void* ctx, uint32_t order, uint32_t channel, uint32_t row) {
     NuadePatternCell cell = nuade_cell_empty();
@@ -137,15 +117,11 @@ static NuadePatternCell soundmon_cell(const void* ctx, uint32_t order, uint32_t 
     return cell;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t soundmon_tracker_cells(void* user_data, const NuadePosition* at, uint32_t channel, int32_t row_lo,
                                        int32_t row_hi, NuadePatternCell* out, uint32_t cap) {
     return nuade_tracker_fill(at, SOUNDMON_NUADE_VOICES, SM_ROWS, channel, row_lo, row_hi, out, cap, soundmon_cell,
                               user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_soundmon = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -164,8 +140,6 @@ const NuadePlayer nuade_player_soundmon = {
     .tracker_info = soundmon_tracker_info,
     .tracker_cells = soundmon_tracker_cells,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SmModule* sm_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_soundmon) {

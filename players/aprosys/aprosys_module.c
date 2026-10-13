@@ -22,8 +22,6 @@ static const struct {
 } k_vector_exceptions[] = { { 0, 0 },       { 1, 0xd00 },   { 5, 0x1322 },  { 26, 0x3ec0 }, { 27, 0x4552 },
                             { 28, 0x4590 }, { 30, 0x4696 }, { 36, 0x16a6 }, { 37, 0x1968 }, { 38, 0x16b8 } };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t aps_u8(const ApsModule* module, uint32_t address) {
     if (address < module->size) {
         return module->data[address];
@@ -46,19 +44,13 @@ uint8_t aps_u8(const ApsModule* module, uint32_t address) {
     return in_record < APS_SAMPLE_RECORD_SIZE ? k_silent_record[in_record] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t aps_u16(const ApsModule* module, uint32_t address) {
     return (uint16_t)((aps_u8(module, address) << 8) | aps_u8(module, address + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t aps_u32(const ApsModule* module, uint32_t address) {
     return ((uint32_t)aps_u16(module, address) << 16) | aps_u16(module, address + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool aps_module_parse(ApsModule* module, const uint8_t* data, size_t size, const int8_t* wave) {
     // Check2 looks at the magic only; InitPlayer walks the sections and refuses a file where one ends past the end
@@ -98,21 +90,15 @@ bool aps_module_parse(ApsModule* module, const uint8_t* data, size_t size, const
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 ApsOrderEntry aps_order_entry(const ApsModule* module, uint8_t position) {
     const uint32_t at = module->order + (uint32_t)position * 2;
     const uint8_t first = aps_u8(module, at);
     return (ApsOrderEntry) { .command = first & 0xe0, .count = first & 0x1f, .param = aps_u8(module, at + 1) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 ApsStep aps_step(const ApsModule* module, uint32_t step) {
     return (ApsStep) { .duration = aps_u8(module, step), .rows = aps_u8(module, step + 1) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ApsCell aps_cell(const ApsModule* module, uint32_t step, uint32_t voice) {
     const uint32_t at = step + 2 + voice * 6;
@@ -127,8 +113,6 @@ ApsCell aps_cell(const ApsModule* module, uint32_t step, uint32_t voice) {
                        .track = aps_u16(module, at + 4) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 ApsTrackEntry aps_track_entry(const ApsModule* module, uint32_t entry) {
     const uint8_t note = aps_u8(module, entry);
     const uint8_t level = aps_u8(module, entry + 2);
@@ -141,8 +125,6 @@ ApsTrackEntry aps_track_entry(const ApsModule* module, uint32_t entry) {
                              .level = level & 0x3f,
                              .param = aps_u8(module, entry + 3) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ApsInstrument aps_instrument(const ApsModule* module, uint32_t instrument) {
     return (ApsInstrument) { .sample = aps_u8(module, instrument),
@@ -163,13 +145,9 @@ ApsInstrument aps_instrument(const ApsModule* module, uint32_t instrument) {
                              .volume_select = aps_u8(module, instrument + 0x19) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 ApsEnvPoint aps_env_point(const ApsModule* module, uint32_t point) {
     return (ApsEnvPoint) { .duration = aps_u8(module, point), .target = (int8_t)aps_u8(module, point + 1) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ApsSampleRecord aps_sample_record(const ApsModule* module, uint32_t record) {
     const uint32_t head = aps_u32(module, record);

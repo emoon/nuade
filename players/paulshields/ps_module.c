@@ -92,25 +92,17 @@ static const PshLayout k_layouts[] = {
     },
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const PshLayout* psh_layout(PshKind kind) {
     return &k_layouts[kind];
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint8_t psh_u8(const PshModule* m, int64_t offset) {
     return offset >= 0 && offset < (int64_t)m->size + 2 ? m->chip[offset] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t psh_u16(const PshModule* m, int64_t offset) {
     return (uint16_t)(psh_u8(m, offset) << 8 | psh_u8(m, offset + 1));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool psh_order_action(const PshLayout* layout, uint16_t word, PshOrderAction* action) {
     if (word < PSH_ORDER_CODE_MIN || (word & 3) != 0) {
@@ -124,7 +116,6 @@ bool psh_order_action(const PshLayout* layout, uint16_t word, PshOrderAction* ac
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The song header of the raw file: the table words, then a start volume and an order list offset for every voice, in
 // the file's order (the first pair belongs to Paula channel 3).
 
@@ -135,8 +126,6 @@ typedef struct FileHeader {
         uint16_t order_list;
     } voices[PSH_VOICES];
 } FileHeader;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static FileHeader read_file_header(const uint8_t* data, const PshLayout* layout) {
     FileHeader h = { { 0, 0 }, { { 0, 0 } } };
@@ -151,14 +140,12 @@ static FileHeader read_file_header(const uint8_t* data, const PshLayout* layout)
     return h;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The bytes the layout's header needs: Check2 and InitPlayer read nothing behind them.
 
 static uint32_t header_size(const PshLayout* layout) {
     return layout->voices_offset + 4 * PSH_VOICES;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2 for one layout: ten zero bytes, four equal start volumes and the layout's marker.
 
 static bool layout_matches(const uint8_t* data, size_t size, const PshLayout* layout) {
@@ -189,8 +176,6 @@ static bool layout_matches(const uint8_t* data, size_t size, const PshLayout* la
     return before == OLD_LIST_END_LOOP || before == OLD_LIST_END_STOP;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const PshLayout* detect_layout(const uint8_t* data, size_t size) {
     for (size_t i = 0; i < nuade_sizeof_array(k_layouts); i++) {
         if (layout_matches(data, size, &k_layouts[i])) {
@@ -200,7 +185,6 @@ static const PshLayout* detect_layout(const uint8_t* data, size_t size) {
     return nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The fields of one sample record. The short layout has no sample volume.
 
 typedef struct SampleRecord {
@@ -210,8 +194,6 @@ typedef struct SampleRecord {
     uint16_t tune;
     uint16_t volume;
 } SampleRecord;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static SampleRecord read_sample_record(const uint8_t* data, const PshLayout* layout, uint32_t index) {
     const uint8_t* record = data + index * layout->sample_record_size;
@@ -229,7 +211,6 @@ static SampleRecord read_sample_record(const uint8_t* data, const PshLayout* lay
                             .volume = nuade_read_be16(record + 0x18) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer's first part: where the sample bytes start. The order list with the highest offset is the last of the song
 // data; its end is the word after the first repeat of the word that precedes it. Returns false when that word does not
 // come again inside the module.
@@ -255,7 +236,6 @@ static bool find_sample_base(const uint8_t* data, size_t size, const PshLayout* 
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample bytes of the 16 records have to fit in the file behind the song data.
 
 static bool samples_fit(const uint8_t* data, size_t size, const PshLayout* layout, uint32_t sample_base) {
@@ -266,7 +246,6 @@ static bool samples_fit(const uint8_t* data, size_t size, const PshLayout* layou
     return total <= size;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample table the replayer builds at song start: the samples follow each other behind the song data, then come
 // the built-in wave forms.
 
@@ -302,7 +281,6 @@ static void build_samples(PshModule* m, const uint8_t* data) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2 and the size check of InitPlayer: the layout and the start of the sample bytes.
 
 static const PshLayout* check_module(const uint8_t* data, size_t size, uint32_t* sample_base) {
@@ -317,7 +295,6 @@ static const PshLayout* check_module(const uint8_t* data, size_t size, uint32_t*
     return layout;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The header behind the sample records: the envelope or instrument table and the voices' start volumes and order
 // lists. The first pair belongs to Paula channel 3.
 
@@ -335,8 +312,6 @@ static void read_header(PshModule* m, const uint8_t* data) {
         v->order_list = m->layout->kind == PshKind_Old ? (int16_t)h.voices[i].order_list : h.voices[i].order_list;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool psh_module_load(PshModule* m, const uint8_t* data, size_t size) {
     memset(m, 0, sizeof(*m));
@@ -372,14 +347,10 @@ bool psh_module_load(PshModule* m, const uint8_t* data, size_t size) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void psh_module_free(PshModule* m) {
     free(m->chip);
     m->chip = nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool psh_probe(const uint8_t* data, size_t size) {
     PshModule m;
@@ -390,13 +361,9 @@ bool psh_probe(const uint8_t* data, size_t size) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const PshSample* psh_sample_number(const PshModule* m, unsigned number) {
     return number < m->sample_count ? &m->samples[number] : nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const PshSample* psh_instrument_sample(const PshModule* m, int64_t record) {
     const int16_t entry_offset = (int16_t)psh_u16(m, record);
@@ -405,8 +372,6 @@ const PshSample* psh_instrument_sample(const PshModule* m, int64_t record) {
     }
     return psh_sample_number(m, (unsigned)entry_offset / PSH_SAMPLE_ENTRY_SIZE);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const int8_t* psh_chip_pointer(const PshModule* m, int64_t offset) {
     if (offset < 0 || offset >= (int64_t)m->wave_base + PSH_WAVE_DATA_SIZE) {

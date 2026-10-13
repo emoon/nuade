@@ -23,7 +23,6 @@
 
 #define BDS_MAX_SUBSONGS 256
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The hunk: a read past it returns 0 (the driver would read whatever follows in memory), a write past it is dropped.
 // The allocation comes from nuade_paula_padded_copy, so a sample that starts inside the hunk can run past its end.
 
@@ -32,7 +31,6 @@ uint16_t bds_u16(const BdsMemory* m, uint32_t offset);
 uint32_t bds_u32(const BdsMemory* m, uint32_t offset);
 void bds_put_u8(BdsMemory* m, uint32_t offset, uint8_t value);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tables the code addresses; all are offsets into the hunk.
 
 #define BDS_MAP_SLOTS 24 // instrument map entries a song starts with
@@ -62,7 +60,6 @@ typedef struct BdsSample {
 BdsInstrument bds_read_instrument(const BdsMemory* m, uint32_t offset);
 BdsSample bds_read_sample(const BdsMemory* m, uint32_t offset);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The loaded module
 
 // Loads the executable, finds the tables and the revision. This is also the check: false for anything the player
@@ -70,7 +67,6 @@ BdsSample bds_read_sample(const BdsMemory* m, uint32_t offset);
 bool bds_module_load(BdsModule* module, const uint8_t* data, size_t size);
 void bds_module_free(BdsModule* module);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Driver
 
 void bds_driver_start(BdsPlayer* player, int subsong);

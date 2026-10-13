@@ -17,7 +17,6 @@
 #include "nuade_utils.h"
 #include <nuade/players/coredesign.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The hunk: a read past it returns 0 (the driver would read whatever follows in memory). The allocation comes from
 // nuade_paula_padded_copy, so a sample that starts inside the hunk can run past its end.
 
@@ -26,12 +25,10 @@ uint16_t cd_u16(const CdMemory* m, uint32_t offset);
 int16_t cd_s16(const CdMemory* m, uint32_t offset);
 uint32_t cd_u32(const CdMemory* m, uint32_t offset);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module's entry points and data, from the table after "S.PHIPPS" (all offsets into the hunk except the counts).
 
 #define CD_INSTRUMENT_SIZE 14
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tables the code addresses; all are offsets into the hunk.
 
 #define CD_SUBSONG_SIZE 8
@@ -81,7 +78,6 @@ uint32_t cd_read_pattern(const CdMemory* m, const CdTables* tables, uint8_t patt
 // (period 0).
 uint16_t cd_read_period(const CdMemory* m, const CdTables* tables, uint8_t note);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The loaded module
 
 // Loads the executable, finds the tables and the version. This is also the check: false for anything the player
@@ -89,7 +85,6 @@ uint16_t cd_read_period(const CdMemory* m, const CdTables* tables, uint8_t note)
 bool cd_module_load(CdModule* module, const uint8_t* data, size_t size);
 void cd_module_free(CdModule* module);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Driver
 
 void cd_driver_start(CdPlayer* player, int subsong);

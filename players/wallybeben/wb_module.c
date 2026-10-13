@@ -53,7 +53,6 @@
 #define ARP_TABLE_BYTES 8u
 #define ZERO_REGS_BYTES 32u
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The patch table of the eagleplayer (WallyBeben, code offset 0x900): each entry is a run of instruction words searched
 // in the module code; the first match becomes a call of the entry's patch routine.
 
@@ -88,13 +87,9 @@ static const PatchPattern k_patches[] = {
 };
 #define PATCH_COUNT ((uint32_t)(sizeof(k_patches) / sizeof(k_patches[0])))
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool in_range(uint32_t size, uint32_t at, uint32_t bytes) {
     return bytes <= size && at <= size - bytes;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool wb_budget_take(WbBudget* budget, uint64_t units) {
     if (units > budget->left) {
@@ -104,8 +99,6 @@ bool wb_budget_take(WbBudget* budget, uint64_t units) {
     budget->left -= units;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The scan of the eagleplayer for a word: `*pos` moves to the word after the match (the post-incrementing compare).
 static bool scan_word(const uint8_t* mod, uint32_t size, WbBudget* budget, uint32_t* pos, uint16_t word) {
@@ -121,8 +114,6 @@ static bool scan_word(const uint8_t* mod, uint32_t size, WbBudget* budget, uint3
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The scan for a long: `*pos` stays at the match.
 static bool scan_long(const uint8_t* mod, uint32_t size, WbBudget* budget, uint32_t* pos, uint32_t value) {
     if (*pos > size || !wb_budget_take(budget, (size - *pos) / 2 + 1)) {
@@ -137,7 +128,6 @@ static bool scan_long(const uint8_t* mod, uint32_t size, WbBudget* budget, uint3
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's Check2: a bra.w to a short reset routine, the register save, a bsr.w to the tick routine.
 
 static bool check_header(const uint8_t* mod, uint32_t size) {
@@ -173,7 +163,6 @@ static bool check_header(const uint8_t* mod, uint32_t size) {
     return nuade_read_be32(mod + tick) == LONG_MOVEM_D0_D7 || nuade_read_be16(mod + tick + 4) == OP_MOVE_B_ABS_D0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the eagleplayer's InitPlayer finds by scanning (see the order of its scans).
 
 typedef struct Scan {
@@ -188,8 +177,6 @@ typedef struct Scan {
     uint32_t code_rts;
     bool movem;
 } Scan;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool scan_module(Scan* s, const uint8_t* mod, uint32_t size, WbBudget* budget) {
     memset(s, 0, sizeof(*s));
@@ -272,14 +259,10 @@ static bool scan_module(Scan* s, const uint8_t* mod, uint32_t size, WbBudget* bu
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint64_t fnv_u16(uint64_t h, uint32_t v) {
     h = (h ^ ((v >> 8) & 0xFFu)) * WB_FNV_PRIME;
     return (h ^ (v & 0xFFu)) * WB_FNV_PRIME;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The equalities between the operands: per operand the number of its value among the distinct values so far.
 static uint64_t partition_hash(const uint32_t* values, uint32_t count) {
@@ -298,8 +281,6 @@ static uint64_t partition_hash(const uint32_t* values, uint32_t count) {
     }
     return h;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The eagleplayer's patches, applied in the order of its table: the first match of each pattern in the code (as the
 // earlier patches left it) becomes a jsr to the patch routine, padded with nops. Bit n of the result: patch n + 1 is
@@ -341,8 +322,6 @@ static bool find_patches(const uint8_t* mod, uint32_t code_len, const WbCode* co
     *found_out = found;
     return on_instruction;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 typedef struct RoleInfo {
     uint16_t bytes;
@@ -397,26 +376,18 @@ static const RoleInfo k_role_info[WbRole_Count] = {
     [WbRole_VoiceTop] = { 1, false },
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t role_bytes(const WbModule* m, WbRole role) {
     return role == WbRole_Voices ? m->voice_bytes : k_role_info[role].bytes;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool overlap(uint32_t a, uint32_t a_bytes, uint32_t b, uint32_t b_bytes) {
     return (uint64_t)a < (uint64_t)b + b_bytes && (uint64_t)b < (uint64_t)a + a_bytes;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A role the replayer keeps as a variable in the data area (the code's immediates and the command byte apart).
 static bool is_variable(const WbModule* m, WbRole role) {
     return m->has[role] && !k_role_info[role].table && role != WbRole_Cmd && m->addr[role] >= m->code_end;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The code operands of the self-modifying slide are immediates of two instructions; true when the operand at `at` is
 // the byte of the immediate (the third byte) of an instruction with opcode `opcode`.
@@ -424,8 +395,6 @@ static bool is_immediate_of(const WbCode* code, uint32_t at, uint16_t opcode, co
     const WbInsn* insn = at >= 3 ? wb_code_insn_at(code, at - 3) : nullptr;
     return insn != nullptr && insn->len == 4 && nuade_read_be16(mod + insn->at) == opcode;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Roles, their addresses and everything the replayer's layout must satisfy.
 static bool bind_roles(WbModule* m, const WbCode* code, const uint32_t* values, uint32_t slot_count, const Scan* scan) {
@@ -534,8 +503,6 @@ static bool bind_roles(WbModule* m, const WbCode* code, const uint32_t* values, 
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A pointer of the song data as a module offset. An address behind the module and below the end of UADE's chip memory
 // reads as zeros: its offset is kept (the module reads past its end as zeros). WB_BAD_POINTER for what the port does
 // not hold: UADE's own memory below the module and the part of the address space above the zeros.
@@ -545,8 +512,6 @@ static uint32_t to_offset(uint32_t address, uint32_t origin) {
                                                                            : WB_BAD_POINTER;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 #define LAYOUT_EXTENTS 7u
 
 // A span of the module's bytes that some table or variable occupies.
@@ -555,8 +520,6 @@ typedef struct Extent {
     uint32_t bytes;
     bool relocated; // the eagleplayer rewrites the span at load
 } Extent;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The tables the port reads from the file, the variables it keeps in structs and the code must not share a byte: the
 // original reads its own writes, the port reads the file's initial bytes.
@@ -598,8 +561,6 @@ static bool check_layout(const WbModule* m, uint32_t instrument_count) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool load_tables(WbModule* m, const Scan* scan, WbBudget* budget) {
     const uint8_t* img = m->image;
@@ -692,8 +653,6 @@ static bool load_tables(WbModule* m, const Scan* scan, WbBudget* budget) {
     return check_layout(m, count);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The voice records must be what the port's voice n = Paula channel n assumes.
 static bool check_voices(const WbModule* m) {
     const uint32_t voices = m->addr[WbRole_Voices];
@@ -705,8 +664,6 @@ static bool check_voices(const WbModule* m) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The eagleplayer's relocation: it scans the words of the code for the opcodes that carry an absolute address and adds
 // the load address to the long behind each (one opcode has two longs, a long that names a custom chip register is left
@@ -776,8 +733,6 @@ static bool check_relocation(const WbCode* code, const uint8_t* mod, uint32_t si
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Decodes the module's code and recognises the build. Everything the eagleplayer does to the code (the scans, the
 // relocation, the patches) must agree with what the build's table says.
 static bool identify(WbModule* m, const Scan* scan, WbBudget* budget) {
@@ -811,8 +766,6 @@ static bool identify(WbModule* m, const Scan* scan, WbBudget* budget) {
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The eagleplayer repairs the song data of one game. The repair lands in the data: a file whose code region contains
 // the words it looks at is refused.
 static bool repair_song_data(WbModule* m) {
@@ -832,8 +785,6 @@ static bool repair_song_data(WbModule* m) {
     m->image[FIX_WORD_AT + 1] = (uint8_t)fixed_word;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool wb_module_load(WbModule* m, const uint8_t* data, size_t size, WbBudget* budget) {
     memset(m, 0, sizeof(*m));
@@ -861,8 +812,6 @@ bool wb_module_load(WbModule* m, const uint8_t* data, size_t size, WbBudget* bud
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void wb_module_free(WbModule* m) {
     free(m->image);
     free(m->song_seq);
@@ -870,8 +819,6 @@ void wb_module_free(WbModule* m) {
     free(m->sample_ptr);
     memset(m, 0, sizeof(*m));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool wb_module_pattern(const WbModule* m, uint32_t number, uint32_t* stream) {
     *stream = WB_BAD_POINTER;
@@ -900,8 +847,6 @@ bool wb_module_pattern(const WbModule* m, uint32_t number, uint32_t* stream) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool wb_module_data_u8(const WbModule* m, uint32_t at, uint8_t* out) {
     if (at < m->code_end || at >= m->size || (at >= m->var_lo && at < m->var_hi)) {
         return false;
@@ -918,8 +863,6 @@ bool wb_module_data_u8(const WbModule* m, uint32_t at, uint8_t* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool read_record(const WbModule* m, uint32_t at, uint8_t* out, uint32_t bytes) {
     for (uint32_t i = 0; i < bytes; i++) {
         if (!wb_module_data_u8(m, at + i, &out[i])) {
@@ -928,8 +871,6 @@ static bool read_record(const WbModule* m, uint32_t at, uint8_t* out, uint32_t b
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool wb_module_instrument(const WbModule* m, uint8_t wave, WbInstrument* out) {
     uint8_t b[INSTRUMENT_BYTES];
@@ -943,8 +884,6 @@ bool wb_module_instrument(const WbModule* m, uint8_t wave, WbInstrument* out) {
                             .loop_length = nuade_read_be16(b + 6) };
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool wb_module_envelope(const WbModule* m, uint8_t env_sel, WbEnvelope* out) {
     uint8_t b[ENVELOPE_BYTES];
@@ -962,8 +901,6 @@ bool wb_module_envelope(const WbModule* m, uint8_t env_sel, WbEnvelope* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool wb_module_arp_byte(const WbModule* m, uint32_t index, uint8_t* out) {
     if (index >= ARP_TABLE_BYTES || !in_range(m->size, m->addr[WbRole_ArpTable], ARP_TABLE_BYTES)) {
         return false;
@@ -971,8 +908,6 @@ bool wb_module_arp_byte(const WbModule* m, uint32_t index, uint8_t* out) {
     *out = m->image[m->addr[WbRole_ArpTable] + index];
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool wb_module_period(const WbModule* m, uint32_t byte_index, uint16_t* out) {
     if (!in_range(m->period_count * 2, byte_index, 2)) {

@@ -19,8 +19,6 @@ void spl_module_close(SplModule* module);
 // offsets of the build tables are offsets of the hunk. Addresses outside the hunk (a table entry that is 0) read as 0
 // and ignore writes.
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static inline uint32_t spl_module_address(const SplModule* module, uint32_t offset) {
     return module->build->load_base + offset;
 }

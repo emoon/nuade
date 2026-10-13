@@ -21,7 +21,6 @@
 #define MK2_SLIDE_SUBTRACT 0x20
 #define MK2_SLIDE_RESERVED 0x40
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period table word at `byte_offset` from its start. The code indexes it with a 16-bit signed value, so notes and
 // slides can read before and past the table.
 
@@ -33,7 +32,6 @@ static uint16_t read_period(Mk2Player* player, int16_t byte_offset) {
     return period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxLC and AUDxLEN of a sample. One that starts outside the module leaves the model; one that runs past the end of
 // the module (an empty instrument plays 65536 words) plays the zeros that follow it in chip memory.
 
@@ -53,7 +51,6 @@ static void set_sample(Mk2Player* player, NuadePaulaChannel* paula, uint32_t sam
     paula->lc = (const int8_t*)player->chip + start;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period of a step: the note plus the row's transpose through the period table. A note with bit 7 moves the voice's
 // last period by its other bits instead (up when the step's parameter byte has bit 7). The note 0x32 of the later
 // versions keeps the last period.
@@ -73,7 +70,6 @@ static uint16_t step_period(Mk2Player* player, Mk2Track* track, const Mk2RowCell
     return (uint16_t)(step->slide_up ? track->last_period + slide : track->last_period - slide);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume of a step: its volume (at least 1) less a ramp that the row's flags select. Bit 5 counts the falling
 // counter down (the rising one follows it); otherwise the falling counter is set to its start and bit 6 counts the
 // rising counter up to MK2_VOLUME_RAMP_MAX (the falling one follows it) while no flag clears the rising one. The volume
@@ -105,7 +101,6 @@ static uint16_t step_volume(Mk2Track* track, const Mk2RowCell* cell, const Mk2St
     return (uint16_t)(volume > ramp ? volume - ramp : 1);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One column of the row: its sequence's step sets the sample, period and volume of the column's voice. A step with
 // bit 0 of the parameter clear stops the DMA of its voice in the next tick, which restarts the sample.
 
@@ -144,7 +139,6 @@ static void play_column(Mk2Player* player, uint32_t column) {
     player->voices[track->dma_voice].restart = !step.keep_dma;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The four columns of the row, then DMA on for every voice (the voices that run on are not restarted).
 
 static void play_row_step(Mk2Player* player) {
@@ -159,7 +153,6 @@ static void play_row_step(Mk2Player* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The first tick of a step in the versions with slides: every column with the slide bit in its sample byte writes the
 // period of its note moved by half its parameter byte (bit 5 of that: down). The column's channel is taken in order,
 // whatever the steps swapped.
@@ -180,7 +173,6 @@ static void slide_periods(Mk2Player* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The first tick of a step.
 
 static void dma_tick(Mk2Player* player) {
@@ -194,7 +186,6 @@ static void dma_tick(Mk2Player* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Moves on one step of the sequences; after the last one, to the next row and the first step; after the last row, to
 // the start of the song. Returns true at that wrap.
 
@@ -216,8 +207,6 @@ static bool next_step(Mk2Player* player) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Returns true when the tick moved the song past its last row.
 
 static bool run_tick(Mk2Player* player) {
@@ -232,7 +221,6 @@ static bool run_tick(Mk2Player* player) {
     return wrapped;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The init of the module: DMA off, the voices in their channels, then the first step of the first row.
 
 static void reset_state(Mk2Player* player) {
@@ -258,8 +246,6 @@ static void reset_state(Mk2Player* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool mk2_start(Mk2Player* player, NuadeVoices* voices) {
     reset_state(player);
     if (voices != nullptr) {
@@ -276,8 +262,6 @@ bool mk2_start(Mk2Player* player, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 Mk2TickResult mk2_tick(Mk2Player* player, NuadeVoices* voices) {
     const bool wrapped = run_tick(player);
     for (uint32_t v = 0; v < MK2_VOICES; v++) {
@@ -286,7 +270,6 @@ Mk2TickResult mk2_tick(Mk2Player* player, NuadeVoices* voices) {
     return (Mk2TickResult) { .looped = wrapped && player->module.layout->signals_song_end };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Plays the song twice round without a mixer: everything it reaches must stay inside what the port models.
 
 static bool dry_run(Mk2Player* player) {
@@ -304,8 +287,6 @@ static bool dry_run(Mk2Player* player) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 Mk2Player* mk2_create(const uint8_t* data, size_t size) {
     Mk2Player* player = calloc(1, sizeof(*player));
     if (player == nullptr) {
@@ -321,8 +302,6 @@ Mk2Player* mk2_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void mk2_destroy(Mk2Player* player) {
     if (player != nullptr) {
         free(player->chip);
@@ -330,14 +309,10 @@ void mk2_destroy(Mk2Player* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t mk2_grid_ticks(const Mk2Player* player) {
     (void)player;
     return 2;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Mk2VoiceState mk2_voice_state(const Mk2Player* player, uint32_t voice) {
     if (voice >= MK2_VOICES) {

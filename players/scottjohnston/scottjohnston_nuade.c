@@ -7,13 +7,9 @@
 #include <nuade/players/scottjohnston.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe scottjohnston_probe(const uint8_t* data, size_t size, const char* filename) {
     return sj_probe(data, size, filename) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult scottjohnston_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -44,20 +40,14 @@ static NuadePlayerOpenResult scottjohnston_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void scottjohnston_close(void* user_data) {
     sj_destroy((SjPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool scottjohnston_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return subsong == 0 && sj_start((SjPlayer*)user_data, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult scottjohnston_tick(void* user_data, NuadeVoices* voices) {
     const SjTickResult tick = sj_tick((SjPlayer*)user_data, voices);
@@ -71,13 +61,9 @@ static NuadeTickResult scottjohnston_tick(void* user_data, NuadeVoices* voices) 
     return (NuadeTickResult) { .length = tick.length, .flags = flags };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void scottjohnston_metadata(void* user_data, const NuadeMetadataSink* sink) {
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, sj_format_name((const SjPlayer*)user_data));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t scottjohnston_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const SjPlayer* player = (const SjPlayer*)user_data;
@@ -89,15 +75,11 @@ static uint32_t scottjohnston_voice_info(void* user_data, NuadeVoiceInfo* out, u
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t scottjohnston_grid_ticks(void* user_data, uint32_t subsong) {
     (void)user_data;
     (void)subsong;
     return sj_ticks_per_row();
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_scottjohnston = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -114,8 +96,6 @@ const NuadePlayer nuade_player_scottjohnston = {
     .voice_info = scottjohnston_voice_info,
     .grid_ticks = scottjohnston_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SjPlayer* sj_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_scottjohnston) {

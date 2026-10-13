@@ -32,8 +32,6 @@
 // A note with loop flags 0 ends at its third audio interrupt.
 #define ONE_SHOT_BLOCK_STARTS 2
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 ThmCreateResult thm_create(const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
     ThmCreateResult result = { .status = ThmStatus_InvalidData };
     ThmModule* module = thm_module_load(data, size, path, io, &result.status);
@@ -51,8 +49,6 @@ ThmCreateResult thm_create(const uint8_t* data, size_t size, const char* path, c
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void thm_destroy(ThmPlayer* player) {
     if (player != nullptr) {
         thm_module_free(player->module);
@@ -60,27 +56,22 @@ void thm_destroy(ThmPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t thm_subsong_count(const ThmPlayer* player) {
     return player->module->subsong_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxVOL as the replayer writes it, after the eagleplayer's volume scaling (the identity at full volume).
 
 static void write_volume(ThmChannel* c, uint32_t volume) {
     c->paula.volume = (uint8_t)(volume & 0x7f);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume of a voice that follows the envelope: the instrument volume scaled by the level.
 
 static void write_level_volume(ThmChannel* c, uint8_t level) {
     write_volume(c, ((uint32_t)c->note_volume * level) >> 6);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // DMACON clear. A channel that plays raises its interrupt request once more as the sample it still has in its output
 // register ends (UAE's audio state machine does this for a channel without DMA), so the request is pending afterwards.
 
@@ -91,7 +82,6 @@ static void switch_dma_off(ThmChannel* c) {
     nuade_paula_channel_dma_off(&c->paula);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The audio interrupt of a channel.
 
 static void audio_interrupt(const ThmModule* module, ThmChannel* c) {
@@ -113,8 +103,6 @@ static void audio_interrupt(const ThmModule* module, ThmChannel* c) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void raise_audio_interrupt(const ThmModule* module, ThmChannel* c) {
     c->irq_pending = true;
     if (c->irq_enabled) {
@@ -122,7 +110,6 @@ static void raise_audio_interrupt(const ThmModule* module, ThmChannel* c) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // INTENA set: a request that came in while the interrupt was off is taken now.
 
 static void enable_audio_interrupt(const ThmModule* module, ThmChannel* c) {
@@ -132,7 +119,6 @@ static void enable_audio_interrupt(const ThmModule* module, ThmChannel* c) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Block starts the mixer played since the last tick: one request each. Once the handler has disabled the interrupt,
 // the rest only leave the request pending, so the loop ends there.
 
@@ -150,7 +136,6 @@ static void answer_audio_interrupts(const ThmModule* module, ThmChannel* c, uint
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The voice stops: DMA and its interrupt off, no envelope work. A pending request stays.
 
 static void stop_voice(ThmChannel* c) {
@@ -159,7 +144,6 @@ static void stop_voice(ThmChannel* c) {
     c->envelope_flags = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The first volume of a note, and what the envelope handler needs to follow it.
 
 static void set_up_envelope(ThmChannel* c, const ThmNote* n, const ThmInstrument* instrument) {
@@ -186,7 +170,6 @@ static void set_up_envelope(ThmChannel* c, const ThmNote* n, const ThmInstrument
     write_volume(c, volume);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Start the DMA of a note: the audio interrupt is enabled first, so a request left over from the previous note's loop
 // is answered before the block start of this one.
 
@@ -200,7 +183,6 @@ static void start_dma(const ThmModule* module, ThmChannel* c) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note or a retrigger on a voice.
 
 static void start_note(const ThmModule* module, ThmChannel* c, uint8_t note, ThmRow row) {
@@ -229,8 +211,6 @@ static void start_note(const ThmModule* module, ThmChannel* c, uint8_t note, Thm
     start_dma(module, c);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_row_command(const ThmModule* module, ThmChannel* c) {
     const ThmRow row = c->row;
     switch (row.note) {
@@ -248,7 +228,6 @@ static void run_row_command(const ThmModule* module, ThmChannel* c) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tick before a row: read the voice's row from its pattern (transposed) and stop the voice if the row starts a
 // note.
 
@@ -266,7 +245,6 @@ static void read_row_ahead(ThmPlayer* p, uint32_t voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tick of a row: the commands of all voices, then the next row; after the last row the next position, or the song
 // start again.
 
@@ -289,8 +267,6 @@ static void run_row(ThmPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_sequencer(ThmPlayer* p) {
     if (p->tick_counter == 0) {
         for (uint32_t v = 0; v < THM_VOICES; v++) {
@@ -304,7 +280,6 @@ static void run_sequencer(ThmPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A signed 32-bit by 16-bit division with the 68000's overflow rule: a quotient that does not fit leaves the
 // destination, whose low word is what the replayer stores.
 
@@ -316,7 +291,6 @@ static int16_t divide_low_word(int32_t dividend, int16_t divisor) {
     return (int16_t)quotient;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One step of the level towards `target` along the slope. On arriving, the level is the target and the slope for the
 // next segment (to `next`, over `steps` steps) is worked out.
 
@@ -334,7 +308,6 @@ static void step_level(ThmChannel* c, uint8_t target, uint8_t next, uint8_t step
     c->stage = (ThmStage)(c->stage + 1);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The release (command 0xdf): the level falls to 0 over the instrument's last segment time.
 
 static void release_voice(ThmChannel* c, const ThmInstrument* instrument) {
@@ -349,7 +322,6 @@ static void release_voice(ThmChannel* c, const ThmInstrument* instrument) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The envelope handler for one voice: the attack and three more segments with the instrument's levels and step counts.
 
 static void step_envelope(ThmPlayer* p, uint32_t voice) {
@@ -396,7 +368,6 @@ static void step_envelope(ThmPlayer* p, uint32_t voice) {
     step_level(c, target, next, steps != 0 ? steps : 1);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A sliding note moves its period towards the target by the instrument's speed.
 
 static void slide_period(ThmPlayer* p, uint32_t voice) {
@@ -425,7 +396,6 @@ static void slide_period(ThmPlayer* p, uint32_t voice) {
     c->paula.period = period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The envelope timer handler: every run slides the periods, every fourth run steps the envelopes.
 
 static void run_envelope_handler(ThmPlayer* p) {
@@ -441,8 +411,6 @@ static void run_envelope_handler(ThmPlayer* p) {
         step_envelope(p, v);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool thm_start(ThmPlayer* p, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     p->sample_rate = sample_rate;
@@ -472,7 +440,6 @@ bool thm_start(ThmPlayer* p, uint32_t subsong, uint32_t sample_rate, NuadeVoices
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Clocks until the voice's next block start, when its audio interrupt can still act on it (a note ends at the third
 // and loops at the second): a tick is due then, so the handler runs when the block starts and not at the next timer
 // interrupt. Long when there is none. The tick is two mixer frames late, so that the mixer has counted the wrap (it
@@ -494,8 +461,6 @@ static uint64_t until_block_start(const ThmChannel* c, uint32_t voice, const Nua
     const uint64_t frame = THM_TIMEBASE_HZ / sample_rate + 1;
     return (uint64_t)(seconds * THM_TIMEBASE_HZ) + 2 * frame;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ThmTickResult thm_tick(ThmPlayer* p, NuadeVoices* voices) {
     p->looped = false;
@@ -522,8 +487,6 @@ ThmTickResult thm_tick(ThmPlayer* p, NuadeVoices* voices) {
     p->time = next;
     return result;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ThmVoiceState thm_voice_state(const ThmPlayer* player, uint32_t voice) {
     const ThmChannel* c = &player->channel[voice % THM_VOICES];

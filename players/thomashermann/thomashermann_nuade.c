@@ -8,13 +8,9 @@
 #include <nuade/players/thomashermann.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe thomashermann_probe(const uint8_t* data, size_t size, const char* filename) {
     return thm_probe(data, size, filename) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult thomashermann_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -45,33 +41,23 @@ static NuadePlayerOpenResult thomashermann_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void thomashermann_close(void* user_data) {
     thm_destroy((ThmPlayer*)user_data);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool thomashermann_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     return thm_start((ThmPlayer*)user_data, subsong, sample_rate, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult thomashermann_tick(void* user_data, NuadeVoices* voices) {
     const ThmTickResult tick = thm_tick((ThmPlayer*)user_data, voices);
     return (NuadeTickResult) { .length = tick.length, .flags = tick.looped ? NuadeTick_Looped : NuadeTick_None };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void thomashermann_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Thomas Hermann");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t thomashermann_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const ThmPlayer* player = (const ThmPlayer*)user_data;
@@ -82,8 +68,6 @@ static uint32_t thomashermann_voice_info(void* user_data, NuadeVoiceInfo* out, u
     }
     return n;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_thomashermann = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -99,8 +83,6 @@ const NuadePlayer nuade_player_thomashermann = {
     .metadata = thomashermann_metadata,
     .voice_info = thomashermann_voice_info,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ThmPlayer* thm_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_thomashermann) {

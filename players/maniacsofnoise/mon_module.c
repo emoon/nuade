@@ -130,25 +130,18 @@ static const MonLayout k_layouts[] = {
       .record_slide_from = 0x2A },
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t mon_u8(const MonModule* m, uint32_t address) {
     return address < m->size ? m->bytes[address] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t mon_u16(const MonModule* m, uint32_t address) {
     return (uint16_t)((uint16_t)mon_u8(m, address) << 8 | mon_u8(m, address + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t mon_u32(const MonModule* m, uint32_t address) {
     return (uint32_t)mon_u16(m, address) << 16 | mon_u16(m, address + 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The same reads on the bytes of an image that is not yet a MonModule.
 
 typedef struct RawImage {
@@ -156,20 +149,16 @@ typedef struct RawImage {
     uint32_t size;
 } RawImage;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t raw_u16(const RawImage* image, uint32_t address) {
     return address <= image->size && image->size - address >= 2 ? nuade_read_be16(image->bytes + address) : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The address a pc-relative displacement word at `address` leads to (the displacement counts from its own address).
 
 static uint32_t pc_target(const RawImage* image, uint32_t address) {
     return address + (uint32_t)(int32_t)(int16_t)raw_u16(image, address);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // FNV-1a over the code from the first entry to the data block. The displacement of a pc-relative load of
 // MON_VOICE_MASK_ADDRESS into a3 counts as zero, so that the signature does not depend on where the code starts. False
 // when the code lies outside the image.
@@ -190,8 +179,6 @@ static bool code_signature(const RawImage* image, uint32_t first, uint32_t end, 
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 typedef struct Entries {
     uint32_t init;
     uint32_t interrupt;
@@ -200,7 +187,6 @@ typedef struct Entries {
     uint32_t count_offset; // of the song count byte from the data block
 } Entries;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2 of the eagleplayer: the entries of the three jumps and the data block.
 
 static bool check_entries(const RawImage* image, Entries* out) {
@@ -226,7 +212,6 @@ static bool check_entries(const RawImage* image, Entries* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The layout of the version whose code and entry positions the module has.
 
 static const MonLayout* find_layout(const RawImage* image, const Entries* entries) {
@@ -246,8 +231,6 @@ static const MonLayout* find_layout(const RawImage* image, const Entries* entrie
     }
     return nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool mon_locate(const uint8_t* bytes, size_t size, MonModule* out) {
     if (size > UINT32_MAX / 2) {
@@ -280,25 +263,17 @@ bool mon_locate(const uint8_t* bytes, size_t size, MonModule* out) {
     return mon_walk_songs(out);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t mon_song_address(const MonModule* m, uint16_t offset) {
     return m->songs + (uint32_t)(int32_t)(int16_t)offset;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const int8_t* mon_sample(const MonModule* m, uint32_t address) {
     return address < m->size ? (const int8_t*)(m->bytes + (address & ~1u)) : nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t mon_period_entry(const MonModule* m, unsigned note) {
     return mon_u16(m, m->base + m->layout->period_table + note * 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool mon_read_song(const MonModule* m, uint32_t number, MonSong* out) {
     if (number >= m->subsong_count) {
@@ -312,8 +287,6 @@ bool mon_read_song(const MonModule* m, uint32_t number, MonSong* out) {
     out->tempo = mon_u8(m, record + 10);
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MonInstrument mon_read_instrument(const MonModule* m, uint32_t address) {
     if (address == MON_NO_ADDRESS) {
@@ -338,8 +311,6 @@ MonInstrument mon_read_instrument(const MonModule* m, uint32_t address) {
         .arpeggio_speed = mon_u8(m, address + 0x16),
     };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MonWave mon_read_wave(const MonModule* m, uint8_t index) {
     const uint32_t entry = m->layout->wave_table + (uint32_t)index * 4;

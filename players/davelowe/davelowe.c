@@ -12,8 +12,6 @@ static const uint8_t s_builtin_tables[] = {
     0x00, 0x00, 0x00, 0xff, // silent envelope: volume 0, then the end mark
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 DlImage* dl_image_create(const uint8_t* data, size_t size) {
     if (size == 0 || size > 0x1000000) {
         return nullptr;
@@ -39,8 +37,6 @@ DlImage* dl_image_create(const uint8_t* data, size_t size) {
     return image;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool dl_image_keep_original(DlImage* image) {
     image->original = malloc(image->module_size);
     if (image->original == nullptr) {
@@ -50,15 +46,11 @@ bool dl_image_keep_original(DlImage* image) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void dl_image_restore(DlImage* image) {
     if (image->original != nullptr) {
         memcpy(image->data, image->original, image->module_size);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void dl_image_destroy(DlImage* image) {
     if (image != nullptr) {
@@ -68,14 +60,10 @@ void dl_image_destroy(DlImage* image) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The code hunk of an executable module as an image of its own
 static DlImage* hunk_image(const uint8_t* data, uint32_t code_size) {
     return dl_image_create(data + DL_HUNK_CODE_OFFSET, code_size);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static DlImage* open_game(const DlImage* file, const uint8_t* data, DlPlayer* player) {
     uint32_t code_size;
@@ -94,8 +82,6 @@ static DlImage* open_game(const DlImage* file, const uint8_t* data, DlPlayer* pl
     return code;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static DlImage* open_deli(const DlImage* file, const uint8_t* data, DlPlayer* player) {
     uint32_t code_size;
     if (!dl_deli_extract(file, &code_size)) {
@@ -113,8 +99,6 @@ static DlImage* open_deli(const DlImage* file, const uint8_t* data, DlPlayer* pl
     return code;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The file itself is the image of a ".dln" module
 static DlImage* open_new(DlImage* file, DlPlayer* player) {
     if (!dl_new_locate(file, &player->new_module)) {
@@ -126,8 +110,6 @@ static DlImage* open_new(DlImage* file, DlPlayer* player) {
     player->first_sample_record = player->new_module.first_sample_record;
     return file;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The module as the engine sees it: the code hunk of a game driver or a Deli module, or the whole ".dln" file. Null if
 // the data is not a Dave Lowe module.
@@ -153,16 +135,12 @@ static DlImage* open_module(const uint8_t* data, size_t size, DlPlayer* player) 
     return image;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool dl_probe(const uint8_t* data, size_t size) {
     DlPlayer player = { 0 };
     DlImage* image = open_module(data, size, &player);
     dl_image_destroy(image);
     return image != nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DlPlayer* dl_create(const uint8_t* data, size_t size) {
     DlPlayer* player = calloc(1, sizeof(*player));
@@ -177,8 +155,6 @@ DlPlayer* dl_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void dl_destroy(DlPlayer* player) {
     if (player != nullptr) {
         dl_image_destroy(player->image);
@@ -186,13 +162,9 @@ void dl_destroy(DlPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t dl_subsong_count(const DlPlayer* player) {
     return player->subsong_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const char* dl_kind_name(const DlPlayer* player) {
     if (player->kind == DlKind_Game) {
@@ -203,8 +175,6 @@ const char* dl_kind_name(const DlPlayer* player) {
     }
     return player->new_module.engine_a ? "new module, first engine" : "new module, second engine";
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool dl_start(DlPlayer* player, uint32_t subsong) {
     if (subsong >= player->subsong_count) {
@@ -226,15 +196,11 @@ bool dl_start(DlPlayer* player, uint32_t subsong) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 DlTickResult dl_tick(DlPlayer* player, NuadeVoices* voices) {
     dl_engine_tick(&player->engine);
     dl_engine_sync(&player->engine, voices);
     return (DlTickResult) { .looped = player->engine.loop.looped };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DlVoiceState dl_voice_state(const DlPlayer* player, int voice) {
     if (voice < 0 || voice >= DL_VOICES) {

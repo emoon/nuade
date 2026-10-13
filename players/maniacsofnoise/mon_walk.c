@@ -33,19 +33,13 @@ typedef struct Walk {
     size_t bit_bytes;
 } Walk;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool test_bit(const uint8_t* bits, uint32_t address) {
     return (bits[address >> 3] & (1u << (address & 7))) != 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void set_bit(uint8_t* bits, uint32_t address) {
     bits[address >> 3] |= (uint8_t)(1u << (address & 7));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool ends_tick(MonPatternCommand command) {
     return command == MonPatternCommand_Note || command == MonPatternCommand_SlideNote
@@ -53,7 +47,6 @@ static bool ends_tick(MonPatternCommand command) {
            || command == MonPatternCommand_Rest;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A pattern from `start` to its end command; the arguments of the commands have to be inside the image too.
 
 static PatternInfo walk_pattern(Walk* walk, uint32_t start) {
@@ -88,7 +81,6 @@ static PatternInfo walk_pattern(Walk* walk, uint32_t start) {
     return (PatternInfo) { 0 };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A voice's sequence from its start; the patterns its words select. It ends at a stop or when a jump comes back to a
 // word it has read, which must not be without a tick-ending pattern in between.
 
@@ -138,7 +130,6 @@ static bool walk_sequence(Walk* walk, uint32_t track) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The first tick of a voice of a song: its first pattern, up to the command that ends its tick. `loaded`: a voice of
 // this tick has loaded an instrument. False when the voice plays a note or slide before that, or never gets to the end
 // of its tick.
@@ -211,7 +202,6 @@ static bool first_tick_voice(const MonModule* m, uint32_t track, bool* loaded, b
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The first tick of a song: the voices run from the last to the first, a sequence stop ends the interrupt.
 
 static bool first_tick(const MonModule* m, const MonSong* song) {
@@ -225,8 +215,6 @@ static bool first_tick(const MonModule* m, const MonSong* song) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool mon_walk_songs(const MonModule* m) {
     if (m->size > MAX_IMAGE_BYTES) {

@@ -42,7 +42,6 @@
 
 #define VIBRATO_STEP_DELAY 7 // a step: bits 3 to 7 the note offset, bits 0 to 2 the delay
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxLC / AUDxLEN of a sample of the hunk: AUDxLC ignores its lowest bit; a sample plays zeros past the hunk's end.
 // An address past the hunk is memory the module does not own: it plays the zeros behind the hunk, the only memory
 // with room for any length.
@@ -53,13 +52,10 @@ static void set_sample(const CdMemory* m, NuadePaulaChannel* paula, uint32_t off
     paula->len_words = length_words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool is_command(uint8_t byte) {
     return byte >= COMMAND_FIRST;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The audio interrupt that a voice's DMA start raises. It sets the sample block that follows the first one in the
 // voice's record (the tick writes it to the registers), once: the eagleplayer's patch disables the interrupt.
 
@@ -79,7 +75,6 @@ static void audio_interrupt(const CdModule* module, CdVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Start a note: the registers are set up, the DMA is cut and the volume is 0. The next voice update starts the DMA.
 
 static void voice_start(const CdModule* module, CdVoice* v, uint32_t instrument_offset, uint16_t period,
@@ -103,7 +98,6 @@ static void voice_start(const CdModule* module, CdVoice* v, uint32_t instrument_
     v->display_instrument = (int)((instrument_offset - module->header.instruments) / CD_INSTRUMENT_SIZE);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One step of the volume envelope. The volume is an 8 bit value: a sum that turns negative ends the stage.
 
 static void envelope_step(const CdModule* module, CdVoice* v) {
@@ -140,7 +134,6 @@ static void envelope_step(const CdModule* module, CdVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tick of one voice: write the registers, start the DMA if it is off, run the envelope.
 
 static void voice_update(const CdModule* module, CdVoice* v) {
@@ -162,7 +155,6 @@ static void voice_update(const CdModule* module, CdVoice* v) {
     envelope_step(module, v);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The vibrato of a track: a sequence of note offsets that the period of the voice follows, each step held for a few
 // ticks.
 
@@ -199,7 +191,6 @@ static void vibrato_step(const CdModule* module, CdTrack* t, CdVoice* v) {
     v->period = cd_read_period(&module->memory, &module->tables, t->note);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A pattern command (a negative byte): select an instrument, end the pattern, select a vibrato, or skip.
 
 static void pattern_command(const CdModule* module, CdTrack* t) {
@@ -215,7 +206,6 @@ static void pattern_command(const CdModule* module, CdTrack* t) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pattern ended: play it again while repeats are left, else read the order list up to the next pattern. False if
 // the order list ended.
 
@@ -253,7 +243,6 @@ static bool track_advance(const CdModule* module, CdTrack* t) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One tick of the pattern: count the current event down and, when it is due, read the next one. Returns false when the
 // pattern ended before an event could be read.
 
@@ -295,8 +284,6 @@ static bool pattern_step(const CdModule* module, CdTrack* t, CdVoice* v) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void track_tick(const CdModule* module, CdTrack* t, CdVoice* v) {
     vibrato_step(module, t, v);
     for (int step = 0; step < MAX_TRACK_STEPS; step++) {
@@ -310,7 +297,6 @@ static void track_tick(const CdModule* module, CdTrack* t, CdVoice* v) {
     t->active = false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tick of the song: the tracks play on voices 1 to 3. When every order list has ended, the flag drops and the next
 // tick restarts the song.
 
@@ -330,7 +316,6 @@ static void music_step(CdPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Start song `song`: all DMA off, the voices that play the song silenced, every track at the start of its order list.
 // The tracks keep their vibrato state.
 
@@ -363,7 +348,6 @@ static void song_init(CdPlayer* player, uint8_t song) {
     player->music_active = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A sound effect plays one instrument at one period on a voice that depends on the driver. The eagleplayer starts a
 // subsong with the "repeat" argument set, which these choices assume. A song that plays blocks the effects.
 
@@ -387,7 +371,6 @@ static void sound_effect_start(CdPlayer* player, const CdSubsong* subsong) {
                 subsong->period, timer);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The driver's start routine: a subsong is a song or a sound effect.
 
 static void subsong_start(CdPlayer* player, int subsong) {
@@ -401,8 +384,6 @@ static void subsong_start(CdPlayer* player, int subsong) {
     player->song_playing = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void cd_driver_start(CdPlayer* player, int subsong) {
     memset(player->voices, 0, sizeof(player->voices));
     memset(player->tracks, 0, sizeof(player->tracks));
@@ -415,8 +396,6 @@ void cd_driver_start(CdPlayer* player, int subsong) {
     }
     subsong_start(player, subsong);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void cd_driver_tick(CdPlayer* player) {
     player->looped = false;

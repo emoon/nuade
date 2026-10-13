@@ -16,29 +16,21 @@
 #define INIT_LENGTH_WORDS 1
 #define INIT_PERIOD 1
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The hardware ignores the lowest bit of the address
 void bth_set_address(const BthPlayer* p, BthVoice* v, uint32_t address, uint16_t length_words) {
     v->paula.lc = bthm_sample(&p->work, address & ~1u, length_words);
     v->paula.len_words = length_words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void bth_wrap_track(BthVoice* v) {
     v->track = v->loop;
     v->wrapped = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int bth_instrument_index(const BthPlayer* p, uint32_t record, uint32_t record_bytes) {
     const BthHeader* h = &p->header;
     return record >= h->samples && record < h->samples_end ? (int)((record - h->samples) / record_bytes) : -1;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t bth_table_word(const BthPlayer* p, uint32_t address) {
     const BthImage* image = p->image;
@@ -52,8 +44,6 @@ uint16_t bth_table_word(const BthPlayer* p, uint32_t address) {
     return bthm_u16(&p->work, address);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The last voice of a module runs only while a word of the module has a value
 static bool voice_runs(const BthPlayer* p, uint32_t index) {
     const BthReplayer* r = &p->replayer;
@@ -65,8 +55,6 @@ static bool voice_runs(const BthPlayer* p, uint32_t index) {
     }
     return (bthm_u16(&p->work, r->last_voice_flag) != 0) == r->last_voice_runs_when_set;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BthTickResult bth_tick(BthPlayer* p, NuadeVoices* voices) {
     const bool legacy = p->replayer.engine == BthEngine_Legacy;
@@ -100,8 +88,6 @@ BthTickResult bth_tick(BthPlayer* p, NuadeVoices* voices) {
     return (BthTickResult) { .looped = all_wrapped };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The init routine's record set-up: the first commands of the track
 static void init_voice(const BthPlayer* p, BthVoice* v, const BthTrackStart* start) {
     v->track = start->track;
@@ -111,8 +97,6 @@ static void init_voice(const BthPlayer* p, BthVoice* v, const BthTrackStart* sta
     v->command = entry.stream;
     v->note_base = entry.note_base;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool bth_start(BthPlayer* p, uint32_t subsong, NuadeVoices* voices) {
     if (subsong >= p->song_count) {
@@ -138,8 +122,6 @@ bool bth_start(BthPlayer* p, uint32_t subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 BthVoiceState bth_voice_state(const BthPlayer* p, int voice) {
     if (voice < 0 || voice >= BTH_VOICES) {
         return (BthVoiceState) { .note = -1, .instrument = -1 };
@@ -147,19 +129,13 @@ BthVoiceState bth_voice_state(const BthPlayer* p, int voice) {
     return (BthVoiceState) { .note = p->voices[voice].note, .instrument = p->voices[voice].instrument };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t bth_subsong_count(const BthPlayer* p) {
     return p->song_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t bth_tick_length(const BthPlayer* p) {
     return p->tick_length;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The unit the lengths of a subsong are multiples of: the module's tempo (the init routine may set it); a BEATHOVEN100
 // length counts ticks
@@ -177,8 +153,6 @@ uint32_t bth_ticks_per_step(const BthPlayer* p, uint32_t subsong) {
     }
     return value == 0 ? 1 : value;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A string of the module's information: Latin-1 in the module, UTF-8 in the tag. Empty if the pointer is bad or the
 // string is not terminated in the module.
@@ -200,19 +174,13 @@ static void copy_string(const BthModule* m, uint32_t address, char* out, size_t 
     out[length] = '\0';
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const char* bth_title(const BthPlayer* p) {
     return p->title;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const char* bth_author(const BthPlayer* p) {
     return p->author;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void bth_destroy(BthPlayer* p) {
     if (p != nullptr) {
@@ -224,16 +192,12 @@ void bth_destroy(BthPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool bth_probe(const uint8_t* data, size_t size) {
     BthPlayer* p = bth_create(data, size);
     const bool opens = p != nullptr;
     bth_destroy(p);
     return opens;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BthPlayer* bth_create(const uint8_t* data, size_t size) {
     BthImage* image = bthi_load(data, size);

@@ -11,14 +11,10 @@
 // Ticks per row of the display grid: the shortest note the songs use is 6 ticks long
 #define KH_GRID_TICKS 6
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe krishatlelid_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return kh_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult krishatlelid_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -48,20 +44,14 @@ static NuadePlayerOpenResult krishatlelid_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void krishatlelid_close(void* user_data) {
     kh_destroy((KhPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool krishatlelid_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return kh_start((KhPlayer*)user_data, subsong, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult krishatlelid_tick(void* user_data, NuadeVoices* voices) {
     const KhTickResult tick = kh_tick((KhPlayer*)user_data, voices);
@@ -75,14 +65,10 @@ static NuadeTickResult krishatlelid_tick(void* user_data, NuadeVoices* voices) {
     return (NuadeTickResult) { .length = tick.length, .flags = flags };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void krishatlelid_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Kris Hatlelid");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t krishatlelid_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const KhPlayer* player = (const KhPlayer*)user_data;
@@ -94,15 +80,11 @@ static uint32_t krishatlelid_voice_info(void* user_data, NuadeVoiceInfo* out, ui
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t krishatlelid_grid_ticks(void* user_data, uint32_t subsong) {
     (void)user_data;
     (void)subsong;
     return KH_GRID_TICKS;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_krishatlelid = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -119,8 +101,6 @@ const NuadePlayer nuade_player_krishatlelid = {
     .voice_info = krishatlelid_voice_info,
     .grid_ticks = krishatlelid_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 KhPlayer* kh_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_krishatlelid) {

@@ -19,8 +19,6 @@ typedef enum FseqEnd {
     FseqEnd_Wait,
 } FseqEnd;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // E9: one sample of a sample pack. The replayer copies the first byte of the sample over the second.
 static void load_packed_sample(const HhModule* m, HhVoice* v, uint8_t number, uint8_t record) {
     const HhPack pack = hh_sample_pack(m, number);
@@ -35,8 +33,6 @@ static void load_packed_sample(const HhModule* m, HhVoice* v, uint8_t number, ui
     }
     hh_restart_volume(v);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // E5: start a sweep through a sample: a window of `length` words that moves by `delta` words every `speed` ticks
 static void start_sweep(const HhModule* m, HhVoice* v, uint32_t at) {
@@ -55,8 +51,6 @@ static void start_sweep(const HhModule* m, HhVoice* v, uint32_t at) {
     sweep->active = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // E6: change the length, step and speed of the sweep
 static void change_sweep(const HhModule* m, HhVoice* v, uint32_t at) {
     HhSweep* sweep = &v->sweep;
@@ -67,8 +61,6 @@ static void change_sweep(const HhModule* m, HhVoice* v, uint32_t at) {
     sweep->started = false;
     sweep->stopped = false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Read the frequency sequence until it yields a value, holds or waits.
 static FseqEnd run_fseq(const HhModule* m, const HhEngine* engine, HhVoice* v) {
@@ -131,8 +123,6 @@ static FseqEnd run_fseq(const HhModule* m, const HhEngine* engine, HhVoice* v) {
     return FseqEnd_Hold;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Move the sample window: AUDxLC/AUDxLEN become the repeat, no restart.
 static void run_sweep(const HhModule* m, HhVoice* v) {
     HhSweep* sweep = &v->sweep;
@@ -159,8 +149,6 @@ static void run_sweep(const HhModule* m, HhVoice* v) {
     hh_write_registers(&v->paula, v->repeat);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_frequency(const HhModule* m, const HhVersion* version, HhVoice* v) {
     const FseqEnd end = run_fseq(m, version->engine, v);
     if (end != FseqEnd_Wait || !version->a_wait_skips_sweep) {
@@ -168,15 +156,11 @@ static void run_frequency(const HhModule* m, const HhVersion* version, HhVoice* 
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void init_voice(HhVoice* v) {
     v->current_sample = 0xff;
     v->sweep.active = false;
     v->repeat = (HhRegisters) { .lc = nullptr, .len_words = 0 }; // no repeat until a sample sets one
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The repeat registers of every channel, when the commands stopped a channel
 static void write_repeat(HhSong* song, const HhModule* m, const HhVersion* version) {
@@ -192,8 +176,6 @@ static void write_repeat(HhSong* song, const HhModule* m, const HhVersion* versi
         hh_write_registers(&song->voices[i].paula, song->voices[i].repeat);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const HhEngine k_hh_engine_a = {
     .name = "engine A",

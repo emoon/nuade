@@ -18,7 +18,6 @@
 #define TICK_LATENCY 35
 #define SECOND_HALF_LATENCY 128
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample the registers point to, AUDxLEN as the replayer writes it (0 plays 65536 words). A sample that runs past
 // the instrument block plays zeros there (the block has the Paula tail); a sample outside it nothing.
 
@@ -27,7 +26,6 @@ static void set_sample(NuadePaulaChannel* c, const MmInstruments* inst, uint32_t
     c->len_words = (uint16_t)words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the event wrote into the hardware registers: a cut stops the voice, a note stops its DMA and a new sample goes
 // into the registers (the repeat is kept for the DMA start).
 
@@ -52,7 +50,6 @@ static void apply_step(Mm4* e, uint32_t v, const MmStep* step) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // DMACON set for the voices that have started a note, then the repeat of the voices that started a sample in this
 // tick. The replayer waits for the DMA start between the two.
 
@@ -79,7 +76,6 @@ static void finish_tick(Mm4* e) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A tick that started a sample in a voice whose DMA has been stopped for a note needs the second interrupt.
 
 static bool needs_second_half(const Mm4* e) {
@@ -92,8 +88,6 @@ static bool needs_second_half(const Mm4* e) {
     return started && restarted;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void mm4_start(Mm4* e, const MmSong* song, const MmInstruments* inst, NuadeVoices* voices) {
     *e = (Mm4) { .timer = (uint16_t)(song->tempo * TIMER_PER_TEMPO), .first_tick = true };
     mm_core_start(&e->core, MmVariant_4V, song, inst, MM4_VOICES);
@@ -102,7 +96,6 @@ void mm4_start(Mm4* e, const MmSong* song, const MmInstruments* inst, NuadeVoice
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One normal tick: the events of the voices (from the last), and the registers.
 
 static void run_tick(Mm4* e) {
@@ -123,8 +116,6 @@ static void run_tick(Mm4* e) {
         e->channel[v].paula.period = e->core.voice[v].out_period;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MmTickResult mm4_tick(Mm4* e, NuadeVoices* voices) {
     MmTickResult result = { .length = e->timer }; // the first interrupt is one timer period after the song start

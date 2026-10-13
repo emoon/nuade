@@ -9,8 +9,6 @@
 // The work a tick costs the proof run; a sequencer step costs one unit per byte it reads.
 #define TICK_WORK 8
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void ufo_state_init(UfoState* state, const UfoSong* song) {
     memset(state, 0, sizeof(*state));
     UfoSequencer* seq = &state->seq;
@@ -30,7 +28,6 @@ void ufo_state_init(UfoState* state, const UfoSong* song) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The timing routine runs twice per interrupt, then the volumes follow.
 
 void ufo_state_tick(const UfoSong* song, UfoState* state) {
@@ -42,7 +39,6 @@ void ufo_state_tick(const UfoSong* song, UfoState* state) {
     ufo_voices_update_volumes(state);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Field by field (padding bytes have no defined value).
 
 static bool same_sequencer(const UfoSequencer* a, const UfoSequencer* b) {
@@ -54,14 +50,11 @@ static bool same_sequencer(const UfoSequencer* a, const UfoSequencer* b) {
            && memcmp(a->command, b->command, sizeof(a->command)) == 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool same_channel(const UfoChannel* a, const UfoChannel* b) {
     return a->instrument == b->instrument && a->volume_scale == b->volume_scale && a->bend == b->bend
            && a->base_period == b->base_period && a->return_position == b->return_position;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the sequencer reads depends on the sequencer state and the channel records (instrument and note checks); the
 // voices only follow.
 

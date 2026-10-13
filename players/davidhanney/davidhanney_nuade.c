@@ -7,14 +7,10 @@
 #include <nuade/players/davidhanney.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe davidhanney_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return dh_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult davidhanney_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -31,34 +27,24 @@ static NuadePlayerOpenResult davidhanney_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void davidhanney_close(void* user_data) {
     dh_destroy((DhPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool davidhanney_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return subsong == 0 && dh_start((DhPlayer*)user_data, voices);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult davidhanney_tick(void* user_data, NuadeVoices* voices) {
     const DhTickResult tick = dh_tick((DhPlayer*)user_data, voices);
     return (NuadeTickResult) { .length = DH_TICK_LENGTH, .flags = tick.looped ? NuadeTick_Looped : NuadeTick_None };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void davidhanney_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "David Hanney");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePositionResult davidhanney_position(void* user_data) {
     const DhPosition p = dh_position((const DhPlayer*)user_data);
@@ -69,8 +55,6 @@ static NuadePositionResult davidhanney_position(void* user_data) {
                                                  .rows = (uint32_t)p.rows,
                                                  .speed = (uint32_t)p.speed } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t davidhanney_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const DhPlayer* player = (const DhPlayer*)user_data;
@@ -84,8 +68,6 @@ static uint32_t davidhanney_voice_info(void* user_data, NuadeVoiceInfo* out, uin
     }
     return n;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTrackerInfoResult davidhanney_tracker_info(void* user_data, const NuadePosition* at) {
     const DhPlayer* player = (const DhPlayer*)user_data;
@@ -102,8 +84,6 @@ static NuadeTrackerInfoResult davidhanney_tracker_info(void* user_data, const Nu
                                                              { "arg", NuadeColumn_Hex, 1, 0 } } } };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int32_t davidhanney_note(uint8_t note) {
     switch (note) {
         case 0:
@@ -116,8 +96,6 @@ static int32_t davidhanney_note(uint8_t note) {
             return dh_note_value(note);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePatternCell davidhanney_cell(const void* ctx, uint32_t order, uint32_t channel, uint32_t row) {
     NuadePatternCell cell = nuade_cell_empty();
@@ -133,8 +111,6 @@ static NuadePatternCell davidhanney_cell(const void* ctx, uint32_t order, uint32
     return cell;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t davidhanney_tracker_cells(void* user_data, const NuadePosition* at, uint32_t channel, int32_t row_lo,
                                           int32_t row_hi, NuadePatternCell* out, uint32_t cap) {
     const DhPlayer* player = (const DhPlayer*)user_data;
@@ -144,8 +120,6 @@ static uint32_t davidhanney_tracker_cells(void* user_data, const NuadePosition* 
     const uint32_t rows = (uint32_t)dh_pattern_rows(player, (int)at->order);
     return nuade_tracker_fill(at, DH_VOICES, rows, channel, row_lo, row_hi, out, cap, davidhanney_cell, user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_davidhanney = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -164,8 +138,6 @@ const NuadePlayer nuade_player_davidhanney = {
     .tracker_info = davidhanney_tracker_info,
     .tracker_cells = davidhanney_tracker_cells,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DhPlayer* dh_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_davidhanney) {

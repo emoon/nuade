@@ -62,8 +62,6 @@
 #define LFO_VOLUME_SHIFT 9
 #define ARPEGGIO_DEFAULT_LENGTH 8
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The period table (three octaves) and the three words after it, which a note past the table reads.
 static const uint16_t k_periods[] = {
     0x358, 0x328, 0x2FA, 0x2D0, 0x2A6, 0x280, 0x25C, 0x23A, 0x21A, 0x1FC, 0x1E0, 0x1C5, 0x1AC,
@@ -104,8 +102,6 @@ typedef enum ListOp {
     ListOp_Jump,
 } ListOp;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A byte of the module as the replayer reads it; past the file it reads memory the format does not define.
 static uint8_t image_u8(TmePlayer* p, uint64_t offset) {
     if (offset >= p->module.size) {
@@ -115,13 +111,9 @@ static uint8_t image_u8(TmePlayer* p, uint64_t offset) {
     return p->module.image[offset];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t image_u16(TmePlayer* p, uint64_t offset) {
     return (uint16_t)(image_u8(p, offset) << 8 | image_u8(p, offset + 1));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t period_at(TmePlayer* p, uint8_t index) {
     if (index >= nuade_sizeof_array(k_periods)) {
@@ -131,23 +123,17 @@ static uint16_t period_at(TmePlayer* p, uint8_t index) {
     return k_periods[index];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static TmeTrack track_at(const TmeModule* m, uint32_t position, int voice) {
     const uint8_t* e
         = m->image + POSITIONS_OFFSET + (size_t)position * POSITION_SIZE + (size_t)voice * TRACK_ENTRY_SIZE;
     return (TmeTrack) { .track = e[0], .instrument_transpose = e[1], .note_transpose = e[2] };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static TmeCell step_from(const uint8_t* s) {
     return (TmeCell) {
         .note = s[0], .instrument = s[1], .list = s[2], .volume = (int8_t)s[3], .flags = s[4], .param = s[5]
     };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Parse the instrument records and give each sampled one its place after the command lists.
 static bool parse_instruments(TmeModule* m, uint64_t sample_base, uint64_t* end) {
@@ -178,8 +164,6 @@ static bool parse_instruments(TmeModule* m, uint64_t sample_base, uint64_t* end)
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The start of every command list: each one ends after a command whose first byte is zero.
 static bool parse_lists(TmeModule* m, uint64_t lists_offset, uint64_t* end) {
     uint64_t offset = lists_offset;
@@ -195,8 +179,6 @@ static bool parse_lists(TmeModule* m, uint64_t lists_offset, uint64_t* end) {
     *end = offset;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool parse_songs(TmeModule* m) {
     for (int i = 0; i < TME_MAX_SONGS; i++) {
@@ -215,8 +197,6 @@ static bool parse_songs(TmeModule* m) {
     }
     return m->song_count > 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Check2 and the layout: the file size in the header must be what the sections add up to, unless the file carries
 // one of the signatures Check2 accepts instead.
@@ -251,8 +231,6 @@ static bool parse_module(TmeModule* m, const uint8_t* data, size_t size) {
     return signature_ab || signature_cde || end == file_size;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The Paula pointer of a module offset, null (and unmodelled) when the sample would run past the file.
 static const int8_t* sample_pointer(TmePlayer* p, uint64_t offset, uint16_t len_words) {
     const uint64_t bytes = (len_words != 0 ? (uint64_t)len_words : 65536u) * 2;
@@ -263,22 +241,16 @@ static const int8_t* sample_pointer(TmePlayer* p, uint64_t offset, uint16_t len_
     return (const int8_t*)p->module.image + offset;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void set_lfo_depth(TmeLfo* lfo, uint8_t target, uint16_t ramp, uint32_t wave_offset) {
     lfo->depth = target;
     lfo->depth_ramp = (uint16_t)(ramp + 1);
     lfo->wave_offset = wave_offset;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void set_lfo_rate(TmeLfo* lfo, uint8_t target, uint16_t ramp) {
     lfo->rate = target;
     lfo->rate_ramp = (uint16_t)(ramp + 1);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The command lists, one per voice and tick: set up the LFOs, wait, jump or end.
 static void run_list(TmePlayer* p, TmeVoice* v) {
@@ -337,8 +309,6 @@ static void run_list(TmePlayer* p, TmeVoice* v) {
     v->list_active = false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void retrigger(TmeVoice* v, bool enabled) {
     v->env_phase = 0;
     v->env_level = 0;
@@ -350,8 +320,6 @@ static void retrigger(TmeVoice* v, bool enabled) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const TmeInstrument* voice_instrument(TmePlayer* p, TmeVoice* v) {
     if (v->instrument < 0) {
         p->unmodelled = true;
@@ -359,8 +327,6 @@ static const TmeInstrument* voice_instrument(TmePlayer* p, TmeVoice* v) {
     }
     return &p->module.instruments[v->instrument];
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A step's instrument: none keeps the voice's, which must exist.
 static void select_instrument(TmePlayer* p, TmeVoice* v, const TmeCell* st) {
@@ -376,8 +342,6 @@ static void select_instrument(TmePlayer* p, TmeVoice* v, const TmeCell* st) {
     }
     voice_instrument(p, v);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The note, slide, portamento and arpeggio parts of a step.
 static void start_note(TmePlayer* p, TmeVoice* v, const TmeCell* st, uint8_t note, uint32_t step_offset) {
@@ -413,8 +377,6 @@ static void start_note(TmePlayer* p, TmeVoice* v, const TmeCell* st, uint8_t not
         v->arp_index = 0;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void play_step(TmePlayer* p, int index) {
     TmeVoice* v = &p->voices[index];
@@ -470,8 +432,6 @@ static void play_step(TmePlayer* p, int index) {
     v->volume_scale = (int8_t)(uint8_t)(ins->volume + st.volume);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A new position: each voice gets its track and transposes. The song wraps when the last position is loaded.
 static void load_position(TmePlayer* p) {
     for (int i = 0; i < TME_VOICES; i++) {
@@ -488,15 +448,11 @@ static void load_position(TmePlayer* p) {
     p->rows_left = TME_ROWS;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_list_all(TmePlayer* p) {
     for (int i = 0; i < TME_VOICES; i++) {
         run_list(p, &p->voices[i]);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // One LFO step: ramp depth and rate to their targets, read the wave at the phase and add it to the base.
 static void run_lfo(TmePlayer* p, TmeLfo* lfo, unsigned shift) {
@@ -524,8 +480,6 @@ static void run_lfo(TmePlayer* p, TmeLfo* lfo, unsigned shift) {
     lfo->phase = (uint8_t)((lfo->phase + lfo->rate_now) & 0x7F);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The arpeggio: step through the note offsets every arp_speed + 1 ticks.
 static void run_arpeggio(TmePlayer* p, TmeVoice* v, bool enabled) {
     if (v->arp_counter-- == 0) {
@@ -540,8 +494,6 @@ static void run_arpeggio(TmePlayer* p, TmeVoice* v, bool enabled) {
     v->pitch.base = period_at(p, (uint8_t)(v->note + offset));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The volume envelope: three phases of (time, level), then a hold.
 static void run_envelope(TmeVoice* v, const TmeInstrument* ins) {
     if (v->env_ticks != 0) {
@@ -554,8 +506,6 @@ static void run_envelope(TmeVoice* v, const TmeInstrument* ins) {
         v->env_phase = (uint16_t)(v->env_phase + k_envelope_advance[v->env_phase]);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void run_synth(TmePlayer* p, int index) {
     TmeVoice* v = &p->voices[index];
@@ -598,8 +548,6 @@ static void run_synth(TmePlayer* p, int index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The replayer's copy of the registers to Paula, for the voices the song enables.
 static void write_paula(TmePlayer* p, int index) {
     TmeVoice* v = &p->voices[index];
@@ -615,8 +563,6 @@ static void write_paula(TmePlayer* p, int index) {
     c->volume = (uint8_t)(v->regs.volume & 0x7F);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void play_row(TmePlayer* p) {
     p->tick_counter = p->song->speed;
     p->rows_left--;
@@ -628,8 +574,6 @@ static void play_row(TmePlayer* p) {
         play_step(p, i);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TmeTickResult tme_tick(TmePlayer* p, NuadeVoices* voices) {
     p->looped = false;
@@ -658,8 +602,6 @@ TmeTickResult tme_tick(TmePlayer* p, NuadeVoices* voices) {
     return (TmeTickResult) { .looped = p->looped };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // InitSound
 bool tme_start(TmePlayer* p, uint32_t subsong, NuadeVoices* voices) {
     if (p == nullptr || subsong >= (uint32_t)p->module.song_count) {
@@ -683,8 +625,6 @@ bool tme_start(TmePlayer* p, uint32_t subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The replayer's state apart from the Paula channels, which nothing reads back.
 typedef struct Snapshot {
     uint32_t position;
@@ -692,8 +632,6 @@ typedef struct Snapshot {
     uint8_t tick_counter;
     TmeVoice voices[TME_VOICES];
 } Snapshot;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void snapshot_take(const TmePlayer* p, Snapshot* s) {
     memset(s, 0, sizeof(*s));
@@ -704,8 +642,6 @@ static void snapshot_take(const TmePlayer* p, Snapshot* s) {
         memcpy(&s->voices[i], &p->voices[i], offsetof(TmeVoice, paula));
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool snapshot_equal(const TmePlayer* p, const Snapshot* s) {
     if (s->position != p->position || s->rows_left != p->rows_left || s->tick_counter != p->tick_counter) {
@@ -718,8 +654,6 @@ static bool snapshot_equal(const TmePlayer* p, const Snapshot* s) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Every subsong until its complete state repeats (Brent's cycle detection): from there on it only replays states
 // the run has seen, so nothing unmodelled can appear later. One work budget covers the whole module.
@@ -757,8 +691,6 @@ static bool dry_run(TmePlayer* p) {
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 TmePlayer* tme_create(const uint8_t* data, size_t size) {
     if (data == nullptr) {
         return nullptr;
@@ -776,16 +708,12 @@ TmePlayer* tme_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool tme_probe(const uint8_t* data, size_t size) {
     TmePlayer* p = tme_create(data, size);
     const bool ok = p != nullptr;
     tme_destroy(p);
     return ok;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void tme_destroy(TmePlayer* p) {
     if (p == nullptr) {
@@ -795,32 +723,22 @@ void tme_destroy(TmePlayer* p) {
     free(p);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int tme_subsong_count(const TmePlayer* p) {
     return p->module.song_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TmePosition tme_position(const TmePlayer* p) {
     return (TmePosition) { .order = (int)p->shown_order, .row = (int)p->shown_row, .speed = p->song->speed + 1 };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int tme_order_count(const TmePlayer* p) {
     return (int)p->module.position_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TmeVoiceState tme_voice_state(const TmePlayer* p, int voice) {
     const TmeVoice* v = &p->voices[voice];
     return (TmeVoiceState) { .note = v->note, .instrument = v->instrument };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TmeCell tme_pattern_cell(const TmePlayer* p, uint32_t order, uint32_t voice, uint32_t row) {
     const TmeModule* m = &p->module;

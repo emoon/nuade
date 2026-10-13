@@ -8,14 +8,10 @@
 #include <nuade/players/protracker4.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe protracker4_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return pt4_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult protracker4_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -32,27 +28,19 @@ static NuadePlayerOpenResult protracker4_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void protracker4_close(void* user_data) {
     pt4_destroy((Pt4Player*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool protracker4_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return subsong == 0 && pt4_start((Pt4Player*)user_data, voices);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult protracker4_tick(void* user_data, NuadeVoices* voices) {
     const Pt4TickResult tick = pt4_tick((Pt4Player*)user_data, voices);
     return (NuadeTickResult) { .length = tick.length, .flags = tick.looped ? NuadeTick_Looped : NuadeTick_None };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void protracker4_metadata(void* user_data, const NuadeMetadataSink* sink) {
     const Pt4Player* player = (const Pt4Player*)user_data;
@@ -61,8 +49,6 @@ static void protracker4_metadata(void* user_data, const NuadeMetadataSink* sink)
         sink->set_tag(sink->ctx, NUADE_META_TITLE, pt4_title(player));
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePositionResult protracker4_position(void* user_data) {
     const Pt4Position p = pt4_position((const Pt4Player*)user_data);
@@ -73,8 +59,6 @@ static NuadePositionResult protracker4_position(void* user_data) {
                                                  .rows = PT4_ROWS,
                                                  .speed = (uint32_t)p.speed } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t protracker4_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const Pt4Player* player = (const Pt4Player*)user_data;
@@ -90,8 +74,6 @@ static uint32_t protracker4_voice_info(void* user_data, NuadeVoiceInfo* out, uin
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTrackerInfoResult protracker4_tracker_info(void* user_data, const NuadePosition* at) {
     if ((int)at->order >= pt4_order_count((const Pt4Player*)user_data)) {
         return (NuadeTrackerInfoResult) { 0 };
@@ -105,8 +87,6 @@ static NuadeTrackerInfoResult protracker4_tracker_info(void* user_data, const Nu
                                                              { "cmd", NuadeColumn_Hex, 1, 0 },
                                                              { "arg", NuadeColumn_Hex, 2, 0 } } } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePatternCell protracker4_cell(const void* ctx, uint32_t order, uint32_t channel, uint32_t row) {
     NuadePatternCell cell = nuade_cell_empty();
@@ -124,8 +104,6 @@ static NuadePatternCell protracker4_cell(const void* ctx, uint32_t order, uint32
     return cell;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t protracker4_tracker_cells(void* user_data, const NuadePosition* at, uint32_t channel, int32_t row_lo,
                                           int32_t row_hi, NuadePatternCell* out, uint32_t cap) {
     const Pt4Player* player = (const Pt4Player*)user_data;
@@ -134,8 +112,6 @@ static uint32_t protracker4_tracker_cells(void* user_data, const NuadePosition* 
     }
     return nuade_tracker_fill(at, PT4_VOICES, PT4_ROWS, channel, row_lo, row_hi, out, cap, protracker4_cell, user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_protracker4 = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -154,8 +130,6 @@ const NuadePlayer nuade_player_protracker4 = {
     .tracker_info = protracker4_tracker_info,
     .tracker_cells = protracker4_tracker_cells,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Pt4Player* pt4_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_protracker4) {

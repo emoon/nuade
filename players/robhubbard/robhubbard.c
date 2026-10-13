@@ -30,15 +30,11 @@
 #define FERRIS_FILL 0x3C // what the ferris wheel writes when it turns and on the way down; 0 on the way up
 #define VOLUME_MASK 0x7F // the volume the eagleplayer's master volume passes on
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool rh_probe(const uint8_t* data, size_t size) {
     RhModule* module = rh_module_open(data, size);
     rh_module_close(module);
     return module != nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RhPlayer* rh_create(const uint8_t* data, size_t size) {
     RhPlayer* player = (RhPlayer*)calloc(1, sizeof(RhPlayer));
@@ -53,8 +49,6 @@ RhPlayer* rh_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void rh_destroy(RhPlayer* player) {
     if (player != nullptr) {
         rh_module_close(player->module);
@@ -62,34 +56,26 @@ void rh_destroy(RhPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int rh_subsong_count(const RhPlayer* player) {
     return (int)player->module->subsong_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int rh_subsong_tempo(const RhPlayer* player, int subsong) {
     const RhModule* m = player->module;
     return rh_module_read_subsong(m, rh_module_played_subsong(m, (uint32_t)subsong)).tempo;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Module reads
 
 static const int8_t* sample_at(const RhModule* m, uint32_t offset) {
     return offset < m->size ? (const int8_t*)(m->data + offset) : nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void set_silence(const RhModule* m, NuadePaulaChannel* paula) {
     paula->lc = sample_at(m, m->silence);
     paula->len_words = m->variant->silence_words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Starting a subsong
 
 bool rh_start(RhPlayer* player, int subsong, NuadeVoices* voices) {
@@ -119,7 +105,6 @@ bool rh_start(RhPlayer* player, int subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Note start and commands
 
 // The period of a note: the period table entry scaled by the instrument's base period.
@@ -127,8 +112,6 @@ static uint16_t note_period(const RhModule* m, uint8_t note, uint16_t base_perio
     const uint32_t table_period = rh_module_u16(m, m->periods + 2u * note);
     return (uint16_t)((table_period * base_period) >> PERIOD_SHIFT);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void start_note(RhPlayer* p, RhVoice* v, uint8_t length) {
     const RhModule* m = p->module;
@@ -147,8 +130,6 @@ static void start_note(RhPlayer* p, RhVoice* v, uint8_t length) {
     v->shown_note = nuade_period_to_note(v->period);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Command 0x80: the voice's instrument, and in the extended builds its vibrato wave.
 static void select_instrument(RhPlayer* p, RhVoice* v, uint8_t operand) {
     const RhModule* m = p->module;
@@ -161,8 +142,6 @@ static void select_instrument(RhPlayer* p, RhVoice* v, uint8_t operand) {
         v->wave_at = v->wave_start;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The eagleplayer's SongEnd: reached when every voice has run off the end of its track list once.
 static void report_wrap(RhPlayer* p, RhVoice* v) {
@@ -178,8 +157,6 @@ static void report_wrap(RhPlayer* p, RhVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Command 0x84: the next stream of the track list; the end of the list starts it over.
 static void next_track(RhPlayer* p, RhVoice* v) {
     const RhModule* m = p->module;
@@ -193,15 +170,11 @@ static void next_track(RhPlayer* p, RhVoice* v) {
     v->stream = rh_module_u32(m, entry);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 typedef enum StepResult {
     StepResult_Continue, // read the next command
     StepResult_Done,     // the voice is done for this tick
     StepResult_Stop,     // the replayer has stopped
 } StepResult;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static StepResult step_command(RhPlayer* p, RhVoice* v, uint8_t byte) {
     const RhModule* m = p->module;
@@ -238,8 +211,6 @@ static StepResult step_command(RhPlayer* p, RhVoice* v, uint8_t byte) {
     return StepResult_Continue;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static StepResult read_commands(RhPlayer* p, RhVoice* v) {
     v->slide = false;
     v->ferris_down = false;
@@ -255,7 +226,6 @@ static StepResult read_commands(RhPlayer* p, RhVoice* v) {
     return StepResult_Done;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Effects
 
 // The vibrato adds period / divisor times the next wave byte to the period.
@@ -272,8 +242,6 @@ static void run_vibrato(const RhModule* m, RhVoice* v, const RhInstrument* ins) 
     const int32_t offset = (int32_t)(int8_t)wave * (int32_t)(int16_t)step;
     v->paula.period = (uint16_t)(v->period + (uint16_t)offset);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The ferris wheel moves a write position up and down between the instrument's limits and writes into the sample:
 // 0 on the way up, 0x3C on the way down.
@@ -301,8 +269,6 @@ static void run_ferris_wheel(RhModule* m, RhVoice* v, const RhInstrument* ins) {
     v->ferris_at = at;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_effects(RhPlayer* p, RhVoice* v) {
     RhModule* m = p->module;
     if (v->slide) {
@@ -317,7 +283,6 @@ static void run_effects(RhPlayer* p, RhVoice* v) {
     run_ferris_wheel(m, v, &ins);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tick
 
 // The repeat registers of the note that started in the tick before: from the instrument's repeat offset on, or silence.
@@ -332,8 +297,6 @@ static void set_repeat(const RhModule* m, RhVoice* v) {
         v->paula.len_words = (uint16_t)(ins.words - (((uint32_t)ins.repeat & 0xFFFF) >> 1));
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static StepResult run_voice(RhPlayer* p, RhVoice* v) {
     const RhModule* m = p->module;
@@ -354,8 +317,6 @@ static StepResult run_voice(RhPlayer* p, RhVoice* v) {
     return StepResult_Done;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 RhTickResult rh_tick(RhPlayer* player, NuadeVoices* voices) {
     player->song_ended = false;
     for (int i = RH_VOICES - 1; i >= 0 && player->running; i--) {
@@ -372,8 +333,6 @@ RhTickResult rh_tick(RhPlayer* player, NuadeVoices* voices) {
     }
     return (RhTickResult) { .looped = player->song_ended, .ended = !player->running };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RhVoiceState rh_voice_state(const RhPlayer* player, int voice) {
     const RhVoice* v = &player->voices[voice];

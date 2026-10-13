@@ -15,7 +15,6 @@
 #include "nuade_paula_channel.h"
 #include <nuade/players/davelowe.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module bytes. Reads past the end return 0 (the engine would read whatever follows in memory). The module is
 // followed by NUADE_PAULA_MAX_SAMPLE_BYTES zero bytes, then the built-in tables, and the allocation comes from
 // nuade_paula_padded_copy: a sample that starts inside the module plays zeros past its end, and any address up to
@@ -24,22 +23,18 @@
 // Room for the built-in tables and the data the patches of the eagleplayers add
 #define DL_BUILTIN_SIZE 0x400
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline uint8_t dli_u8(const DlImage* image, uint32_t address) {
     return address < image->size ? image->data[address] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline uint16_t dli_u16(const DlImage* image, uint32_t address) {
     return (uint16_t)((dli_u8(image, address) << 8) | dli_u8(image, address + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline uint32_t dli_u32(const DlImage* image, uint32_t address) {
     return ((uint32_t)dli_u16(image, address) << 16) | dli_u16(image, address + 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copies the module and appends the built-in tables; null if the allocation fails.
 DlImage* dl_image_create(const uint8_t* data, size_t size);
 void dl_image_destroy(DlImage* image);
@@ -47,7 +42,6 @@ void dl_image_destroy(DlImage* image);
 bool dl_image_keep_original(DlImage* image);
 void dl_image_restore(DlImage* image);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Writes, for the fixes the eagleplayers and the drivers apply to the module data when they load it. A write past the
 // image is dropped.
 static inline void dli_set16(DlImage* image, uint32_t address, uint16_t value) {
@@ -57,7 +51,6 @@ static inline void dli_set16(DlImage* image, uint32_t address, uint16_t value) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline void dli_set32(DlImage* image, uint32_t address, uint32_t value) {
     if (image->size < 4 || address > image->size - 4) {
         return;
@@ -66,35 +59,30 @@ static inline void dli_set32(DlImage* image, uint32_t address, uint32_t value) {
     dli_set16(image, address + 2, (uint16_t)value);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What AUDxLC set to `address` points at: the register ignores bit 0. Null past the image.
 static inline const int8_t* dli_sample(const DlImage* image, uint32_t address) {
     const uint32_t word_address = address & ~1u;
     return word_address <= image->size ? (const int8_t*)(image->data + word_address) : nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A read position in the image: the headers, tables and patterns are read field after field.
 typedef struct DlCursor {
     const DlImage* image;
     uint32_t address;
 } DlCursor;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline uint16_t dlc_u16(DlCursor* cursor) {
     const uint16_t value = dli_u16(cursor->image, cursor->address);
     cursor->address += 2;
     return value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline uint32_t dlc_u32(DlCursor* cursor) {
     const uint32_t value = dli_u32(cursor->image, cursor->address);
     cursor->address += 4;
     return value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Song data
 
 // A sample record: how a pattern selects the sound of the notes that follow. `state` 0 is the immediate form: the
@@ -127,7 +115,6 @@ typedef enum DlCommandWord {
     DlCommandWord_Filter = 0x30,
 } DlCommandWord;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Module kinds
 
 #define DL_NOT_FOUND 0xFFFFFFFFu
@@ -235,7 +222,6 @@ bool dl_new_locate(DlImage* image, DlNewModule* module);
 DlSubsong dl_new_subsong(const DlImage* image, const DlNewModule* module, uint32_t index);
 DlVariant dl_new_variant(const DlNewModule* module);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Engine
 
 // The volume ramp of some drivers: the music volume is the envelope minus `level`, which counts down from

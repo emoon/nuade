@@ -46,25 +46,17 @@ static const E6Ring k_channel_ring[EMS6_VOICES] = {
     E6Ring_LowLeft,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t e6_module_u8(const Ems6Module* m, uint32_t offset) {
     return offset < m->size ? m->data[offset] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t e6_module_u16(const Ems6Module* m, uint32_t offset) {
     return (uint16_t)(e6_module_u8(m, offset) << 8 | e6_module_u8(m, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t e6_module_u32(const Ems6Module* m, uint32_t offset) {
     return (uint32_t)e6_module_u16(m, offset) << 16 | e6_module_u16(m, offset + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Ems6Subsong e6_module_subsong(const Ems6Module* m, uint32_t index) {
     const uint32_t header = m->subsongs + index * SUBSONG_HEADER_SIZE;
@@ -75,13 +67,10 @@ Ems6Subsong e6_module_subsong(const Ems6Module* m, uint32_t index) {
     return subsong;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t instrument_start(const Ems6Module* m, uint32_t instrument) {
     return m->instruments + e6_module_u32(m, m->instruments + instrument * 4);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Instrument n runs from its offset in the table to the next one's. An 8SVX with a repeat part loops that part (a
 // header of fixed size, then the data); without one it plays once from its data. "SYN" + a wave size of 32, 64 or 128
 // is a wavetable; anything else is raw data.
@@ -115,26 +104,18 @@ E6Sample e6_module_sample(const Ems6Module* m, uint32_t instrument) {
     return sample;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t e6_module_wave_data(const Ems6Module* m, uint32_t instrument) {
     return instrument_start(m, instrument) + WAVETABLE_HEADER;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint8_t e6_module_arpeggio_entry(const Ems6Module* m, uint32_t table, uint32_t pos) {
     const uint32_t list = m->arpeggios + e6_module_u32(m, m->arpeggios + table * 4);
     return e6_module_u8(m, list + pos);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t e6_module_pattern(const Ems6Module* m, uint32_t number) {
     return m->patterns + e6_module_u32(m, m->patterns + number * 4);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PatternCommand e6_module_pattern_command(const Ems6Module* m, uint32_t offset) {
     PatternCommand cmd = { .code = e6_module_u8(m, offset) };
@@ -144,7 +125,6 @@ PatternCommand e6_module_pattern_command(const Ems6Module* m, uint32_t offset) {
     return cmd;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2: "E.M.S. V6.". The section sizes must also fit the file, which the replayer does not look at.
 
 bool ems6_probe(const uint8_t* data, size_t size) {
@@ -157,8 +137,6 @@ bool ems6_probe(const uint8_t* data, size_t size) {
     const uint64_t instruments = patterns + e6_module_u32(&m, HEADER_SECTIONS + 8);
     return subsongs + SUBSONG_HEADER_SIZE <= size && instruments <= size;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Ems6Player* ems6_create(const uint8_t* data, size_t size) {
     if (!ems6_probe(data, size)) {
@@ -190,8 +168,6 @@ Ems6Player* ems6_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void ems6_destroy(Ems6Player* player) {
     if (player == nullptr) {
         return;
@@ -201,13 +177,10 @@ void ems6_destroy(Ems6Player* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const char* ems6_version(const Ems6Player* player) {
     return player->version;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The Paula channels loop the four rings from the start.
 
 static void start_paula(Ems6Player* p, NuadeVoices* voices) {
@@ -223,8 +196,6 @@ static void start_paula(Ems6Player* p, NuadeVoices* voices) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool ems6_start(Ems6Player* player, NuadeVoices* voices) {
     if (player == nullptr || voices == nullptr) {
         return false;
@@ -238,7 +209,6 @@ bool ems6_start(Ems6Player* player, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Fill the rings with as much as fits, one sequencer tick of output at a time.
 
 static void mix_ahead(Ems6Player* p) {
@@ -266,7 +236,6 @@ static void mix_ahead(Ems6Player* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Channel 0's audio interrupt (one per lap of the rings): the model of the DMA position starts over.
 
 static void answer_audio_interrupts(Ems6Player* p, NuadeVoices* voices) {
@@ -278,7 +247,6 @@ static void answer_audio_interrupts(Ems6Player* p, NuadeVoices* voices) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The CIA timer interrupt.
 
 Ems6TickResult ems6_tick(Ems6Player* player, NuadeVoices* voices) {
@@ -302,8 +270,6 @@ Ems6TickResult ems6_tick(Ems6Player* player, NuadeVoices* voices) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 Ems6TrackState ems6_track_state(const Ems6Player* player, uint32_t track) {
     if (track >= EMS6_TRACKS || player->seq.tracks[track].note_starts == 0) {
         return (Ems6TrackState) { .note = -1, .instrument = -1 };
@@ -313,8 +279,6 @@ Ems6TrackState ems6_track_state(const Ems6Player* player, uint32_t track) {
         = { .note = t->note & E6_NOTE_MASK, .instrument = t->instrument, .note_starts = t->note_starts };
     return state;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t ems6_track_count(const Ems6Player* player) {
     return player->used_tracks;

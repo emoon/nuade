@@ -20,7 +20,6 @@
 #define FIXED_TRANSPOSE_COLUMN 0x400u
 #define STEP_NONE 0xFF // no arpeggio step: what the init's position load leaves, except after a fade start
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Fades. One fade for all voices (Fixed layout) or one per voice.
 
 static void reset_fades(SmstPlayer* p) {
@@ -33,7 +32,6 @@ static void reset_fades(SmstPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The position's fade byte. Bit 7 starts a fade: bit 6 fades out, bit 5 starts from the end volume, the low bits are
 // the ticks a step takes. Without bit 7 it is the volume itself. Returns the volume the voices take (bit 7 set: none).
 
@@ -63,7 +61,6 @@ static uint8_t start_fade(SmstPlayer* p, uint8_t byte) {
     return volume;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The position record: the block range, the transpose, the fade and the voices' instrument offsets. Returns the
 // arpeggio step it leaves behind (see SmstPlayer.idle_step).
 
@@ -107,7 +104,6 @@ static uint8_t load_position(SmstPlayer* p) {
     return !ver->voice_fade && (fade_byte & POSITION_FADE_BIT) ? p->fade_control : STEP_NONE;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pattern a voice plays in the current block.
 
 static void load_pattern(SmstPlayer* p, SmstVoice* v) {
@@ -126,15 +122,12 @@ static void load_pattern(SmstPlayer* p, SmstVoice* v) {
     v->pattern = m->tables.patterns + (uint32_t)m->pattern_length * number;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void load_patterns(SmstPlayer* p) {
     for (int i = 0; i < SMST_VOICES; i++) {
         load_pattern(p, &p->voices[i]);
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The row of a voice: note and info bytes. A note starts the voice's DMA over; the row commands set the speed or end
 // the pattern.
 
@@ -160,7 +153,6 @@ static void read_row(SmstPlayer* p, SmstVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The end of the song: the original calls SongEnd here, and starts the song over.
 
 static void wrap_song(SmstPlayer* p) {
@@ -171,7 +163,6 @@ static void wrap_song(SmstPlayer* p) {
     reset_fades(p);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tick counter, the row, the block, the position.
 
 static void advance(SmstPlayer* p) {
@@ -200,7 +191,6 @@ static void advance(SmstPlayer* p) {
     load_position(p);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The fade counter, once a tick.
 
 static void fade_tick(SmstPlayer* p) {
@@ -231,8 +221,6 @@ static void fade_tick(SmstPlayer* p) {
         p->fade++;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SmstTickResult smst_tick(SmstPlayer* p, NuadeVoices* voices) {
     const SmstVersion* ver = p->module.version;
@@ -292,7 +280,6 @@ SmstTickResult smst_tick(SmstPlayer* p, NuadeVoices* voices) {
     return (SmstTickResult) { .looped = p->looped };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The init writes into the module's memory: it copies the built-in samples' slots into the module's slot table.
 
 static void put_u8(SmstModule* m, uint32_t address, uint8_t value) {
@@ -301,21 +288,15 @@ static void put_u8(SmstModule* m, uint32_t address, uint8_t value) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void put_u16(SmstModule* m, uint32_t address, uint16_t value) {
     put_u8(m, address, (uint8_t)(value >> 8));
     put_u8(m, address + 1, (uint8_t)value);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void put_u32(SmstModule* m, uint32_t address, uint32_t value) {
     put_u16(m, address, (uint16_t)(value >> 16));
     put_u16(m, address + 2, (uint16_t)value);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void copy_builtin_slots(SmstModule* m) {
     const SmstVersion* ver = m->version;
@@ -336,7 +317,6 @@ static void copy_builtin_slots(SmstModule* m) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The init: every voice plays the silent word until its first note (most versions), the first position is read.
 
 static void start_dummy_voices(SmstPlayer* p) {
@@ -348,8 +328,6 @@ static void start_dummy_voices(SmstPlayer* p) {
         nuade_paula_channel_dma_on(&v->paula);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool smst_start(SmstPlayer* p, int subsong) {
     if (subsong < 0 || subsong >= p->subsongs) {
@@ -409,8 +387,6 @@ bool smst_start(SmstPlayer* p, int subsong) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 SmstPlayer* smst_create(const uint8_t* data, size_t size) {
     if (size == 0 || size > MAX_MODULE_BYTES) {
         return nullptr;
@@ -440,8 +416,6 @@ SmstPlayer* smst_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void smst_destroy(SmstPlayer* p) {
     if (p == nullptr) {
         return;
@@ -451,8 +425,6 @@ void smst_destroy(SmstPlayer* p) {
     free(p);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool smst_probe(const uint8_t* data, size_t size) {
     SmstPlayer* p = smst_create(data, size);
     const bool supported = p != nullptr;
@@ -460,19 +432,13 @@ bool smst_probe(const uint8_t* data, size_t size) {
     return supported;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int smst_subsong_count(const SmstPlayer* p) {
     return p->subsongs;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int smst_ticks_per_row(const SmstPlayer* p) {
     return p->module.speed;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SmstVoiceState smst_voice_state(const SmstPlayer* p, int voice) {
     if (voice < 0 || voice >= SMST_VOICES) {

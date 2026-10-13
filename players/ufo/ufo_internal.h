@@ -22,7 +22,6 @@
 #define UFO_PERIOD_ENTRIES 84
 #define UFO_MAX_NOTE_INDEX (UFO_PERIOD_ENTRIES - 3)
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Song
 
 // Chunk walk of the eagleplayer's InitSound. False for a song the replayer would read outside of.
@@ -48,7 +47,6 @@ uint8_t* ufo_bank_read(const char* path, const NuadeIo* io, uint32_t* size);
 bool ufo_instrument_make(UfoInstrument* out, const uint8_t* buffer, uint32_t buffer_size, uint32_t sample_offset,
                          uint32_t length, uint32_t loop_offset, uint8_t volume);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // State
 
 void ufo_state_init(UfoState* state, const UfoSong* song);
@@ -59,7 +57,6 @@ void ufo_state_tick(const UfoSong* song, UfoState* state);
 // Do the two states hold the same sequencer and channel state (everything that decides which song bytes get read)?
 bool ufo_state_same_sequence(const UfoState* a, const UfoState* b);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Sequencer (ufo_sequencer.c) and voices (ufo_voice.c)
 
 void ufo_sequencer_call(const UfoSong* song, UfoState* state);

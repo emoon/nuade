@@ -20,10 +20,8 @@
 #define KICK_BITS (2 * FG_ACTIVE_VOICES)
 #define COMMAND_FLAG_BITS 8
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Module records
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A voice record as the module initialises it
 static FgVoice read_voice(const FgModule* m, uint32_t record) {
     FgVoice v;
@@ -45,10 +43,8 @@ static FgVoice read_voice(const FgModule* m, uint32_t record) {
     return v;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Paula registers
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxLC points into the module (its padded copy: any AUDxLEN can follow, past the module it plays zeros). An address
 // past the module points at memory the port does not have: none.
 static void write_lc(FgPlayer* p, uint32_t voice, uint32_t offset) {
@@ -56,13 +52,11 @@ static void write_lc(FgPlayer* p, uint32_t voice, uint32_t offset) {
     p->voices[voice].paula.lc = offset <= m->size ? (const int8_t*)(m->image + offset) : nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxLEN as the code writes it: 0 plays 65536 words.
 static void write_len(FgPlayer* p, uint32_t voice, uint16_t words) {
     p->voices[voice].paula.len_words = words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tick's last step: the registers of the three voices
 static void write_registers(FgPlayer* p) {
     const FgLayout* l = &p->layout;
@@ -93,10 +87,8 @@ static void write_registers(FgPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The voice routines
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Eco: a 16 byte wave that changes every tick. Each tick adds the table (16 bytes) and the table shifted by the
 // phase (0..15 on, so up to 30 bytes in). The locator checked that the wave is inside the module.
 static void step_noise(FgPlayer* p) {
@@ -109,7 +101,6 @@ static void step_noise(FgPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume envelope's step: the next entry of the envelope, capped by the section's cap. The module also looks up a
 // second level (record byte 6) that nothing reads.
 static void envelope_advance(FgPlayer* p, FgVoice* v) {
@@ -126,7 +117,6 @@ static void envelope_advance(FgPlayer* p, FgVoice* v) {
     v->volume = level;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static void envelope_tick(FgPlayer* p, FgVoice* v) {
     v->envelope_tick = (uint8_t)(v->envelope_tick + 1);
     if ((uint8_t)(v->envelope_tick - v->active.instrument.envelope_speed) != 0) {
@@ -136,7 +126,6 @@ static void envelope_tick(FgPlayer* p, FgVoice* v) {
     envelope_advance(p, v);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Moves the pitch toward the target by the step. The words are sign extended and compared as unsigned longs, like the
 // module's cmpa.w does.
 static void slide(FgVoice* v) {
@@ -150,7 +139,6 @@ static void slide(FgVoice* v) {
     a->pitch = (uint16_t)(from > to ? from - step : from + step);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static void vibrato(FgPlayer* p, FgVoice* v) {
     v->vibrato_phase = (uint8_t)((v->vibrato_phase + 1) & 0xf);
     const uint8_t index = (uint8_t)(v->vibrato_phase | v->active.instrument.vibrato_row);
@@ -161,7 +149,6 @@ static void vibrato(FgPlayer* p, FgVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What every note start does after it has set the pitch
 static void note_start(FgPlayer* p, FgVoice* v) {
     v->vibrato_left = v->active.instrument.vibrato_delay;
@@ -174,7 +161,6 @@ static void note_start(FgPlayer* p, FgVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The voice's command: a new one is loaded from the command table and starts a note; without one the duration runs
 // down and the next command follows when it has
 static void command(FgPlayer* p, uint32_t index) {
@@ -211,7 +197,6 @@ static void command(FgPlayer* p, uint32_t index) {
     note_start(p, v);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The engine period of a pitch: 48 steps to the octave, the period table holds the lowest octave and every octave
 // halves the period
 static uint16_t period_of_pitch(const FgPlayer* p, uint16_t pitch_value) {
@@ -220,12 +205,10 @@ static uint16_t period_of_pitch(const FgPlayer* p, uint16_t pitch_value) {
     return shift >= 16 ? 0 : (uint16_t)(period >> shift);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static void pitch(FgPlayer* p, FgVoice* v) {
     v->period = period_of_pitch(p, (uint16_t)(v->active.pitch + (uint16_t)v->vibrato));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static void voice_tick(FgPlayer* p, uint32_t index) {
     FgVoice* v = &p->voices[index];
     envelope_tick(p, v);
@@ -235,10 +218,8 @@ static void voice_tick(FgPlayer* p, uint32_t index) {
     pitch(p, v);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Sections
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static void reset_voices(FgPlayer* p) {
     for (uint32_t i = 0; i < FG_ACTIVE_VOICES; i++) {
         p->voices[i].command = COMMAND_SILENCE;
@@ -248,7 +229,6 @@ static void reset_voices(FgPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The instrument setup: the instruments of the three voices, from the table of 4 byte records. The Star Goose and
 // Victory Road setup runs only when the gate is set or at the start of a section.
 static void setup_instruments(FgPlayer* p, const FgOp* op) {
@@ -264,7 +244,6 @@ static void setup_instruments(FgPlayer* p, const FgOp* op) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A new note on a voice, from the byte of the note table at the step. `nibble`: the byte carries the vibrato row in its
 // high nibble and the note in the low one.
 static void track(FgPlayer* p, const FgOp* op, uint16_t step) {
@@ -297,7 +276,6 @@ static void track(FgPlayer* p, const FgOp* op, uint16_t step) {
     note_start(p, v);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The channel mask: the commands the mask table allows at the current position start
 static void channel_mask(FgPlayer* p, const FgOp* op) {
     const FgChannelMask* mask = &p->layout.mask;
@@ -316,7 +294,6 @@ static void channel_mask(FgPlayer* p, const FgOp* op) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Counts a step of the section; when the section's length is reached the next section is requested: the one after
 // this for Advance, `to` for AdvanceTo
 static void advance(FgPlayer* p, bool to_next, uint8_t to) {
@@ -329,7 +306,6 @@ static void advance(FgPlayer* p, bool to_next, uint8_t to) {
     s->position = position;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Does the branch's test hold for the step
 static bool test_holds(const FgOp* op, uint16_t step) {
     switch (op->test) {
@@ -353,7 +329,6 @@ static bool test_holds(const FgOp* op, uint16_t step) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Runs a section routine for one tick. `step` is the routine's copy of the position.
 static void run_section(FgPlayer* p, uint32_t section, uint16_t step) {
     const FgLayout* l = &p->layout;
@@ -462,7 +437,6 @@ static void run_section(FgPlayer* p, uint32_t section, uint16_t step) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The request stage: a pending request resets the song state and the voices; a pending section starts; the current
 // section's routine runs. Section 0 is the song end.
 static bool request_stage(FgPlayer* p, uint16_t step) {
@@ -495,8 +469,6 @@ static bool request_stage(FgPlayer* p, uint16_t step) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 FgTickResult fg_tick(FgPlayer* p, NuadeVoices* voices) {
     const FgLayout* l = &p->layout;
     if (l->features.has_noise) {
@@ -515,10 +487,7 @@ FgTickResult fg_tick(FgPlayer* p, NuadeVoices* voices) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Player
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 FgPlayer* fg_create(const uint8_t* data, size_t size) {
     FgPlayer* p = (FgPlayer*)calloc(1, sizeof(FgPlayer));
@@ -533,8 +502,6 @@ FgPlayer* fg_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void fg_destroy(FgPlayer* p) {
     if (p == nullptr) {
         return;
@@ -545,39 +512,28 @@ void fg_destroy(FgPlayer* p) {
     free(p);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool fg_probe(const uint8_t* data, size_t size) {
     FgPlayer* p = fg_create(data, size);
     fg_destroy(p);
     return p != nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int fg_subsong_count(const FgPlayer* p) {
     return (int)fg_header_subsongs(&p->original);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const char* fg_version_name(const FgPlayer* p) {
     return fg_traits(p->layout.version)->name;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const char* fg_title(const FgPlayer* p) {
     return fg_header_title(&p->original);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const char* fg_author(const FgPlayer* p) {
     return fg_header_author(&p->original);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module's init routine for a subsong: the first request from the subsong table, the audio registers, the DMA on
 bool fg_start(FgPlayer* p, int subsong, NuadeVoices* voices) {
     const FgLayout* l = &p->layout;
@@ -606,8 +562,6 @@ bool fg_start(FgPlayer* p, int subsong, NuadeVoices* voices) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 FgVoiceState fg_voice_state(const FgPlayer* p, int voice) {
     const uint16_t period = voice >= 0 && voice < FG_ACTIVE_VOICES ? p->voices[voice].note_period : 0;

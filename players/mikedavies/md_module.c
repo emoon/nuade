@@ -145,8 +145,6 @@ typedef struct MdScan {
     uint32_t periods_operand;         // lea.l period_table,a5
 } MdScan;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool read_word(const MdModule* module, uint32_t at, uint16_t* out) {
     if (module->size < 2 || at > module->size - 2) {
         return false;
@@ -154,8 +152,6 @@ static bool read_word(const MdModule* module, uint32_t at, uint16_t* out) {
     *out = nuade_read_be16(module->data + at);
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool read_long(const MdModule* module, uint32_t at, uint32_t* out) {
     if (module->size < 4 || at > module->size - 4) {
@@ -165,16 +161,12 @@ static bool read_long(const MdModule* module, uint32_t at, uint32_t* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void put_be32(uint8_t* p, uint32_t value) {
     p[0] = (uint8_t)(value >> 24);
     p[1] = (uint8_t)(value >> 16);
     p[2] = (uint8_t)(value >> 8);
     p[3] = (uint8_t)value;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool write_long(MdModule* module, uint32_t at, uint32_t value) {
     if (module->size < 4 || at > module->size - 4) {
@@ -184,7 +176,6 @@ static bool write_long(MdModule* module, uint32_t at, uint32_t value) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The first word-aligned position at or after `from` that holds `word`.
 
 static bool find_word(const MdModule* module, uint32_t from, uint16_t word, uint32_t* out) {
@@ -197,8 +188,6 @@ static bool find_word(const MdModule* module, uint32_t from, uint16_t word, uint
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool find_long(const MdModule* module, uint32_t from, uint32_t value, uint32_t* out) {
     for (uint32_t at = from; at <= module->size && module->size - at >= 4; at += 2) {
         if (nuade_read_be32(module->data + at) == value) {
@@ -209,7 +198,6 @@ static bool find_long(const MdModule* module, uint32_t from, uint32_t value, uin
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2 of the eagleplayer: the init routine is "movem; bsr.b; movem; rts" around 0xF2 (the code of the other form
 // starts six bytes earlier), and the first bra.w after it jumps to the instrument load.
 
@@ -244,7 +232,6 @@ static bool check2(const MdModule* module) {
     return read_word(module, bra + 2 + displacement, &word) && word == MD_OP_MOVE_L_PREINC;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The searches of InitPlayer for the operands: each starts where the previous one stopped.
 
 static bool locate(const MdModule* module, MdScan* out) {
@@ -301,7 +288,6 @@ static bool locate(const MdModule* module, MdScan* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The operands the eagleplayer relocates between the init routine and the period table: it steps a word at a time,
 // and an instruction that takes an absolute address (or an immediate pointer) is followed by an operand that it
 // relocates, unless that is a custom chip address.
@@ -367,7 +353,6 @@ static bool find_operands(const MdModule* module, uint32_t init, uint32_t period
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // FNV-1a over the code of a version, with the relocated operands replaced.
 
 static bool hash_code(const MdModule* module, const MdScan* scan, const MdOperands* operands, uint32_t code_end,
@@ -407,8 +392,6 @@ static bool hash_code(const MdModule* module, const MdScan* scan, const MdOperan
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const MdLayout* find_layout(const MdModule* module, const MdScan* scan, const MdOperands* operands) {
     for (uint32_t i = 0; i < nuade_sizeof_array(md_layouts); i++) {
         uint64_t hash = 0;
@@ -419,7 +402,6 @@ static const MdLayout* find_layout(const MdModule* module, const MdScan* scan, c
     return nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The variables below the init routine: the voice records (a mask and a register offset each), everything else zero.
 // The replayer starts from this image, so the port does not read it again.
 
@@ -447,7 +429,6 @@ static bool check_variables(const MdModule* module, const MdScan* scan) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The relocation of the long at `at`: image address to module offset.
 
 static bool relocate(MdModule* module, uint32_t image_base, uint32_t at, uint32_t* out) {
@@ -460,7 +441,6 @@ static bool relocate(MdModule* module, uint32_t image_base, uint32_t at, uint32_
     return write_long(module, at, value);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tables the module's own searches find: the offsets and sizes InitPlayer works out of the operands.
 
 typedef struct MdTables {
@@ -474,8 +454,6 @@ typedef struct MdTables {
     uint32_t periods;
     bool shift_instruments; // the module is short of four bytes in the instrument table: three longs move up
 } MdTables;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool read_tables(const MdModule* module, const MdScan* scan, MdTables* out) {
     uint32_t subsongs = 0;
@@ -523,7 +501,6 @@ static bool read_tables(const MdModule* module, const MdScan* scan, MdTables* ou
     return out->subsong_count > 0 && out->subsong_count <= MD_MAX_SUBSONGS && out->instrument_count >= 2;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The extents of the samples the relocation of the instrument and effect tables saw: the lowest sample address
 // and the highest end, as the code compares them (signed, an update on a tie).
 
@@ -532,7 +509,6 @@ typedef struct MdSampleExtent {
     int32_t end;
 } MdSampleExtent;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One record of the instrument or effect table: the sample pointer is relocated, the extents follow.
 
 static bool relocate_record(MdModule* module, uint32_t image_base, uint32_t at, bool first, MdSampleExtent* extent) {
@@ -556,12 +532,10 @@ static bool relocate_record(MdModule* module, uint32_t image_base, uint32_t at, 
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The words the eagleplayer's search takes for the end of a track. They are fixed in its code, not the commands of
 // the version (World Cup USA 94 ends tracks with 0xE4).
 static const uint16_t md_track_end_words[] = { 0x94, 0xFE, 0xFF, 0x1FE, 0x1FF };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A track ends at the first of these words, which the search takes with it.
 
 static bool find_track_end(const MdModule* module, uint32_t from, uint32_t* out) {
@@ -579,7 +553,6 @@ static bool find_track_end(const MdModule* module, uint32_t from, uint32_t* out)
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Relocates the track pointers that the call commands hold. The search compares every word of the data between the
 // tables and the samples (or after the samples, up to the end of the last track) with the call command; a hit takes
 // the long six bytes on and goes on eight bytes later. `from` and `to` are load addresses.
@@ -608,7 +581,6 @@ static bool relocate_calls(MdModule* module, uint32_t image_base, uint32_t from,
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The call command: the code of the first compare after the tick routine's start, which the eagleplayer reads at a
 // fixed distance from there.
 
@@ -618,14 +590,12 @@ static bool find_call_command(const MdModule* module, const MdScan* scan, uint16
            && read_word(module, compare + 2 + MD_CALL_COMMAND_OFFSET, out);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The address of the end of a table, in the load addresses the relocation produces.
 
 static uint32_t table_end_address(uint32_t offset, uint32_t count, uint32_t record_bytes) {
     return MD_LOAD_ADDRESS + offset + count * record_bytes;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample pointers of the instrument and effect tables, relocated. Returns the extents of the samples and the
 // address of the end of the tables (the later of the two, in load addresses as the code compares them).
 
@@ -652,7 +622,6 @@ static bool relocate_samples(MdModule* module, uint32_t image_base, const MdTabl
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The track pointers of the subsongs (all but the -1 of a voice that is off), relocated. Returns the highest.
 
 static bool relocate_subsongs(MdModule* module, uint32_t image_base, const MdTables* tables, int32_t* highest_track) {
@@ -677,7 +646,6 @@ static bool relocate_subsongs(MdModule* module, uint32_t image_base, const MdTab
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer after the searches: the data of the song is relocated to the load address of the module. Everything
 // below is in load addresses, as the code compares them. Returns the end of the data the module uses, as an offset.
 
@@ -717,7 +685,6 @@ static bool relocate_module(MdModule* module, const MdScan* scan, const MdTables
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The repairs of broken rips that InitPlayer applies to the module's bytes move the three longs from `from` up by four
 // bytes and put `fill` in the gap.
 
@@ -731,7 +698,6 @@ static bool shift_longs_up(MdModule* module, uint32_t from, uint32_t fill) {
     return write_long(module, from, fill);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The end of Mercs: a track word, then the shift.
 
 static bool repair_mercs(MdModule* module) {
@@ -739,7 +705,6 @@ static bool repair_mercs(MdModule* module) {
            && shift_longs_up(module, MD_PATCH_MERCS_RECORD, MD_PATCH_MERCS_RECORD_VALUE);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The operands that name the tables are among the ones the relocation scan reached (a scan that lost its step on the
 // way would leave them unrelocated).
 
@@ -752,8 +717,6 @@ static bool has_operand(const MdOperands* operands, uint32_t at) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool tables_in_module(const MdModule* module, const MdTables* tables) {
     const uint64_t subsongs_bytes = (uint64_t)MD_SUBSONG_BYTES * tables->subsong_count;
     const uint64_t instruments_bytes = (uint64_t)MD_INSTRUMENT_BYTES * tables->instrument_count;
@@ -763,8 +726,6 @@ static bool tables_in_module(const MdModule* module, const MdTables* tables) {
            && tables->instruments >= tables->periods && tables->instruments + instruments_bytes <= module->size
            && tables->instruments_limit >= tables->instruments && tables->sfx >= tables->periods;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool md_module_parse(MdModule* module, uint8_t* data, uint32_t size) {
     MdScan scan;
@@ -804,8 +765,6 @@ bool md_module_parse(MdModule* module, uint8_t* data, uint32_t size) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool md_read_subsong(const MdModule* module, uint32_t index, MdSubsong* out) {
     if (index >= module->subsong_count) {
         return false;
@@ -819,7 +778,6 @@ bool md_read_subsong(const MdModule* module, uint32_t index, MdSubsong* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The six longs of an instrument record; the words are the low halves.
 
 bool md_read_instrument(const MdModule* module, uint32_t index, MdInstrument* out) {
@@ -840,8 +798,6 @@ bool md_read_instrument(const MdModule* module, uint32_t index, MdInstrument* ou
     };
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MdCommand md_command(const MdModule* module, uint16_t code) {
     const uint16_t end = module->layout->command_end;
@@ -869,13 +825,9 @@ MdCommand md_command(const MdModule* module, uint16_t code) {
     return MdCommand_Instrument;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t md_unit(const MdModule* module) {
     return module->layout->byte_tracks ? 1 : 2;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool md_offset(const MdModule* module, uint32_t address, uint32_t* out) {
     const uint32_t offset = address - MD_LOAD_ADDRESS;
@@ -885,8 +837,6 @@ bool md_offset(const MdModule* module, uint32_t address, uint32_t* out) {
     *out = offset;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool md_read_code(const MdModule* module, uint32_t address, uint16_t* out) {
     uint32_t offset = 0;
@@ -900,13 +850,10 @@ bool md_read_code(const MdModule* module, uint32_t address, uint16_t* out) {
     return read_word(module, offset, out);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool md_read_note(const MdModule* module, uint32_t address, MdNote* out) {
     return md_read_code(module, address, &out->note) && md_read_code(module, address + md_unit(module), &out->duration);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The call command reads words and a long, also in the byte tracks.
 
 bool md_read_call(const MdModule* module, uint32_t address, MdCall* out) {
@@ -920,13 +867,9 @@ bool md_read_call(const MdModule* module, uint32_t address, MdCall* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool md_read_loop_count(const MdModule* module, uint32_t address, uint16_t* out) {
     return md_read_code(module, address + md_unit(module), out);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool md_read_period(const MdModule* module, int16_t byte_offset, uint16_t* out) {
     const int64_t at = (int64_t)module->periods + byte_offset;

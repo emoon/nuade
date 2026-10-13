@@ -7,13 +7,9 @@
 #include <nuade/players/pokeynoise.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe pokeynoise_probe(const uint8_t* data, size_t size, const char* filename) {
     return pn_probe(data, size, filename) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult pokeynoise_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -31,34 +27,24 @@ static NuadePlayerOpenResult pokeynoise_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void pokeynoise_close(void* user_data) {
     pn_destroy((PnPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool pokeynoise_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return pn_start((PnPlayer*)user_data, subsong, voices);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult pokeynoise_tick(void* user_data, NuadeVoices* voices) {
     const PnTickResult tick = pn_tick((PnPlayer*)user_data, voices);
     return (NuadeTickResult) { .length = tick.length, .flags = NuadeTick_None };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void pokeynoise_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Pokeynoise");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t pokeynoise_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const PnPlayer* player = (const PnPlayer*)user_data;
@@ -69,8 +55,6 @@ static uint32_t pokeynoise_voice_info(void* user_data, NuadeVoiceInfo* out, uint
     }
     return n;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_pokeynoise = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -86,8 +70,6 @@ const NuadePlayer nuade_player_pokeynoise = {
     .metadata = pokeynoise_metadata,
     .voice_info = pokeynoise_voice_info,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PnPlayer* pn_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_pokeynoise) {

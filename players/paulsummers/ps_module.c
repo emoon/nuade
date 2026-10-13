@@ -27,13 +27,9 @@
 
 static const int8_t PS_IDLE_SAMPLE[PS_IDLE_WORDS * 2] = { 0 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const int8_t* ps_idle_sample(void) {
     return PS_IDLE_SAMPLE;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ps_u8(const PsModule* module, uint32_t at, uint8_t* out) {
     if (at >= module->size) {
@@ -43,8 +39,6 @@ bool ps_u8(const PsModule* module, uint32_t at, uint8_t* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool ps_u16(const PsModule* module, uint32_t at, uint16_t* out) {
     if (module->size < 2 || at > module->size - 2) {
         return false;
@@ -52,8 +46,6 @@ bool ps_u16(const PsModule* module, uint32_t at, uint16_t* out) {
     *out = nuade_read_be16(module->mem + at);
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ps_u32(const PsModule* module, uint32_t at, uint32_t* out) {
     if (module->size < 4 || at > module->size - 4) {
@@ -63,7 +55,6 @@ bool ps_u32(const PsModule* module, uint32_t at, uint32_t* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The address a signed 16 bit displacement word at `at` leads to.
 
 static bool displacement_target(const PsModule* module, uint32_t at, uint32_t* out) {
@@ -75,7 +66,6 @@ static bool displacement_target(const PsModule* module, uint32_t at, uint32_t* o
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Scans words from `*at` for `opcode`; `*at` ends on the word behind it.
 
 static bool find_word(const PsModule* module, uint32_t* at, uint16_t opcode) {
@@ -89,7 +79,6 @@ static bool find_word(const PsModule* module, uint32_t* at, uint16_t opcode) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2, from the lea that loads the image's own address: the image must be addressed from its first byte.
 
 static bool check_start_address(const PsModule* module, uint32_t at) {
@@ -100,7 +89,6 @@ static bool check_start_address(const PsModule* module, uint32_t at) {
     return displacement_target(module, at, &target) && target == 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2 after the interrupt prologue (move #$2700,sr ... rte): the first lea behind the rte.
 
 static bool check_after_rte(const PsModule* module, uint32_t at) {
@@ -124,7 +112,6 @@ static bool check_after_rte(const PsModule* module, uint32_t at) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2 after a lea followed by four "move.b #$88,d16(a0)": the same lea scan.
 
 static bool check_after_setup(const PsModule* module, uint32_t at) {
@@ -138,8 +125,6 @@ static bool check_after_setup(const PsModule* module, uint32_t at) {
     }
     return check_start_address(module, at);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool check_image(const PsModule* module) {
     if (module->size <= PS_MIN_SIZE) {
@@ -159,8 +144,6 @@ static bool check_image(const PsModule* module) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool ps_song_entry(const PsModule* module, uint32_t subsong, PsSongEntry* out) {
     uint32_t tempo_timer = 0;
     const uint32_t entry = module->song_table + (subsong & 0xFu) * PS_ENTRY_BYTES;
@@ -172,8 +155,6 @@ bool ps_song_entry(const PsModule* module, uint32_t subsong, PsSongEntry* out) {
                            .timer = (uint16_t)tempo_timer };
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ps_voice_stream(const PsModule* module, uint32_t subsong, uint32_t voice, uint32_t* out) {
     uint32_t offset = 0;
@@ -189,8 +170,6 @@ bool ps_voice_stream(const PsModule* module, uint32_t subsong, uint32_t voice, u
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool ps_range(const PsModule* module, uint32_t at, PsRange* out) {
     uint32_t sample_offset = 0;
     PsRange range = { 0 };
@@ -204,14 +183,11 @@ bool ps_range(const PsModule* module, uint32_t at, PsRange* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool ps_period_pair(const PsModule* module, int32_t note, PsPeriodPair* out) {
     const uint32_t at = module->period_table - ((uint32_t)note << 2);
     return ps_u32(module, at, &out->current) && ps_u32(module, at + 4, &out->next);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer: the subsong count and the two tables, found in the code behind the start-up code.
 
 static bool locate_tables(PsModule* module) {
@@ -256,7 +232,6 @@ static bool locate_tables(PsModule* module) {
     return displacement_target(module, at + 2, &module->period_table);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Every subsong has to start with a tempo the engine survives: a positive tempo runs its tick body twice and returns
 // through a clobbered stack.
 
@@ -269,8 +244,6 @@ static bool tempos_supported(const PsModule* module) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ps_module_parse(PsModule* module, const uint8_t* bytes, size_t size) {
     *module = (PsModule) { 0 };
@@ -292,8 +265,6 @@ bool ps_module_parse(PsModule* module, const uint8_t* bytes, size_t size) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void ps_module_free(PsModule* module) {
     free(module->mem);

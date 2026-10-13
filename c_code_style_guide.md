@@ -17,29 +17,7 @@ A reusable C11 code style reference extracted from a production cross-platform c
 | Short if/loops on one line | Never |
 | Short blocks on one line | Only if empty |
 | Trailing comments | Aligned, 1 space before `//` |
-
----
-
-## Function Separators
-
-Every function is preceded by a separator line of exactly 119 forward slashes. An optional descriptive comment may appear between the separator and the function.
-
-```c
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-static void helper_function(int x) {
-    // ...
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Processes input data and returns the transformed result
-
-int process_data(const u8* data, u32 size) {
-    // ...
-}
-```
-
-Place a separator before every function, including the first one in the file. Group related helpers together, but still separate each with the divider.
+| Between functions | One blank line, no separator lines |
 
 ---
 
@@ -553,16 +531,13 @@ Repeated `//` lines, not `/* */`:
 
 ### File/section headers
 
-Descriptive block between separator lines:
+A plain comment block at the top of the file or section:
 
 ```c
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Replay String API
 //
 // Length-prefixed strings for safe string handling.
 // Arena-based memory management for zero-copy operations.
-//
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ```
 
 ### Function documentation

@@ -39,39 +39,29 @@ static const int16_t sine_table[64]
         0,    -24,  -49,  -74,  -97,  -120, -141, -161, -180, -197, -212, -224, -235, -244, -250, -253,
         -255, -253, -250, -244, -235, -224, -212, -197, -180, -161, -141, -120, -97,  -74,  -49,  -24 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // `n` bytes at `offset` lie inside `size` bytes; written so that it cannot wrap.
 
 static bool in_range(size_t size, uint64_t offset, uint64_t n) {
     return n <= size && offset <= size - n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t module_u16(const MxeModule* module, uint32_t offset) {
     return in_range(module->size, offset, 2) ? nuade_read_be16(module->bytes + offset) : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t module_u32(const MxeModule* module, uint32_t offset) {
     return in_range(module->size, offset, 4) ? nuade_read_be32(module->bytes + offset) : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t mxe_period(uint8_t note_offset) {
     const uint32_t index = note_offset / 2u;
     return index < MXE_NOTE_COUNT ? period_table[index] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int16_t mxe_sine(uint8_t offset) {
     return sine_table[(offset / 2u) % nuade_sizeof_array(sine_table)];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2 of one of the first record's voice lists: 0 (no list), or an even offset inside the file whose six bytes
 // before it are the end of the previous list.
 
@@ -83,7 +73,6 @@ static bool check2_list(const MxeModule* module, uint32_t list) {
            && module_u32(module, list - MXE_LIST_ENTRY_BYTES) == 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2 and the header part of InitPlayer. The record count in the first word (the replayer relocates that many
 // records) must equal the count that the first list offset implies (the number of subsongs).
 
@@ -116,8 +105,6 @@ bool mxe_module_parse(MxeModule* module, const uint8_t* bytes, size_t size) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 MxeRecord mxe_record(const MxeModule* module, uint32_t subsong) {
     const uint32_t at = RECORD_FIRST + subsong * RECORD_BYTES;
     const uint8_t mask = (uint8_t)module_u16(module, at); // the word is {priority, voice mask}
@@ -129,22 +116,17 @@ MxeRecord mxe_record(const MxeModule* module, uint32_t subsong) {
     return record;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 MxeListEntry mxe_list_entry(const MxeModule* module, uint32_t offset) {
     const uint32_t pattern = module_u32(module, offset);
     return (MxeListEntry) { .end = pattern == 0, .pattern = pattern, .value = module_u16(module, offset + 4) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The commands that carry two parameter bytes behind their word.
 
 static bool command_has_extra(MxeCommand command) {
     return command == MxeCommand_VibratoRestart || command == MxeCommand_Vibrato || command == MxeCommand_Portamento
            || command == MxeCommand_Arpeggio;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MxeRead mxe_read_item(const MxeModule* module, uint32_t* pos, bool first_of_event, MxeItem* item) {
     if (!in_range(module->size, *pos, 2)) {
@@ -183,14 +165,11 @@ MxeRead mxe_read_item(const MxeModule* module, uint32_t* pos, bool first_of_even
     return MxeRead_Item;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A byte offset into the period table: even (the replayer reads words) and inside the table.
 
 static bool period_offset_ok(uint8_t offset) {
     return (offset & 1) == 0 && offset < MXE_PERIOD_TABLE_BYTES;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t gcd(uint32_t a, uint32_t b) {
     while (b != 0) {
@@ -201,7 +180,6 @@ static uint32_t gcd(uint32_t a, uint32_t b) {
     return a;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What one item may ask of the replayer.
 
 static bool walk_item(MxeModule* module, const MxeItem* item) {
@@ -226,7 +204,6 @@ static bool walk_item(MxeModule* module, const MxeItem* item) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The events of one list entry: `count` times note, commands, duration, from the start of the pattern.
 
 static bool walk_pattern(MxeModule* module, const MxeListEntry* entry, uint32_t* budget) {
@@ -252,7 +229,6 @@ static bool walk_pattern(MxeModule* module, const MxeListEntry* entry, uint32_t*
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Relocation adds the load address to the pattern of every entry of every list, so a longword that two lists (or
 // overlapping entries) share ends up with the address added twice. `relocated` marks the longwords done.
 
@@ -266,7 +242,6 @@ static bool mark_relocated(uint8_t* relocated, uint32_t offset) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A voice's position list: entries up to the end mark, each relocated once. A list that is played also has its
 // patterns walked, and its end mark must send it back to an entry unless the record stops its voices.
 
@@ -300,8 +275,6 @@ static bool walk_list(MxeModule* module, uint8_t* relocated, uint32_t list, bool
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool mxe_module_validate(MxeModule* module) {
     uint8_t* relocated = calloc(module->size, 1);
     if (relocated == nullptr) {
@@ -321,20 +294,15 @@ bool mxe_module_validate(MxeModule* module) {
     return ok && module->grid_ticks != 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Sample file
 
 static uint16_t samples_u16(const MxeSamples* samples, uint32_t offset) {
     return in_range(samples->size, offset, 2) ? nuade_read_be16(samples->bytes + offset) : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t samples_u32(const MxeSamples* samples, uint32_t offset) {
     return in_range(samples->size, offset, 4) ? nuade_read_be32(samples->bytes + offset) : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MxeInstrument mxe_instrument(const MxeSamples* samples, uint32_t index) {
     const uint32_t at = SAMPLES_FIRST + index * INSTRUMENT_BYTES;
@@ -345,7 +313,6 @@ MxeInstrument mxe_instrument(const MxeSamples* samples, uint32_t index) {
                              .loop_words = samples_u16(samples, at + 12) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer: the word at the start counts the instruments, the first sample follows the table, and the sample that
 // the 16 bytes before it describe (the last instrument) must end inside the file.
 
@@ -376,22 +343,17 @@ bool mxe_samples_load(MxeSamples* samples, const uint8_t* bytes, size_t size) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void mxe_samples_free(MxeSamples* samples) {
     free(samples->bytes);
     memset(samples, 0, sizeof(*samples));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // `words` words from `start`; AUDxLEN 0 plays 65536 words.
 
 static bool sound_ok(const MxeSamples* samples, uint32_t start, uint16_t words) {
     const uint64_t bytes = words == 0 ? NUADE_PAULA_MAX_SAMPLE_BYTES : 2u * words;
     return in_range(samples->size, start, bytes);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool mxe_samples_check(const MxeSamples* samples, const MxeModule* module) {
     for (uint32_t i = 0; i < MXE_MAX_INSTRUMENTS; i++) {
@@ -410,7 +372,6 @@ bool mxe_samples_check(const MxeSamples* samples, const MxeModule* module) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Reads `name` from the song's directory (any case). A bare file name has no directory: the current one.
 
 static MxeLoad load_named(const char* song_path, const NuadeIo* io, const char* name, MxeSamples* samples) {
@@ -433,7 +394,6 @@ static MxeLoad load_named(const char* song_path, const NuadeIo* io, const char* 
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ExtLoad: the song's name with "MAX." changed to "SMP."; a name of another form loses its last character. When that
 // file cannot be read, "SMP.set" is read; a file that is read but refused by InitPlayer ends the load.
 

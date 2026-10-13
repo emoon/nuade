@@ -7,14 +7,10 @@
 #include <nuade/players/maniacsofnoise.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe maniacsofnoise_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return mon_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult maniacsofnoise_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -32,34 +28,24 @@ static NuadePlayerOpenResult maniacsofnoise_open(const NuadeSongSource* source) 
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void maniacsofnoise_close(void* user_data) {
     mon_destroy((MonPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool maniacsofnoise_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return mon_start((MonPlayer*)user_data, (int)subsong, voices);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult maniacsofnoise_tick(void* user_data, NuadeVoices* voices) {
     const MonTickResult tick = mon_tick((MonPlayer*)user_data, voices);
     return (NuadeTickResult) { .length = MON_TICK_LENGTH, .flags = tick.ended ? NuadeTick_Ended : NuadeTick_None };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void maniacsofnoise_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Maniacs of Noise");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t maniacsofnoise_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const MonPlayer* player = (const MonPlayer*)user_data;
@@ -70,8 +56,6 @@ static uint32_t maniacsofnoise_voice_info(void* user_data, NuadeVoiceInfo* out, 
     }
     return count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_maniacsofnoise = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -87,8 +71,6 @@ const NuadePlayer nuade_player_maniacsofnoise = {
     .metadata = maniacsofnoise_metadata,
     .voice_info = maniacsofnoise_voice_info,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MonPlayer* mon_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_maniacsofnoise) {

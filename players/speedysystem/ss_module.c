@@ -43,7 +43,6 @@
 #define SAMPLE_LAST 0x30
 #define SAMPLE_SKIP_LAST 0xB0
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer's period table (entry 0 is never played; the nibble 13 reads past it).
 
 static const uint16_t k_periods[TABLE_NOTE_LAST + 1] = {
@@ -53,13 +52,10 @@ static const uint16_t k_periods[TABLE_NOTE_LAST + 1] = {
 // The attack and release delays, in ticks, indexed by the nibbles of a note cell's second byte.
 static const uint8_t k_delays[16] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 16, 24 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool in_range(size_t size, int64_t offset, size_t length) {
     return offset >= 0 && (uint64_t)offset <= size && length <= size - (size_t)offset;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // 0 past the end; callers check the range where it matters.
 
 static uint32_t read_u32(const uint8_t* data, size_t size, int64_t offset) {
@@ -69,27 +65,19 @@ static uint32_t read_u32(const uint8_t* data, size_t size, int64_t offset) {
     return nuade_read_be32(data + offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The nibbles of a note cell's first byte.
 typedef struct SsNote {
     unsigned octave; // 1..4
     unsigned note;   // 1..13
 } SsNote;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static SsNote cell_note(SsCell cell) {
     return (SsNote) { .octave = cell.first >> 4, .note = cell.first & 0x0Fu };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 SsDelays ss_cell_delays(SsCell cell) {
     return (SsDelays) { .attack = k_delays[cell.second >> 4], .release = k_delays[cell.second & DELAY_NIBBLE_MASK] };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SsCellKind ss_cell_kind(SsCell cell) {
     if (cell.first == END_CELL_BYTE) {
@@ -105,8 +93,6 @@ SsCellKind ss_cell_kind(SsCell cell) {
     const unsigned note = cell_note(cell).note;
     return note >= 1 && note <= NOTE_NIBBLE_LAST ? SsCell_Note : SsCell_Skip;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SsNoteStart ss_cell_start(SsCell cell) {
     if (cell_note(cell).note > TABLE_NOTE_LAST) {
@@ -124,8 +110,6 @@ SsNoteStart ss_cell_start(SsCell cell) {
     return (SsNoteStart) { SsStart_Sample, cell.third };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t ss_note_period(SsCell cell) {
     const SsNote note = cell_note(cell);
     // The nibble 13 is not modelled (ss_cell_start): clamp, so the table is never read past its end.
@@ -136,7 +120,6 @@ uint16_t ss_note_period(SsCell cell) {
     return (uint16_t)(period >> (note.octave - BASE_OCTAVE));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The offset of a voice's pattern at a position: the table entry is relative to the marker.
 
 static int64_t pattern_offset(const SsModule* m, unsigned voice, uint8_t position) {
@@ -144,8 +127,6 @@ static int64_t pattern_offset(const SsModule* m, unsigned voice, uint8_t positio
         = (int32_t)read_u32(m->data, m->size, (int64_t)m->base + position * 4 + voice * POINTER_TABLE_BYTES);
     return (int64_t)m->base + pointer;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ss_expand_position(const SsModule* module, uint8_t position, SsCell rows[SS_ROWS][SS_VOICES]) {
     for (unsigned voice = 0; voice < SS_VOICES; voice++) {
@@ -171,29 +152,22 @@ bool ss_expand_position(const SsModule* module, uint8_t position, SsCell rows[SS
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxLEN is the low word of the length (move.w); 0 plays 65536 words.
 
 static uint16_t length_register(int64_t words) {
     return (uint16_t)words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 typedef struct SampleEntry {
     int32_t pointer;
     int32_t length;
 } SampleEntry;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static SampleEntry read_sample_entry(const SsModule* m, unsigned sample) {
     const int64_t table = (int64_t)m->base + SAMPLE_TABLE_OFFSET;
     return (SampleEntry) { .pointer = (int32_t)read_u32(m->data, m->size, table + sample * 4),
                            .length = (int32_t)read_u32(m->data, m->size, table + (SAMPLE_TABLE_ENTRIES + sample) * 4) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 typedef struct IffHeader {
     bool has_body;
@@ -204,7 +178,6 @@ typedef struct IffHeader {
     uint32_t body; // the offset of the BODY chunk from the sample's start
 } IffHeader;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Reads 0 past the end of the file: a sample too close to it has no header.
 
 static IffHeader read_iff_header(const SsModule* m, int64_t offset) {
@@ -218,14 +191,12 @@ static IffHeader read_iff_header(const SsModule* m, int64_t offset) {
     return h;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An AUDxLC in the file: the player's padded copy has any AUDxLEN readable behind it.
 
 static bool sample_in_file(const SsModule* m, int64_t offset) {
     return offset >= 0 && (uint64_t)offset <= m->size;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample start (InitSound relocated the pointer, the note start writes AUDxLC/AUDxLEN, then the routine at 0x1104
 // looks for an IFF header and replaces them).
 
@@ -255,7 +226,6 @@ static SsSample resolve_sample(const SsModule* m, unsigned sample) {
     return s;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2: the magic, then the marker in the first 128 words after byte 14.
 
 static bool check_magic(const uint8_t* data, size_t size) {
@@ -270,7 +240,6 @@ static bool check_magic(const uint8_t* data, size_t size) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Every position the song plays up to the first end cell of voice 0 (or the 256 positions of the byte-wide position):
 // each pattern must lie in the file, each sample a note starts must be a valid one, and no note may need the
 // unmodelled reads.
@@ -301,8 +270,6 @@ static bool check_song(const SsModule* m) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ss_module_parse(SsModule* module, const uint8_t* data, size_t size) {
     if (!check_magic(data, size)) {

@@ -11,14 +11,10 @@
 // A note is a period table index; index 36 (period 854) is C-1, so the column starts three octaves below it at index 0.
 #define STK_OCTAVE_SHIFT (-2)
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe syntracker_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return stk_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult syntracker_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -35,13 +31,9 @@ static NuadePlayerOpenResult syntracker_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void syntracker_close(void* user_data) {
     stk_destroy((StkPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool syntracker_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
@@ -53,14 +45,10 @@ static bool syntracker_start(void* user_data, uint32_t subsong, uint32_t sample_
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult syntracker_tick(void* user_data, NuadeVoices* voices) {
     const StkTickResult tick = stk_tick((StkPlayer*)user_data, voices);
     return (NuadeTickResult) { .length = STK_TICK_LENGTH, .flags = tick.looped ? NuadeTick_Looped : NuadeTick_None };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void syntracker_metadata(void* user_data, const NuadeMetadataSink* sink) {
     const StkPlayer* player = (const StkPlayer*)user_data;
@@ -73,8 +61,6 @@ static void syntracker_metadata(void* user_data, const NuadeMetadataSink* sink) 
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadePositionResult syntracker_position(void* user_data) {
     const StkPosition p = stk_position((const StkPlayer*)user_data);
     return (NuadePositionResult) { .valid = true,
@@ -84,8 +70,6 @@ static NuadePositionResult syntracker_position(void* user_data) {
                                                  .rows = STK_ROWS,
                                                  .speed = (uint32_t)p.speed } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t syntracker_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const StkPlayer* player = (const StkPlayer*)user_data;
@@ -101,8 +85,6 @@ static uint32_t syntracker_voice_info(void* user_data, NuadeVoiceInfo* out, uint
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTrackerInfoResult syntracker_tracker_info(void* user_data, const NuadePosition* at) {
     const StkPlayer* player = (const StkPlayer*)user_data;
     if ((int)at->order >= stk_order_count(player)) {
@@ -117,8 +99,6 @@ static NuadeTrackerInfoResult syntracker_tracker_info(void* user_data, const Nua
                                                              { "fx", NuadeColumn_Hex, 2, 0 },
                                                              { "arg", NuadeColumn_Hex, 2, 0 } } } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePatternCell syntracker_cell(const void* ctx, uint32_t order, uint32_t channel, uint32_t row) {
     NuadePatternCell cell = nuade_cell_empty();
@@ -138,8 +118,6 @@ static NuadePatternCell syntracker_cell(const void* ctx, uint32_t order, uint32_
     return cell;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t syntracker_tracker_cells(void* user_data, const NuadePosition* at, uint32_t channel, int32_t row_lo,
                                          int32_t row_hi, NuadePatternCell* out, uint32_t cap) {
     const StkPlayer* player = (const StkPlayer*)user_data;
@@ -148,8 +126,6 @@ static uint32_t syntracker_tracker_cells(void* user_data, const NuadePosition* a
     }
     return nuade_tracker_fill(at, STK_VOICES, STK_ROWS, channel, row_lo, row_hi, out, cap, syntracker_cell, user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_syntracker = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -168,8 +144,6 @@ const NuadePlayer nuade_player_syntracker = {
     .tracker_info = syntracker_tracker_info,
     .tracker_cells = syntracker_tracker_cells,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 StkPlayer* stk_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_syntracker) {

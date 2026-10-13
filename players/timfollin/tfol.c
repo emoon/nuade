@@ -44,14 +44,10 @@ static const uint16_t tfol_periods[128] = {
     0x6564, 0x2062, 0x7920, 0x414e, 0x4459, 0x2053, 0x494c, 0x5641, 0x2000, 0x0000, 0x0000,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool tfol_probe(const uint8_t* data, size_t size) {
     TfolModule module;
     return tfol_module_locate(data, size, &module);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TfolCreateResult tfol_create(const uint8_t* data, size_t size) {
     TfolCreateResult result = { .status = TfolStatus_InvalidData };
@@ -78,8 +74,6 @@ TfolCreateResult tfol_create(const uint8_t* data, size_t size) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void tfol_destroy(TfolPlayer* player) {
     if (player == nullptr) {
         return;
@@ -89,13 +83,9 @@ void tfol_destroy(TfolPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t tfol_subsong_count(const TfolPlayer* player) {
     return player->module.subsong_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Sets the sample registers of a voice from an instrument; the sample address clears bit 0 like Paula does.
 static void tfol_load_sample(TfolVoice* v, const TfolModule* m, const TfolInstrument* inst) {
@@ -104,16 +94,12 @@ static void tfol_load_sample(TfolVoice* v, const TfolModule* m, const TfolInstru
     v->paula.len_words = inst->length_words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void tfol_stop_voice(TfolVoice* v) {
     v->active = false;
     v->retrigger = false;
     nuade_paula_channel_dma_off(&v->paula);
     v->paula.volume = 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // InitSound: the song's streams, and the state of every voice.
 bool tfol_start(TfolPlayer* player, uint32_t subsong, NuadeVoices* voices) {
@@ -142,8 +128,6 @@ bool tfol_start(TfolPlayer* player, uint32_t subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The second sample of a voice: entry wave_flags & 0x3f of the instrument table, started with DMA already running so
 // that Paula takes it as the repeat.
 static void tfol_switch_to_second_sample(TfolPlayer* player, TfolVoice* v) {
@@ -156,8 +140,6 @@ static void tfol_switch_to_second_sample(TfolPlayer* player, TfolVoice* v) {
     tfol_load_sample(v, &player->module, &inst);
     nuade_paula_channel_dma_on(&v->paula);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The sweep: a run of sample bytes of the instrument fills with 0x80 position by position, then empties again.
 static void tfol_sweep(TfolPlayer* player, TfolVoice* v) {
@@ -187,8 +169,6 @@ static void tfol_sweep(TfolPlayer* player, TfolVoice* v) {
     v->sweep_position = position;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Restarts the sweep of the voice's instrument.
 static void tfol_reset_sweep(TfolPlayer* player, TfolVoice* v) {
     v->sweep_counter = v->sweep_rate;
@@ -202,8 +182,6 @@ static void tfol_reset_sweep(TfolPlayer* player, TfolVoice* v) {
         tfol_module_poke(&player->module, v->instrument.offset + TFOL_RESET_FIRST + i, value);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The amplitude envelope: attack up to 0x3f, then release down to the sustain level.
 static void tfol_envelope(TfolVoice* v) {
@@ -235,15 +213,11 @@ static void tfol_envelope(TfolVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void tfol_set_note_period(TfolVoice* v, uint8_t note) {
     v->note = note;
     v->period = tfol_periods[note & TFOL_NOTE_MASK];
     v->paula.period = v->period;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Moves the period by the pitch modulation amount, up or down; the direction flips every `ticks` ticks.
 static void tfol_pitch_modulation(TfolVoice* v) {
@@ -262,8 +236,6 @@ static void tfol_pitch_modulation(TfolVoice* v) {
         v->vibrato_direction ^= 1;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The vibrato: alternates the note by +-depth. Returns true when it set the period (the portamento is then skipped).
 static bool tfol_vibrato(TfolVoice* v) {
@@ -287,8 +259,6 @@ static bool tfol_vibrato(TfolVoice* v) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The portamento: the note moves by `rate` per tick towards the target and stops on it.
 static void tfol_portamento(TfolVoice* v) {
     if (v->portamento_rate == 0 || v->note == v->portamento_target) {
@@ -309,8 +279,6 @@ static void tfol_portamento(TfolVoice* v) {
     tfol_set_note_period(v, note);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A note: the instrument's sample starts with DMA on, and the period follows.
 static void tfol_start_note(TfolPlayer* player, TfolVoice* v) {
     if (v->has_instrument) {
@@ -322,8 +290,6 @@ static void tfol_start_note(TfolPlayer* player, TfolVoice* v) {
     }
     v->paula.period = v->period;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A note byte of the stream: sets the period, starts the sample, reads the length and restarts the effects.
 static void tfol_play_note(TfolPlayer* player, TfolVoice* v, const TfolEvent* ev) {
@@ -362,8 +328,6 @@ static void tfol_play_note(TfolPlayer* player, TfolVoice* v, const TfolEvent* ev
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void tfol_stack_push(TfolPlayer* player, TfolVoice* v, uint32_t value) {
     if (v->stack_top >= TFOL_STACK_ENTRIES) {
         tfol_stop_voice(v);
@@ -371,8 +335,6 @@ static void tfol_stack_push(TfolPlayer* player, TfolVoice* v, uint32_t value) {
     }
     player->stack[v->stack_top++] = value;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t tfol_stack_pop(TfolPlayer* player, TfolVoice* v) {
     if (v->stack_top == 0 || player->stack[v->stack_top - 1] == TFOL_STACK_EMPTY) {
@@ -382,16 +344,12 @@ static uint32_t tfol_stack_pop(TfolPlayer* player, TfolVoice* v) {
     return player->stack[--v->stack_top];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The instrument command: the instrument number selects an entry of the song's instrument table.
 static void tfol_select_instrument(TfolPlayer* player, TfolVoice* v, uint8_t number) {
     v->instrument_number = number;
     v->instrument = tfol_module_instrument(&player->module, player->song_record.instrument_table, number);
     v->has_instrument = v->instrument.valid;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void tfol_set_envelope(TfolVoice* v, const uint8_t* args) {
     v->envelope_level_start = (uint8_t)((args[0] >> 4) * 4);
@@ -400,8 +358,6 @@ static void tfol_set_envelope(TfolVoice* v, const uint8_t* args) {
     v->envelope_release_rate = args[1] & 0xf;
     v->envelope_state_start = args[2];
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Runs one command of the stream. Returns false when the fetch ends.
 static bool tfol_run_command(TfolPlayer* player, TfolVoice* v, const TfolEvent* ev, uint32_t* at) {
@@ -481,8 +437,6 @@ static bool tfol_run_command(TfolPlayer* player, TfolVoice* v, const TfolEvent* 
     return v->active;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Reads the stream until a note starts or the voice stops.
 static void tfol_fetch(TfolPlayer* player, TfolVoice* v) {
     uint32_t at = v->stream;
@@ -503,8 +457,6 @@ static void tfol_fetch(TfolPlayer* player, TfolVoice* v) {
     tfol_stop_voice(v);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The note counter: one tick before the end a note-off voice cuts its DMA, at the end the next events are read.
 static void tfol_note_counter(TfolPlayer* player, TfolVoice* v) {
     v->note_counter--;
@@ -516,8 +468,6 @@ static void tfol_note_counter(TfolPlayer* player, TfolVoice* v) {
         tfol_fetch(player, v);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void tfol_update_voice(TfolPlayer* player, TfolVoice* v) {
     if (!v->active) {
@@ -549,8 +499,6 @@ static void tfol_update_voice(TfolPlayer* player, TfolVoice* v) {
     tfol_note_counter(player, v);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 TfolTickResult tfol_tick(TfolPlayer* player, NuadeVoices* voices) {
     for (uint32_t i = 0; i < TFOL_VOICES; i++) {
         if (player->voices[i].retrigger) {
@@ -567,8 +515,6 @@ TfolTickResult tfol_tick(TfolPlayer* player, NuadeVoices* voices) {
     }
     return (TfolTickResult) { .ended = !any_active };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TfolVoiceState tfol_voice_state(const TfolPlayer* player, uint32_t voice) {
     const TfolVoice* v = &player->voices[voice];

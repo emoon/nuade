@@ -7,14 +7,10 @@
 #include <nuade/players/timfollin.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe tfol_nuade_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return tfol_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult tfol_nuade_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -37,34 +33,24 @@ static NuadePlayerOpenResult tfol_nuade_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void tfol_nuade_close(void* user_data) {
     tfol_destroy((TfolPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool tfol_nuade_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return tfol_start((TfolPlayer*)user_data, subsong, voices);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult tfol_nuade_tick(void* user_data, NuadeVoices* voices) {
     const TfolTickResult tick = tfol_tick((TfolPlayer*)user_data, voices);
     return (NuadeTickResult) { .length = TFOL_TICK_LENGTH, .flags = tick.ended ? NuadeTick_Ended : NuadeTick_None };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void tfol_nuade_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Tim Follin");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t tfol_nuade_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const TfolPlayer* player = (const TfolPlayer*)user_data;
@@ -75,8 +61,6 @@ static uint32_t tfol_nuade_voice_info(void* user_data, NuadeVoiceInfo* out, uint
     }
     return n;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_timfollin = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -92,8 +76,6 @@ const NuadePlayer nuade_player_timfollin = {
     .metadata = tfol_nuade_metadata,
     .voice_info = tfol_nuade_voice_info,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TfolPlayer* tfol_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_timfollin) {

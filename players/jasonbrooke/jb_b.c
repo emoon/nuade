@@ -26,7 +26,6 @@ enum {
     Flag_Kept = Flag_VibratoHold | Flag_VibratoUp | Flag_Vibrato, // what a new row keeps
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Voice tick
 
 // The volume envelope: the level byte counts down in steps of 0x40 (the top two bits are a duration), 0xC0 and above
@@ -46,8 +45,6 @@ static void envelope_step(const JbModule* m, const JbBConfig* c, Voice* v) {
     v->envelope_position++;
     v->envelope_volume = jbm_u8(m, t->envelope + offset);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The vibrato: a depth that ramps up and down by the speed byte, offsetting the period by depth - span / 2
 static uint16_t vibrato(const JbBConfig* c, Voice* v, uint16_t period) {
@@ -71,8 +68,6 @@ static uint16_t vibrato(const JbBConfig* c, Voice* v, uint16_t period) {
     }
     return (uint16_t)(period + depth - (span >> 1));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void voice_tick(JbB* b, JbModule* m, Voice* v) {
     const JbBConfig* c = &b->config;
@@ -112,15 +107,12 @@ static void voice_tick(JbB* b, JbModule* m, Voice* v) {
     v->period = period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Sequencer
 
 typedef enum CommandResult {
     CommandResult_Continue,
     CommandResult_EndRow,
 } CommandResult;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Runs `command` for voice `index`; `p` is the stream offset after the command byte and moves over its arguments
 static CommandResult run_command(JbB* b, JbModule* m, int index, JbBCommand command, uint32_t* p) {
@@ -192,8 +184,6 @@ static CommandResult run_command(JbB* b, JbModule* m, int index, JbBCommand comm
     return CommandResult_Continue;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void sequence_step(JbB* b, JbModule* m, int index) {
     const JbBTables* t = &b->config.tables;
     Voice* v = &b->voices[index];
@@ -245,8 +235,6 @@ static void sequence_step(JbB* b, JbModule* m, int index) {
     v->stream = (uint16_t)p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void jb_b_start(JbB* b, const JbModule* m, int subsong) {
     const JbBTables* t = &b->config.tables;
     const JbBSong song = jb_b_song(m, t, subsong);
@@ -269,8 +257,6 @@ void jb_b_start(JbB* b, const JbModule* m, int subsong) {
         nuade_paula_channel_dma_on(&v->paula);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 JbTickResult jb_b_tick(JbB* b, JbModule* m, NuadeVoices* voices) {
     const JbBTables* t = &b->config.tables;

@@ -37,8 +37,6 @@ typedef enum SdrRegion {
     SdrRegion_Stray,
 } SdrRegion;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static SdrRegion region_of(const SdrMemory* memory, uint32_t address) {
     if (address - SDR_MODULE_BASE < memory->module_size) {
         return SdrRegion_Module;
@@ -50,8 +48,6 @@ static SdrRegion region_of(const SdrMemory* memory, uint32_t address) {
     const bool zero = (address >= ZERO_FROM && address < SLOW_END) || address >= KICKSTART_START;
     return zero ? SdrRegion_Zero : SdrRegion_Stray;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint8_t sdr_u8(SdrMemory* memory, uint32_t offset) {
     const uint32_t address = SDR_MODULE_BASE + offset;
@@ -69,19 +65,14 @@ uint8_t sdr_u8(SdrMemory* memory, uint32_t offset) {
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t sdr_u16(SdrMemory* memory, uint32_t offset) {
     return (uint16_t)(sdr_u8(memory, offset) << 8 | sdr_u8(memory, offset + 1));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t sdr_u32(SdrMemory* memory, uint32_t offset) {
     return (uint32_t)sdr_u16(memory, offset) << 16 | sdr_u16(memory, offset + 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxLC has no bit 0. The sound is read from the sample file, or from zeros; it has to end in the same region where
 // it starts (a buffer that runs on into another region would play what the memory between holds).
 
@@ -109,8 +100,6 @@ const int8_t* sdr_sample_pointer(SdrMemory* memory, uint32_t offset, uint16_t le
     return nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 SdrHeader sdr_read_header(SdrMemory* memory) {
     return (SdrHeader) {
         .instruments = sdr_u32(memory, 0),
@@ -119,7 +108,6 @@ SdrHeader sdr_read_header(SdrMemory* memory) {
     };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The subsong table sits between the header and the volume switch table.
 
 int sdr_module_subsong_count(SdrMemory* memory) {
@@ -130,13 +118,9 @@ int sdr_module_subsong_count(SdrMemory* memory) {
     return (int)((header.volume_switches - SUBSONG_TABLE) / SUBSONG_ENTRY_SIZE);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t sdr_read_track_offset(SdrMemory* memory, uint32_t subsong, uint32_t voice) {
     return sdr_u32(memory, SUBSONG_TABLE + SUBSONG_ENTRY_SIZE * subsong + 4 * voice);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SdrTrackEntry sdr_read_track_entry(SdrMemory* memory, uint32_t offset) {
     return (SdrTrackEntry) {
@@ -149,13 +133,10 @@ SdrTrackEntry sdr_read_track_entry(SdrMemory* memory, uint32_t offset) {
     };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t sdr_track_first_byte(SdrMemory* memory, uint32_t offset) {
     return sdr_u8(memory, offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The instrument number is shifted into a 16-bit word, which then counts as signed. A record that starts below the
 // module and reads memory this port does not model (UADE's own data, which a real 68000 reads as an odd-address word
 // or as nonsense) is a junk record: the note it belongs to is muted, and the record's fields are not read.
@@ -187,7 +168,6 @@ SdrInstrument sdr_read_instrument(SdrMemory* memory, uint32_t table, uint16_t nu
     return instrument;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A table offset of the header as Check2 reads it: a long whose upper word is 0 and whose lower word is a positive,
 // even number.
 
@@ -200,7 +180,6 @@ static bool read_table_offset(SdrMemory* memory, uint32_t at, uint16_t* offset) 
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2, and InitPlayer's test that the module reaches past its volume switch table (a signed comparison).
 
 bool sdr_check_module(SdrMemory* memory) {
@@ -233,20 +212,16 @@ bool sdr_check_module(SdrMemory* memory) {
            && (int32_t)memory->module_size > (int32_t)sdr_u32(memory, header.volume_switches + 4);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sdr_name_matches(const char* filename) {
     return filename != nullptr && strncasecmp(nuade_path_basename(filename), MODULE_PREFIX, PREFIX_LENGTH) == 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // UADE puts the sample file behind the module.
 
 uint32_t sdr_sample_base(uint32_t module_size) {
     return SDR_MODULE_BASE + ((module_size + SAMPLE_GAP) & ~(SAMPLE_ALIGN - 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample file name: the song's with "sdr." changed to "smp."; a song without that prefix loses its last
 // character instead.
 
@@ -263,8 +238,6 @@ static bool samples_file_name(const char* song, char* name, size_t capacity) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool load_file(SdrMemory* memory, const NuadeIo* io, const char* url) {
     const NuadeIoReadResult file = NuadeIo_read_url_to_memory(io, url);
     if (file.data == nullptr) {
@@ -280,7 +253,6 @@ static bool load_file(SdrMemory* memory, const NuadeIo* io, const char* url) {
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ExtLoad: the sample file of the song, else "smp.set", from the song's directory. UADE puts it behind the module
 // (sdr_sample_base).
 

@@ -9,14 +9,10 @@
 
 #define RR_GRID_TICKS 6 // the voices run on their own durations: a display grid only
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe riffraff_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return rr_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult riffraff_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -34,27 +30,19 @@ static NuadePlayerOpenResult riffraff_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void riffraff_close(void* user_data) {
     rr_destroy((RrPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool riffraff_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return rr_start((RrPlayer*)user_data, subsong, voices);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult riffraff_tick(void* user_data, NuadeVoices* voices) {
     const RrTickResult tick = rr_tick((RrPlayer*)user_data, voices);
     return (NuadeTickResult) { .length = RR_TICK_LENGTH, .flags = tick.looped ? NuadeTick_Looped : NuadeTick_None };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void riffraff_metadata(void* user_data, const NuadeMetadataSink* sink) {
     const RrPlayer* player = (const RrPlayer*)user_data;
@@ -63,8 +51,6 @@ static void riffraff_metadata(void* user_data, const NuadeMetadataSink* sink) {
         sink->set_tag(sink->ctx, NUADE_META_TITLE, rr_title(player));
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t riffraff_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const RrPlayer* player = (const RrPlayer*)user_data;
@@ -76,15 +62,11 @@ static uint32_t riffraff_voice_info(void* user_data, NuadeVoiceInfo* out, uint32
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t riffraff_grid_ticks(void* user_data, uint32_t subsong) {
     (void)user_data;
     (void)subsong;
     return RR_GRID_TICKS;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_riffraff = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -101,8 +83,6 @@ const NuadePlayer nuade_player_riffraff = {
     .voice_info = riffraff_voice_info,
     .grid_ticks = riffraff_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RrPlayer* rr_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_riffraff) {

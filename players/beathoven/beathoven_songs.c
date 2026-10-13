@@ -26,8 +26,6 @@
 #define MAX_LIST_ENTRIES 4096
 #define MAX_WRITES 8192
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool add_write(BthSong* song, uint32_t address, uint16_t value) {
     if (song->write_count == song->write_capacity) {
         const uint32_t capacity = song->write_capacity == 0 ? 8 : song->write_capacity * 2;
@@ -42,21 +40,15 @@ static bool add_write(BthSong* song, uint32_t address, uint16_t value) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool add_write32(BthSong* song, uint32_t address, uint32_t value) {
     return add_write(song, address, (uint16_t)(value >> 16)) && add_write(song, address + 2, (uint16_t)value);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void bth_songs_free(BthSong* songs, uint32_t count) {
     for (uint32_t i = 0; i < count; i++) {
         free(songs[i].writes);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A sequential reader of the instruction words of a routine that is matched whole
 typedef struct Cursor {
@@ -67,8 +59,6 @@ typedef struct Cursor {
 
 #define REQUIRE(c, words) cursor_require((c), (words), nuade_sizeof_array(words))
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Consumes `count` words, which must be `words`; once a word did not match, nothing is consumed any more
 static void cursor_require(Cursor* c, const uint32_t* words, uint32_t count) {
     c->ok = c->ok && bthm_match(c->module, c->at, words, count);
@@ -77,14 +67,10 @@ static void cursor_require(Cursor* c, const uint32_t* words, uint32_t count) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void cursor_require_word(Cursor* c, uint16_t word) {
     const uint32_t words[] = { word };
     cursor_require(c, words, 1);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Consumes a branch of the given kind with a one byte displacement
 static void cursor_require_short_branch(Cursor* c, uint16_t kind) {
@@ -94,15 +80,11 @@ static void cursor_require_short_branch(Cursor* c, uint16_t kind) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t cursor_take32(Cursor* c) {
     const uint32_t value = bthm_u32(c->module, c->at);
     c->at += 4;
     return value;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t cursor_take_pc16(Cursor* c) {
     const uint32_t value = bthm_pc16(c->module, c->at);
@@ -110,7 +92,6 @@ static uint32_t cursor_take_pc16(Cursor* c) {
     return value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The routine the eagleplayer calls once when it has loaded the module (the header's `once`). Two forms exist.
 
 // An entry of form A's list: an instrument record and the offset of its sample. The list ends at a record of 0.
@@ -121,14 +102,10 @@ typedef struct SampleListEntry {
     uint32_t offset;
 } SampleListEntry;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static SampleListEntry read_sample_list_entry(const BthModule* m, uint32_t list, uint32_t index) {
     const uint32_t entry = list + SAMPLE_LIST_ENTRY_BYTES * index;
     return (SampleListEntry) { .record = bthm_u32(m, entry), .offset = bthm_u32(m, entry + 4) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Form A: copy a longword into a variable, then for every (record, offset) pair of a list set the record's sample
 // address to the offset plus a base:
@@ -169,13 +146,9 @@ static bool apply_sample_list(BthModule* m, uint32_t at) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Form B's table: the start address, then entries of (gap, address) that follow it
 #define ADDRESS_TABLE_LONGWORD_BYTES 4
 #define ADDRESS_TABLE_ENTRY_BYTES 8
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Form B: a table of addresses built by adding the gaps stored in every other slot to a start address, and a block
 // of words copied:
@@ -224,16 +197,12 @@ static bool apply_address_table(BthModule* m, uint32_t at) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool bth_apply_once(BthModule* module, const BthHeader* header) {
     if (header->once == 0) {
         return true;
     }
     return apply_sample_list(module, header->once) || apply_address_table(module, header->once);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Where the init routine's dispatch leads for a subsong
 typedef struct InitPath {
@@ -244,8 +213,6 @@ typedef struct InitPath {
     bool failed; // a word write did not fit in the song's list
 } InitPath;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The state the dispatch tests: the subsong number counted down by subq, the zero flag the last test set, and the
 // address the last lea loaded into a0
 typedef struct Dispatch {
@@ -254,13 +221,9 @@ typedef struct Dispatch {
     uint32_t last_lea;
 } Dispatch;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void write_word(InitPath* path, BthSong* song, uint32_t address, uint16_t value) {
     path->failed = path->failed || !add_write(song, address, value);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // An instruction that sets module words or loads a table address: applies it. Returns the address after it, 0 if the
 // word at `at` is another instruction.
@@ -314,8 +277,6 @@ static uint32_t apply_setup_instruction(const BthModule* m, uint32_t at, Dispatc
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Walks the init routine's dispatch for `subsong`. It follows the branches the subsong number selects (a call is
 // followed like a jump) and applies the instructions that set module words or load table addresses; it ends at the
 // first instruction that is not part of the dispatch.
@@ -358,8 +319,6 @@ static bool follow_dispatch(const BthModule* m, uint32_t start, uint32_t subsong
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The track list and loop entry the voice set-up at `at` stores in the voice record, if it is of a known form: the
 // address is an immediate or the contents of a longword of the module
 static uint32_t read_field_store(const BthModule* m, uint32_t at, uint16_t field, uint32_t* value) {
@@ -381,8 +340,6 @@ static uint32_t read_field_store(const BthModule* m, uint32_t at, uint16_t field
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The voice set-up at `at`, the instruction that writes channel `channel`'s hardware address into the record: the
 // track list and the loop entry that follow. Returns false if the instructions are not of a known form.
 static bool read_voice_setup(const BthModule* m, uint32_t at, uint32_t channel, BthTrackStart* out) {
@@ -399,8 +356,6 @@ static bool read_voice_setup(const BthModule* m, uint32_t at, uint32_t channel, 
     return next != 0 && read_field_store(m, next, RECORD_LOOP, &out->loop) != 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The first voice set-up of a channel at or after `from`
 static bool find_voice_setup(const BthModule* m, uint32_t from, uint32_t channel, BthTrackStart* out) {
     for (uint32_t at = from; at + 8 <= m->size && at < from + SETUP_SPAN; at += 2) {
@@ -411,18 +366,13 @@ static bool find_voice_setup(const BthModule* m, uint32_t from, uint32_t channel
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A table of (track list, loop entry) pairs, one for each voice
 #define TABLE_PAIR_BYTES 8
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static BthTrackStart read_track_start(const BthModule* m, uint32_t table, uint32_t voice) {
     return (BthTrackStart) { .track = bthm_u32(m, table + TABLE_PAIR_BYTES * voice),
                              .loop = bthm_u32(m, table + TABLE_PAIR_BYTES * voice + 4) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A subsong's entry in the indexed init's song table: the track list and loop entry of every voice, and two words for
 // the module's variables
@@ -434,7 +384,6 @@ typedef struct IndexedSong {
     uint16_t note_offset;
 } IndexedSong;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static IndexedSong read_indexed_song(const BthModule* m, uint32_t entry) {
     IndexedSong song = { 0 };
     for (uint32_t voice = 0; voice < BTH_VOICES; voice++) {
@@ -445,8 +394,6 @@ static IndexedSong read_indexed_song(const BthModule* m, uint32_t entry) {
     return song;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A subsong's entry in the indexed init's sample table: a list of sample records (zero-terminated) and the instrument
 // records to give them
 #define INDEXED_SAMPLES_BYTES 8
@@ -456,12 +403,9 @@ typedef struct IndexedSamples {
     uint32_t records;
 } IndexedSamples;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static IndexedSamples read_indexed_samples(const BthModule* m, uint32_t entry) {
     return (IndexedSamples) { .list = bthm_u32(m, entry), .records = bthm_u32(m, entry + 4) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A sample record: the address of the sample, and a length word at +6
 #define SAMPLE_LENGTH_FIELD 6
@@ -471,12 +415,9 @@ typedef struct SampleInfo {
     uint16_t length;
 } SampleInfo;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static SampleInfo read_sample_info(const BthModule* m, uint32_t record) {
     return (SampleInfo) { .sample = bthm_u32(m, record), .length = bthm_u16(m, record + SAMPLE_LENGTH_FIELD) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The indexed init of two modules (Cosmic Bouncer, Rock Challenge) indexes its tables with the subsong number:
 //   andi.l #$ffff,d0; move.l d0,d1; lsl.l #3,d1; lea samples.l,a0; movea.l 4(a0,d1.l),a1; movea.l (a0,d1.l),a0
@@ -536,8 +477,6 @@ static bool decode_indexed(const BthModule* m, uint32_t at, uint32_t subsong, Bt
     return add_write(song, tempo, indexed.tempo) && add_write(song, note, indexed.note_offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // One subsong: the track lists of the four voices
 static bool decode_song(const BthModule* m, uint32_t init, uint32_t subsong, BthSong* song) {
     InitPath path = { 0 };
@@ -571,8 +510,6 @@ static bool decode_song(const BthModule* m, uint32_t init, uint32_t subsong, Bth
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // BEATHOVEN100 sets a voice up with move.l #track,$a(a0); move.l #loop,$e(a0) and has one song. Returns the track
 // lists of the voices in the order of the code.
 static bool decode_legacy(const BthModule* m, uint32_t voice_count, BthSong* song) {
@@ -590,8 +527,6 @@ static bool decode_legacy(const BthModule* m, uint32_t voice_count, BthSong* son
     }
     return voice == voice_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t bth_decode_songs(const BthImage* image, const BthHeader* header, const BthReplayer* replayer, BthSong* songs,
                           uint32_t capacity) {

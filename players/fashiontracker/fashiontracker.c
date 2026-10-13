@@ -47,8 +47,6 @@
 #define MAX_PADDED_SAMPLES 256
 #define ADDRESS_LIMIT 0x1000000u
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const uint16_t k_periods[PERIOD_COUNT] = {
     856, 808, 762, 720, 678, 640, 604, 570, 538, 508, 480, 453, 428, 404, 381, 360, 339, 320,
     302, 285, 269, 254, 240, 226, 214, 202, 190, 180, 170, 160, 151, 143, 135, 127, 120, 113,
@@ -57,26 +55,18 @@ static const uint16_t k_periods[PERIOD_COUNT] = {
 // What a sample plays after its one pass: the player's 8 byte BSS hunk, all zero.
 static const int8_t k_silence[SILENCE_WORDS * 2] = { 0 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // FtModule reads; the original reads whatever memory follows the module, here it is zero.
 static uint8_t module_u8(const FtModule* m, uint32_t offset) {
     return offset < m->size ? m->data[offset] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t module_u16(const FtModule* m, uint32_t offset) {
     return (uint16_t)(module_u8(m, offset) << 8 | module_u8(m, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t module_u32(const FtModule* m, uint32_t offset) {
     return (uint32_t)module_u16(m, offset) << 16 | module_u16(m, offset + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ft_probe(const uint8_t* data, size_t size) {
     if (data == nullptr || size < SCAN_SIZE) {
@@ -87,14 +77,11 @@ bool ft_probe(const uint8_t* data, size_t size) {
            && nuade_read_be32(data + 0x16) == CHECK_LONG_16;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The offset in the module of a table address as the code holds it.
 static uint32_t table_offset(const FtModule* m, uint32_t address) {
     return address - m->link_base;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The two scans of InitPlayer. A pattern must be found exactly as often as the original's counter allows: it starts at
 // 1, a sample table match subtracts 6, a pattern block match adds 3, an order list match adds 2, and anything but 0 at
 // the end is an error.
@@ -129,7 +116,6 @@ static bool scan_tables(FtModule* m) {
     return counter == 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Zero pad the module so that every sample the tables name starts inside `data`; the Paula tail covers its length.
 
 static bool load_module(FtModule* m, const uint8_t* data, size_t size) {
@@ -162,8 +148,6 @@ static bool load_module(FtModule* m, const uint8_t* data, size_t size) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 FtPlayer* ft_create(const uint8_t* data, size_t size) {
     if (!ft_probe(data, size)) {
         return nullptr;
@@ -179,8 +163,6 @@ FtPlayer* ft_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void ft_destroy(FtPlayer* player) {
     if (player == nullptr) {
         return;
@@ -188,8 +170,6 @@ void ft_destroy(FtPlayer* player) {
     free(player->module.data);
     free(player);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static FtCell cell_at(const FtModule* m, uint32_t pattern, uint32_t voice, uint32_t row) {
     const uint32_t offset = m->patterns + pattern * PATTERN_SIZE + row * ROW_SIZE + voice * 4;
@@ -200,16 +180,12 @@ static FtCell cell_at(const FtModule* m, uint32_t pattern, uint32_t voice, uint3
                       .param = module_u8(m, offset + 3) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The sample a table index names; null if it does not start inside the module. Any length can follow it: past the
 // module it plays the zeros of the Paula tail.
 static const int8_t* sample_at(const FtModule* m, uint32_t address) {
     const uint32_t offset = table_offset(m, address);
     return offset <= m->size ? (const int8_t*)m->data + offset : nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A note: restart the voice on the instrument's sample. A sample whose loop flag (low byte of its sample table entry)
 // is 1 loops whole; any other sample plays once, then the voice loops on 4 words of silence.
@@ -244,8 +220,6 @@ static void start_note(const FtModule* m, FtVoice* v, const FtCell* cell) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void play_row(FtPlayer* p) {
     const FtModule* m = &p->module;
     FtSong* s = &p->song;
@@ -272,8 +246,6 @@ static void play_row(FtPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Arpeggio on ticks 1..5: the period `semitones` table entries above the voice's note; tick 3 restores the note.
 // A period that is not in the table (or runs past it) makes the original search into its own variables; no song does.
 static void run_arpeggio(FtVoice* v, const FtCell* cell, uint8_t tick) {
@@ -293,8 +265,6 @@ static void run_arpeggio(FtVoice* v, const FtCell* cell, uint8_t tick) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void play_tick(FtPlayer* p) {
     FtSong* s = &p->song;
     s->tick++;
@@ -307,8 +277,6 @@ static void play_tick(FtPlayer* p) {
         run_arpeggio(&s->voices[i], &cell, s->tick);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // InitSound
 bool ft_start(FtPlayer* player, NuadeVoices* voices) {
@@ -326,8 +294,6 @@ bool ft_start(FtPlayer* player, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 FtTickResult ft_tick(FtPlayer* player, NuadeVoices* voices) {
     FtSong* s = &player->song;
     s->looped = false;
@@ -338,27 +304,19 @@ FtTickResult ft_tick(FtPlayer* player, NuadeVoices* voices) {
     return (FtTickResult) { .looped = s->looped };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 FtPosition ft_position(const FtPlayer* player) {
     const FtSong* s = &player->song;
     return (FtPosition) { .order = s->shown_order, .row = s->shown_row, .speed = TICKS_PER_ROW };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int ft_order_count(const FtPlayer* player) {
     return (int)player->module.order_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 FtVoiceState ft_voice_state(const FtPlayer* player, int voice) {
     const FtVoice* v = &player->song.voices[voice];
     return (FtVoiceState) { .note = v->note, .instrument = v->started ? v->instrument : -1 };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 FtCell ft_pattern_cell(const FtPlayer* player, int order, int voice, int row) {
     const FtModule* m = &player->module;

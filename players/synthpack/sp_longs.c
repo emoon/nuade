@@ -15,7 +15,6 @@
 // Columns of the sequencer drive these Paula channels.
 static const uint8_t sp_long_slot_channel[SP_VOICES] = { 0, 1, 3, 2 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Instruments
 
 typedef struct SpLongInstrument {
@@ -38,7 +37,6 @@ typedef struct SpLongEvent {
     uint8_t param;
 } SpLongEvent;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The header of instrument `index`; false if the table has no such entry or the header lies outside the set.
 
 static bool sp_long_instrument(const SpMemory* set, unsigned index, SpLongInstrument* instrument) {
@@ -61,8 +59,6 @@ static bool sp_long_instrument(const SpMemory* set, unsigned index, SpLongInstru
     return index < SP_INSTRUMENTS && sp_memory_has(set, offset, SP_LONG_HEADER_SIZE);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static SpLongEvent sp_long_event(const SpMemory* song, uint32_t at) {
     return (SpLongEvent) { .note = sp_u8(song, at),
                            .volume = sp_u8(song, at + 1),
@@ -72,14 +68,12 @@ static SpLongEvent sp_long_event(const SpMemory* song, uint32_t at) {
                            .param = sp_u8(song, at + 5) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Offset of the first event of note list `notes`.
 
 static uint32_t sp_long_note_list(const SpMemory* song, uint8_t notes) {
     return SP_NOTES_OFFSET + sp_u16(song, SP_NOTES_OFFSET + 2u * notes);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The LFO tables
 
 static int8_t sp_long_lfo_value(const SpLongLfo* lfo) {
@@ -87,8 +81,6 @@ static int8_t sp_long_lfo_value(const SpLongLfo* lfo) {
                ? sp_long_lfo_tables[lfo->wave][(lfo->phase >> 8) & (SP_LONG_LFO_LENGTH - 1)]
                : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static SpLongLfo sp_long_lfo_start(const SpLfoSettings* settings) {
     return (SpLongLfo) { .delay = (uint16_t)(settings->delay << 8),
@@ -98,7 +90,6 @@ static SpLongLfo sp_long_lfo_start(const SpLfoSettings* settings) {
                          .table = true };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An LFO runs once its delay has passed (a delay of d counts d * 4 ticks), and with `after_release` only after the
 // key was released. Returns whether the LFO's value is to be used this tick.
 
@@ -114,7 +105,6 @@ static bool sp_long_lfo_advance(SpLongLfo* lfo, const SpLfoSettings* settings, b
     return settings->depth != SP_LFO_OFF;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Validation
 
 // The highest period index an arpeggio adds to the note.
@@ -124,7 +114,6 @@ static unsigned sp_long_arpeggio_reach(const SpLongEvent* event) {
     return high > low ? high : low;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One event that starts a note.
 
 static bool sp_long_check_event(SpCheck* check, const SpLongEvent* event, const SpCell* cell) {
@@ -145,7 +134,6 @@ static bool sp_long_check_event(SpCheck* check, const SpLongEvent* event, const 
     return note >= 0 && (unsigned)note + reach < SP_PERIOD_COUNT;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The reads a column makes over the rows of one position.
 
 static bool sp_long_check_column(SpCheck* check, const SpPosition* entry, unsigned column) {
@@ -173,8 +161,6 @@ static bool sp_long_check_column(SpCheck* check, const SpPosition* entry, unsign
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool sp_long_check_position(SpCheck* check, const SpPosition* entry) {
     for (unsigned column = 0; column < SP_VOICES; column++) {
         if (!sp_long_check_column(check, entry, column)) {
@@ -184,7 +170,6 @@ static bool sp_long_check_position(SpCheck* check, const SpPosition* entry) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An instrument a voice runs on: its header, and the LFO tables it reads. `sounding` for one a note starts on: its
 // waveform and every address the morph puts in AUDxLC, for the longest repeat any instrument can have left in AUDxLEN
 // (a note's start writes the morph's address before it writes the new length).
@@ -212,7 +197,6 @@ static bool sp_long_check_instrument(const SpMemory* set, unsigned index, bool s
     return !sp_wave_scanned(wave) || sp_wave_scan_in_set(set, wave, last, longest_repeat);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The voices start on instrument 0 with no morph table: a morphing one would read the Amiga's low memory, and one
 // that does not morph still points AUDxLC at its waveform.
 
@@ -226,8 +210,6 @@ static bool sp_long_check_idle_instrument(const SpMemory* set) {
     }
     return instrument.morph.depth == SP_LFO_OFF && sp_wave_scan_in_set(set, &instrument.wave, 0, 1);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool sp_long_check_instruments(const SpCheck* check) {
     if (!sp_long_check_idle_instrument(check->set)) {
@@ -249,7 +231,6 @@ static bool sp_long_check_instruments(const SpCheck* check) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The position a subsong starts at: the n-th position that has a start mark, else the first.
 
 static unsigned sp_long_start_position(const SpMemory* song, int subsong) {
@@ -265,15 +246,12 @@ static unsigned sp_long_start_position(const SpMemory* song, int subsong) {
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const SpRules sp_long_rules = { .max_subsongs = SP_POSITION_COUNT,
                                 .loop_point = SP_NO_LOOP_POINT,
                                 .start_position = sp_long_start_position,
                                 .check_position = sp_long_check_position,
                                 .check_instruments = sp_long_check_instruments };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The arpeggio of an effect cycles through steps that add nothing, the parameter's high nibble or its low nibble.
 
 typedef enum SpLongArpStep {
@@ -300,8 +278,6 @@ static const SpLongArpStep sp_long_arpeggios[SP_LONG_ARP_PATTERNS][SP_LONG_ARP_S
       SpLongArp_Low, SpLongArp_Low, SpLongArp_High, SpLongArp_High, SpLongArp_High, SpLongArp_End },
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void sp_long_arpeggio(SpLongState* state, SpLongVoice* voice) {
     const SpLongArpStep* steps = sp_long_arpeggios[voice->effect & (SP_LONG_ARP_PATTERNS - 1)];
     SpLongArpStep step = steps[voice->arp_step++];
@@ -323,7 +299,6 @@ static void sp_long_arpeggio(SpLongState* state, SpLongVoice* voice) {
     voice->base.base_period = sp_period(voice->base.arp_note + add, instrument.tuning);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sequencer
 
 // A note starts: the LFOs start over with their tables.
@@ -335,7 +310,6 @@ static void sp_long_note_on(SpLongVoice* voice, const SpLongInstrument* instrume
     voice->arp_step = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One column of a row.
 
 static void sp_long_column_row(SpLongState* state, unsigned column) {
@@ -374,8 +348,6 @@ static void sp_long_column_row(SpLongState* state, unsigned column) {
     sp_long_note_on(voice, &instrument, (unsigned)sp_event_note(event.note, instrument.note_offset, cell.note_shift));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void sp_long_row(SpLongState* state) {
     SpSequencer* sequencer = &state->sequencer;
     sequencer->entry = sp_position(state->song, sequencer->position);
@@ -391,8 +363,6 @@ static void sp_long_row(SpLongState* state) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void sp_long_sequencer_tick(SpLongState* state) {
     if (!state->sequencer.running) {
         return;
@@ -406,7 +376,6 @@ static void sp_long_sequencer_tick(SpLongState* state) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The voice step
 
 static void sp_long_update_level(SpLongVoice* voice, const SpLongInstrument* instrument) {
@@ -422,8 +391,6 @@ static void sp_long_update_level(SpLongVoice* voice, const SpLongInstrument* ins
     voice->base.level = lowered < 0 ? 0 : lowered;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void sp_long_update_period(SpLongVoice* voice, const SpLongInstrument* instrument) {
     int16_t bend = 0;
     if (sp_long_lfo_advance(&voice->pitch_lfo, &instrument->pitch_lfo, voice->base.released)) {
@@ -432,7 +399,6 @@ static void sp_long_update_period(SpLongVoice* voice, const SpLongInstrument* in
     voice->base.period = (uint16_t)(voice->base.base_period + bend);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A short waveform is morphed: AUDxLC moves through the waveform's memory each tick.
 
 static void sp_long_morph(SpLongState* state, SpLongVoice* voice, const SpLongInstrument* instrument,
@@ -448,15 +414,11 @@ static void sp_long_morph(SpLongState* state, SpLongVoice* voice, const SpLongIn
     sp_channel_set_lc(channel, state->set, sp_wave_scan_offset(&instrument->wave, position));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t sp_long_volume(const SpVoice* voice) {
     const uint32_t scaled = (uint32_t)(uint16_t)voice->level * voice->volume;
     const uint32_t product = (scaled & 0xFFFF) * SP_LONG_MASTER_VOLUME;
     return sp_paula_volume(((product << 4) >> 16) & 0xFFFF);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void sp_long_voice_tick(SpLongState* state, SpHardware* hardware, unsigned slot) {
     SpLongVoice* voice = &state->voice[slot];
@@ -474,8 +436,6 @@ static void sp_long_voice_tick(SpLongState* state, SpHardware* hardware, unsigne
     sp_voice_restart(&voice->base, &instrument.wave, channel, state->set);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void sp_long_start(SpLongState* state, const SpMemory* song, const SpMemory* set, SpHardware* hardware, int subsong) {
     *state = (SpLongState) { .song = song, .set = set };
     sp_sequencer_start(&state->sequencer, sp_long_start_position(song, subsong), sp_long_rules.loop_point);
@@ -484,8 +444,6 @@ void sp_long_start(SpLongState* state, const SpMemory* song, const SpMemory* set
     }
     sp_hardware_reset(hardware);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void sp_long_tick(SpLongState* state, SpHardware* hardware) {
     state->events = (SpSongEvents) { 0 };
@@ -497,8 +455,6 @@ void sp_long_tick(SpLongState* state, SpHardware* hardware) {
     sp_long_sequencer_tick(state);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sp_long_silent(const SpLongState* state) {
     for (int i = 0; i < SP_VOICES; i++) {
         if (!sp_voice_silent(&state->voice[i].base)) {
@@ -507,8 +463,6 @@ bool sp_long_silent(const SpLongState* state) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const SpVoice* sp_long_channel_voice(const SpLongState* state, unsigned channel) {
     for (unsigned slot = 0; slot < SP_VOICES; slot++) {

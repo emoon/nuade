@@ -44,8 +44,6 @@
 #define END_OF_PATTERNS 0xFE
 #define END_OF_PATTERN 0xFF
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool mm_song_identify(const MmBlock* song, MmVariant* variant) {
     if (song->size < SONG_HEADER_SIZE || mm_u8(song, 0) != SONG_SIGNATURE_0 || mm_u8(song, 1) != SONG_SIGNATURE_1) {
         return false;
@@ -59,8 +57,6 @@ bool mm_song_identify(const MmBlock* song, MmVariant* variant) {
     return pause >= SONG_4V_PAUSE_MIN && pause <= SONG_4V_PAUSE_MAX;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void read_title(MmSong* s) {
     for (int i = 0; i < SONG_TITLE_LENGTH; i++) {
         const uint8_t c = mm_u8(&s->block, SONG_TITLE_OFFSET + (uint32_t)i);
@@ -69,7 +65,6 @@ static void read_title(MmSong* s) {
     s->title[SONG_TITLE_LENGTH] = '\0';
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A position list runs to the word 0x03E7; returns the offset after it, 0 if the song ends first.
 
 static uint32_t skip_list(const MmBlock* b, uint32_t offset) {
@@ -83,7 +78,6 @@ static uint32_t skip_list(const MmBlock* b, uint32_t offset) {
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The position lists of the tracks the song has, one after the other from `at`; returns the offset behind them, 0 if
 // the song ends first.
 
@@ -101,7 +95,6 @@ static uint32_t locate_lists(MmSong* s, uint32_t at) {
     return at;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The patterns follow the lists: events of 3 bytes up to a first byte 0xFF, 0xFE after the last pattern. A pattern that
 // starts with 0xFF is empty and reads as the first pattern, like the entries after the last one.
 
@@ -131,8 +124,6 @@ static void index_patterns(MmSong* s, uint32_t start) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool open_4v(MmSong* s) {
     const MmBlock* b = &s->block;
     const uint32_t gap
@@ -154,8 +145,6 @@ static bool open_4v(MmSong* s) {
     index_patterns(s, end);
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool open_8v(MmSong* s) {
     const MmBlock* b = &s->block;
@@ -188,8 +177,6 @@ static bool open_8v(MmSong* s) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool mm_song_open(MmSong* s, const MmBlock* data, MmVariant variant) {
     *s = (MmSong) { 0 };
     s->storage = malloc(data->size != 0 ? data->size : 1);
@@ -206,14 +193,11 @@ bool mm_song_open(MmSong* s, const MmBlock* data, MmVariant variant) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void mm_song_close(MmSong* s) {
     free(s->storage);
     *s = (MmSong) { 0 };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The table is indexed by the period and starts 0xE2 bytes before the data after the header, so its first entry is the
 // one of the period 113 (the lowest). A read outside the song gives the period itself, a table period below the lowest
 // the replayer's buffers are sized for is raised to it.
@@ -230,7 +214,6 @@ uint16_t mm_song_slow_period(const MmSong* s, uint16_t period) {
     return mapped < MM_PERIOD_MIN ? MM_PERIOD_MIN : mapped;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pattern a position list entry names (an index past the table reads the first pattern).
 
 uint32_t mm_song_pattern(const MmSong* s, uint16_t number) {

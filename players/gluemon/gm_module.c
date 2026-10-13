@@ -29,45 +29,31 @@ static const uint16_t k_periods[GM_PERIOD_COUNT] = {
     0x0168, 0x0153, 0x0140, 0x012E, 0x011D, 0x010D, 0x00FE, 0x00F0, 0x00E2, 0x00D6,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t gm_note_index(uint8_t note) {
     return note >> 1;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t gm_period(uint8_t note) {
     const uint32_t index = gm_note_index(note);
     return index < GM_PERIOD_COUNT ? k_periods[index] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool gm_is_command(uint8_t entry) {
     return entry >= GM_COMMAND_FIRST && entry <= GM_COMMAND_LAST;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const int8_t* gm_wave(const GmModule* module, uint32_t voice) {
     return (const int8_t*)(module->bytes + module->waves + (size_t)voice * GM_WAVE_BYTES);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint8_t gm_order(const GmModule* module, uint32_t index) {
     const size_t at = module->orders + index;
     return at < module->size ? module->bytes[at] : GM_ORDER_END;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static size_t pattern_offset(const GmModule* module, uint8_t pattern) {
     return module->patterns + (size_t)pattern * module->rows * GM_ROW_BYTES;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 GmRow gm_row(const GmModule* module, uint8_t pattern, uint32_t row) {
     GmRow result = { { GM_NOTE_NONE, GM_NOTE_NONE, GM_NOTE_NONE, GM_NOTE_NONE } };
@@ -78,13 +64,10 @@ GmRow gm_row(const GmModule* module, uint8_t pattern, uint32_t row) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const int8_t* gm_pattern_wave(const GmModule* module, uint8_t pattern) {
     return (const int8_t*)(module->bytes + pattern_offset(module, pattern));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Every entry of the patterns the position table names: a note stays inside the period table. On the percussion voice
 // only 0xFF and the commands are skipped; any other byte, 0xFE too, plays 32 bytes of its pattern, which must lie in
 // the file.
@@ -110,7 +93,6 @@ static bool patterns_usable(const GmModule* module) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The header: name, the envelopes of the voices, speed, rows, four waveforms, the length of the position table.
 
 static bool read_header(GmModule* module, const uint8_t* bytes, size_t size) {
@@ -142,7 +124,6 @@ static bool read_header(GmModule* module, const uint8_t* bytes, size_t size) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The position table: the replayer starts at entry order_bytes - 2 and steps first, so entry order_bytes - 1 must end
 // the table (it is where the song starts), and the table before the first end mark names patterns of the pointer table.
 // Returns the highest pattern number, or -1.
@@ -167,8 +148,6 @@ static int check_orders(GmModule* module) {
     module->patterns = module->orders + order_bytes;
     return highest;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool gm_module_parse(GmModule* module, const uint8_t* bytes, size_t size) {
     if (size < GM_HEADER_BYTES || nuade_read_be32(bytes) != GM_MARK

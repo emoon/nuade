@@ -9,7 +9,6 @@
 
 #define NOT_FOUND 0xFFFFFFFFu
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Instruction words. A name says what the instruction does with a0 = the voice record, a1 = the channel's hardware
 // registers, d0 and d1 = scratch, as the replayers use them.
 
@@ -127,7 +126,6 @@
 #define OP_BGT 0x6E00
 #define OP_BLE 0x6F00
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Voice record fields (offsets from a0) that the locator and the song decoder test for; the replayer's own use of
 // them is in the voice routines
 
@@ -143,12 +141,10 @@
 #define RECORD_LEGACY_LOOP 0x000E
 #define RECORD_LEGACY_NOTE_BASE 0x0012
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Patterns of instruction words. BTH_ANY matches any word (an operand).
 
 #define BTH_ANY 0x10000u
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Whether the `count` words at `at` are those of `pattern`
 static inline bool bthm_match(const BthModule* m, uint32_t at, const uint32_t* pattern, uint32_t count) {
     for (uint32_t i = 0; i < count; i++) {
@@ -159,7 +155,6 @@ static inline bool bthm_match(const BthModule* m, uint32_t at, const uint32_t* p
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The first even address in [from, to) where the words of `pattern` follow one another, NOT_FOUND if none
 static inline uint32_t bthm_find(const BthModule* m, uint32_t from, uint32_t to, const uint32_t* pattern,
                                  uint32_t count) {
@@ -174,14 +169,12 @@ static inline uint32_t bthm_find(const BthModule* m, uint32_t from, uint32_t to,
 #define BTH_MATCH(m, at, pattern) bthm_match((m), (at), (pattern), nuade_sizeof_array(pattern))
 #define BTH_FIND(m, from, to, pattern) bthm_find((m), (from), (to), (pattern), nuade_sizeof_array(pattern))
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Whether the word at `at` is a branch of the given kind
 static inline bool bthm_is_branch(const BthModule* m, uint32_t at, uint16_t kind) {
     const uint16_t op = bthm_u16(m, at);
     return (op & OP_BRANCH_MASK) == kind && (op & 0xFF) != 0xFF;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The target of the branch at `at` and the address after it
 static inline uint32_t bthm_branch_target(const BthModule* m, uint32_t at, uint32_t* next) {
     const int8_t displacement = (int8_t)(bthm_u16(m, at) & 0xFF);

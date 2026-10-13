@@ -44,16 +44,12 @@ typedef struct StepResult {
     bool restart; // the loop command: the whole song goes back to its start
 } StepResult;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t read_byte(const UfoSong* song, UfoState* state, uint32_t* cursor) {
     const uint8_t byte = ufo_song_u8(song, *cursor, &state->fault);
     (*cursor)++;
     state->work++;
     return byte;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void apply_control(UfoState* state, unsigned channel, uint8_t number, uint8_t value) {
     switch (number) {
@@ -68,7 +64,6 @@ static void apply_control(UfoState* state, unsigned channel, uint8_t number, uin
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One event with its command. The loop command sets result->restart: the step ends without a delay.
 
 static void run_event(const UfoSong* song, UfoState* state, unsigned channel, uint32_t* cursor, uint8_t command,
@@ -104,7 +99,6 @@ static void run_event(const UfoSong* song, UfoState* state, unsigned channel, ui
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Reads the events of a channel up to the next non-zero delay (the replayer's u5e78).
 
 static StepResult channel_step(const UfoSong* song, UfoState* state, unsigned channel) {
@@ -157,8 +151,6 @@ static StepResult channel_step(const UfoSong* song, UfoState* state, unsigned ch
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void restart_song(UfoSequencer* seq) {
     for (unsigned i = 0; i < UFO_CHANNELS; i++) {
         seq->position[i] = seq->saved_position[i];
@@ -166,7 +158,6 @@ static void restart_song(UfoSequencer* seq) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One call of the timing routine (u5d5a).
 void ufo_sequencer_call(const UfoSong* song, UfoState* state) {
     UfoSequencer* seq = &state->seq;

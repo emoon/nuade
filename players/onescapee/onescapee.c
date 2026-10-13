@@ -25,8 +25,6 @@
 
 static const uint8_t k_volumes[ONESCAPEE_VOICES] = { 64, 64, 1, 1 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Check2: `k` longwords of $AA55FF00, one longword of anything else, then the rest of the 24 + 1 compares against
 // $55AA00FF (the second loop keeps the first loop's counter and pointer), or 24 longwords of $AA55FF00. It reads no
 // further than the module's 25th longword (the caller has checked the size).
@@ -46,15 +44,11 @@ static bool check_pattern(const uint8_t* data) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // InitSound decodes the first buffer without looking at the module size; a smaller module would run its remaining
 // byte count below zero and play whatever follows it in memory.
 bool onescapee_probe(const uint8_t* data, size_t size) {
     return data != nullptr && size >= ON_CHUNK_BYTES && size <= UINT32_MAX && check_pattern(data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 OnEscapeePlayer* onescapee_create(const uint8_t* data, size_t size) {
     if (!onescapee_probe(data, size)) {
@@ -74,16 +68,12 @@ OnEscapeePlayer* onescapee_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void onescapee_destroy(OnEscapeePlayer* player) {
     if (player != nullptr) {
         free(player->data);
         free(player);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Copy `count` module bytes from the read position into `dest`, XORing every longword with the key. The original
 // always decodes the whole count and reads past the module end when fewer bytes remain, but the refill overwrites
@@ -97,8 +87,6 @@ static void decode(OnReplayer* r, int8_t* dest, uint32_t count) {
     r->remaining -= count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Point AUDxLC of all four channels at the buffer that was just filled; the next refill takes the other one.
 static void swap_buffers(OnReplayer* r) {
     const int8_t* lc = r->buffers[r->fill];
@@ -107,8 +95,6 @@ static void swap_buffers(OnReplayer* r) {
     }
     r->fill ^= 1;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Fill the buffer: module data while there is some, then zeros up to the buffer end and SongEnd (the stream starts over
 // at the next refill).
@@ -130,15 +116,11 @@ static void fill_buffer(OnReplayer* r) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The AUD0 interrupt handler.
 static void audio_interrupt(OnReplayer* r) {
     fill_buffer(r);
     swap_buffers(r);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // InitSound and StartInt
 static void init_sound(OnReplayer* r) {
@@ -155,8 +137,6 @@ static void init_sound(OnReplayer* r) {
         c->volume = k_volumes[i];
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool onescapee_start(OnEscapeePlayer* player, NuadeVoices* voices) {
     if (player == nullptr || voices == nullptr) {
@@ -177,8 +157,6 @@ bool onescapee_start(OnEscapeePlayer* player, NuadeVoices* voices) {
     r->wraps_seen = state.wraps;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 OnEscapeeTickResult onescapee_tick(OnEscapeePlayer* player, NuadeVoices* voices) {
     OnReplayer* r = &player->r;

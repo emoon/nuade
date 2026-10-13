@@ -102,7 +102,6 @@ typedef struct Instrument {
     uint8_t sweep_step;
 } Instrument;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One instrument record of the table (16 bytes each; the index is a byte shifted left as a word).
 
 static Instrument instrument_read(const ScoModule* m, uint8_t index) {
@@ -128,21 +127,18 @@ static Instrument instrument_read(const ScoModule* m, uint8_t index) {
     };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period of a note (the table is indexed by a word: the note doubled).
 
 static uint16_t note_period(const ScoModule* m, uint8_t note) {
     return sco_u16_indexed(m, m->base[ScoRole_Period], (uint16_t)(note * 2));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period of the note below `note` (the table word in front of its entry).
 
 static uint16_t note_period_below(const ScoModule* m, uint8_t note) {
     return sco_u16_indexed(m, m->base[ScoRole_Period] - 2, (uint16_t)(note * 2));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A sample of the sample table (the entries are 4 bytes; the index is scaled in a word).
 
 static ScoSampleBounds sample_bounds(const ScoModule* m, uint8_t index) {
@@ -156,7 +152,6 @@ typedef struct Svx {
     uint32_t body;
 } Svx;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An 8SVX sample: the header the replayer reads (the chunk id at +12, the one-shot and repeat lengths).
 
 static Svx svx_read(const ScoModule* m, uint32_t start) {
@@ -168,7 +163,6 @@ static Svx svx_read(const ScoModule* m, uint32_t start) {
     return svx;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Volume is staged as the byte the replayer writes (high byte 0); the glue's patch masks it to 7 bits.
 
 static void stage_silence(ScoRegisters* staged) {
@@ -177,7 +171,6 @@ static void stage_silence(ScoRegisters* staged) {
     staged->volume = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The noise buffer and its generator. The generator keeps its seed words behind the buffer, and in the build that fills
 // half a buffer per call, the first word it writes ends on the seed's high byte: the seed lives in the image too.
 
@@ -203,7 +196,6 @@ static void noise_generate(ScoModule* m) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume envelope of a voice, then the master level it is held under and the fade out of that level.
 
 static void envelope_step(Sco3Voice* v) {
@@ -249,7 +241,6 @@ static void envelope_step(Sco3Voice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A sample that loops: its repeat part (the last word when it has none).
 
 static void sample_loop(const Sco3* s, Sco3Voice* v) {
@@ -265,7 +256,6 @@ static void sample_loop(const Sco3* s, Sco3Voice* v) {
     v->staged.len_words = 1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A sample played in chunks: a chunk per tick from the stream position, then the loop or the end.
 
 static void stream_chunk(Sco3Voice* v) {
@@ -297,7 +287,6 @@ typedef struct WaveForm {
     uint32_t shift;
 } WaveForm;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The size of the wave forms a sequence or a sweep uses (the selector is the sequence's first word or the wave type):
 // 8 bytes, 16 bytes, else 32 bytes. A wave is read at its number shifted by `shift` from `base`.
 
@@ -311,7 +300,6 @@ static WaveForm wave_form(const ScoModule* m, uint16_t selector) {
     return (WaveForm) { .base = m->base[ScoRole_Wave16], .words = 0x10, .shift = 5 };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A wave form sequence: the next record of the sequence sets the wave form and the period; a record that is 0xFFFF
 // jumps to the record number in its period field. Switching to or from the noise wave restarts the voice's DMA.
 
@@ -352,7 +340,6 @@ static void wave_sequence_step(Sco3* s, uint32_t index) {
     s->unmodeled = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A swept wave form: the position moves by the step and turns at the limits; the wave form is read from the position.
 
 static void sweep_step(Sco3* s, Sco3Voice* v) {
@@ -385,7 +372,6 @@ static void sweep_step(Sco3* s, Sco3Voice* v) {
     s->unmodeled = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the voice's wave type does every tick.
 
 static void wave_step(Sco3* s, uint32_t index) {
@@ -406,7 +392,6 @@ static void wave_step(Sco3* s, uint32_t index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A pitch slide to the note the pattern asked for: the period moves by the rate each tick up to the target's period.
 
 static void slide_step(const ScoModule* m, Sco3Voice* v) {
@@ -433,7 +418,6 @@ static void slide_step(const ScoModule* m, Sco3Voice* v) {
     v->period = target;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Vibrato: after the delay the period swings by a step (the distance to the next note shifted right) and half of it.
 
 static void vibrato_step(const ScoModule* m, Sco3Voice* v) {
@@ -465,7 +449,6 @@ static void vibrato_step(const ScoModule* m, Sco3Voice* v) {
     vb->phase++;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A pitch sequence (arpeggio): bytes of notes, relative to the voice's note or absolute (bit 7), 0xFF jumps to the
 // position in the next byte, 0xFE ends it.
 
@@ -491,7 +474,6 @@ static void pitch_sequence_step(Sco3* s, Sco3Voice* v) {
     s->unmodeled = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The first registers of a sample instrument at a note: the whole sample from the sample offset, then (the next
 // ticks) its loop.
 
@@ -511,7 +493,6 @@ static void sample_start(const Sco3* s, Sco3Voice* v) {
     v->staged.len_words = (uint16_t)((bounds.end - 2 - from) >> 1);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A sample instrument played in chunks: the chunk registers and the end, loop and silence addresses.
 
 static void stream_start(const Sco3* s, Sco3Voice* v) {
@@ -539,7 +520,6 @@ static void stream_start(const Sco3* s, Sco3Voice* v) {
     v->staged.len_words = st->chunk_words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note with an instrument: the instrument's fields, the volume envelope, the wave type's first registers.
 
 static void note_instrument(Sco3* s, uint32_t index) {
@@ -601,14 +581,12 @@ static void note_instrument(Sco3* s, uint32_t index) {
     v->sweep.step = in.sweep_step;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The byte `offset` behind `pos` in a pattern: the position is a word index, sign extended (`$1(a0,d4.w)`).
 
 static uint8_t pattern_byte(const ScoModule* m, uint32_t pattern, uint16_t pos, uint16_t offset) {
     return sco_u8(m, pattern + (uint32_t)(int32_t)(int16_t)pos + offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The bytes a pattern command takes (a note, a rest and a duration take one). A slide is followed by its note.
 
 static uint16_t pattern_command_size(const ScoModule* m, uint8_t command) {
@@ -629,21 +607,18 @@ static uint16_t pattern_command_size(const ScoModule* m, uint8_t command) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Whether a pattern byte ends an event: an envelope command, a slide (which carries its note), a rest or a note.
 
 static bool pattern_command_ends_event(uint8_t command) {
     return command == PatternCommand_Envelope || command == PatternCommand_Slide || command < V3_NOTE_LENGTH_BASE;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The bytes of a pattern command as the event sees them: a slide takes its note byte along.
 
 static uint16_t pattern_event_size(const ScoModule* m, uint8_t command) {
     return (uint16_t)(pattern_command_size(m, command) + (command == PatternCommand_Slide ? 1 : 0));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What a pattern byte did: the event goes on, the event is over, or the byte is a note to play.
 
 typedef enum PatternStep {
@@ -652,7 +627,6 @@ typedef enum PatternStep {
     PatternStep_Note,
 } PatternStep;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A pattern command that is not a note: runs it and moves `pos` behind it.
 
 static PatternStep pattern_command(Sco3* s, uint32_t index, uint32_t pattern, uint16_t* pos) {
@@ -734,7 +708,6 @@ static PatternStep pattern_command(Sco3* s, uint32_t index, uint32_t pattern, ui
 
 static void stream_next_entry(Sco3* s, uint32_t index);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Reads the pattern from the voice's position until a note, a slide, a rest or an envelope command ends the event; at
 // the end of the pattern the voice moves on in its stream.
 
@@ -783,7 +756,6 @@ static void pattern_run(Sco3* s, uint32_t index, uint32_t pattern) {
     stream_next_entry(s, index);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pattern ended: a stream word 0xFF00 behind the entry jumps (to the word index in the one after it), else the
 // stream goes to the next word.
 
@@ -800,7 +772,6 @@ static void stream_next_entry(Sco3* s, uint32_t index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The stream entry `offset` bytes behind `pos`: the position is a word index, sign extended (`2(a1,d4.w)`).
 
 static ScoStreamEntry stream_entry(const ScoModule* m, uint32_t base, uint16_t pos, uint16_t offset) {
@@ -808,14 +779,12 @@ static ScoStreamEntry stream_entry(const ScoModule* m, uint32_t base, uint16_t p
     return (ScoStreamEntry) { .word = word, .command = (uint8_t)(word >> 8), .arg = (uint8_t)word };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Whether a stream entry is the control command `command` (those take a zero argument).
 
 static bool stream_control(ScoStreamEntry entry, StreamCommand command) {
     return entry.command == command && entry.arg == 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The note counters ran out: read the stream. Control words change the voice and read on; a pattern number starts the
 // pattern at the voice's position.
 
@@ -893,7 +862,6 @@ static void sequence_advance(Sco3* s, uint32_t index) {
     s->unmodeled = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One voice of a tick.
 
 static void voice_run(Sco3* s, uint32_t index, NuadePaulaChannel* paula) {
@@ -926,8 +894,6 @@ static void voice_run(Sco3* s, uint32_t index, NuadePaulaChannel* paula) {
         pitch_sequence_step(s, v);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void sc3_tick(Sco3* s, NuadePaulaChannel* paula) {
     s->song_end = false;
@@ -965,8 +931,6 @@ void sc3_tick(Sco3* s, NuadePaulaChannel* paula) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sc3_ended(const Sco3* s) {
     for (uint32_t i = 0; i < SCO_VOICES; i++) {
         if (s->voice[i].active) {
@@ -976,7 +940,6 @@ bool sc3_ended(const Sco3* s) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The init routine: the replayer's variables are cleared, the voices get their streams and speed, the pattern base and
 // the noise seed are set, DMA is off and the period and volume registers are 0.
 
@@ -1006,7 +969,6 @@ void sc3_init(Sco3* s, ScoModule* module, uint32_t subsong, NuadePaulaChannel* p
     sco_write8(module, seed, SCO_V3_TOD);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The open-time proof that the module only does what the port models. The song tables, the streams of every subsong and
 // the patterns they name are walked as the replayer reads them, under one work budget for the whole module (a module
 // that runs it out is refused). What it checks:
@@ -1031,8 +993,6 @@ typedef struct Walk {
     uint8_t* patterns; // one bit per pattern number a stream names
 } Walk;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void walk_push(Walk* w, uint16_t pos, uint32_t flags) {
     const uint32_t state = ((uint32_t)pos << 2) | flags;
     if ((w->visited[state >> 3] & (1u << (state & 7))) == 0) {
@@ -1041,7 +1001,6 @@ static void walk_push(Walk* w, uint16_t pos, uint32_t flags) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The states reachable from one stream state, as sequence_advance moves; false when the work budget is gone.
 
 static bool walk_stream(Walk* w, uint32_t base) {
@@ -1093,7 +1052,6 @@ static bool walk_stream(Walk* w, uint32_t base) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A pattern as the replayer reads it (an event is a note, a slide, a rest or an envelope command; after it, 0xFF ends
 // the pattern).
 
@@ -1115,13 +1073,9 @@ static bool walk_pattern(Walk* w, uint32_t pattern) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool behind_code(const ScoModule* m, uint32_t address) {
     return address >= m->entry + m->version->code_len && address < m->size;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool walk_module(Walk* w) {
     const ScoModule* m = w->m;
@@ -1146,8 +1100,6 @@ static bool walk_module(Walk* w) {
     }
     return !sco_module_var_read(m);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sc3_modeled(const ScoModule* m) {
     Walk w = { .m = m, .budget = V3_WALK_BUDGET };

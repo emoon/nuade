@@ -18,7 +18,6 @@
 #define GLIDE_LONGER 0xFD00 // a glide that lengthens the period; any other value shortens it
 #define NOTE_C1 60          // the table index shown as C-1
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Command words. A note command's word selects which parameters follow; modifiers follow a note and may repeat.
 
 typedef enum SdrModifier {
@@ -65,7 +64,6 @@ static const SdrCommandForm command_forms[NOTE_COMMANDS] = {
     { .duration = true, .note = true, .glide = true, .instrument = true },
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // SongEnd: each voice that reaches the end of its track clears its flag; with all flags clear the song has ended and
 // the flags are set again as they were at the start.
 
@@ -80,26 +78,20 @@ static void voice_reached_end(SdrPlayer* p, int index) {
     p->song_ended = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t add_to_low_byte(uint16_t word, uint8_t value) {
     return (uint16_t)((word & 0xFF00) | ((word + value) & 0xFF));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A word read as a signed byte distance, added to a table offset.
 
 static uint32_t table_entry(uint32_t table, uint16_t distance) {
     return table + (uint32_t)(int32_t)(int16_t)distance;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t scale_period(uint16_t period, uint16_t ratio) {
     return (uint16_t)(((uint32_t)period * ratio) >> RATIO_SHIFT);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Table entries are [length][repeats] and `length` elements of `element_size` bytes. Each call returns the next
 // element; after the repeats the next entry follows, and an entry starting with 0xFF restarts at the table's start.
 
@@ -125,7 +117,6 @@ static uint32_t cursor_step(SdrMemory* module, SdrCursor* cursor, uint32_t table
     return element;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A new note starts all four tables over.
 
 static void restart_tables(SdrVoice* v) {
@@ -135,14 +126,10 @@ static void restart_tables(SdrVoice* v) {
     v->waveform_cursor.at = v->instrument.waveform;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void clear_cursor(SdrCursor* cursor) {
     cursor->left = 0;
     cursor->repeats = 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void clear_note_state(SdrVoice* v) {
     v->slide = 0;
@@ -154,15 +141,12 @@ static void clear_note_state(SdrVoice* v) {
     clear_cursor(&v->waveform_cursor);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t next_word(SdrPlayer* p, SdrVoice* v) {
     const uint16_t word = sdr_u16(&p->memory, v->commands);
     v->commands += 2;
     return word;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The slide of a note: its ratio per tick, from a table, and the ticks to wait.
 
 static void start_slide(SdrPlayer* p, SdrVoice* v, SdrRomTable table, uint16_t delay, uint16_t distance) {
@@ -171,7 +155,6 @@ static void start_slide(SdrPlayer* p, SdrVoice* v, SdrRomTable table, uint16_t d
     v->slide = RATIO_ONE;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A glide spreads a pitch change over the note: the table is chosen by the first word, the ratio index is the
 // amount divided by the ticks of the note after the delay. False when that division is by zero.
 
@@ -188,8 +171,6 @@ static bool read_glide(SdrPlayer* p, SdrVoice* v) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void load_instrument(SdrPlayer* p, SdrVoice* v) {
     uint16_t number = next_word(p, v);
     if ((uint8_t)number == v->substitute_of) {
@@ -199,7 +180,6 @@ static void load_instrument(SdrPlayer* p, SdrVoice* v) {
     v->display_instrument = number & 0xFF;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The note's table index with the track's transposition and the arpeggio added to its low byte.
 
 static uint16_t note_index(const SdrVoice* v) {
@@ -210,7 +190,6 @@ static uint16_t note_index(const SdrVoice* v) {
     return add_to_low_byte(index, v->arpeggio_offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note command. False when the stream asks for something the replayer cannot do (a glide over no ticks, or a note
 // without an instrument after a junk one).
 
@@ -246,7 +225,6 @@ static bool run_note_command(SdrPlayer* p, SdrVoice* v, const SdrCommandForm* fo
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A modifier at the stream position: skips its word, then reads its parameters. A modifier that comes first in a stream
 // entry has had its word read as the command word, so one more word is skipped.
 
@@ -283,7 +261,6 @@ static void run_modifier(SdrPlayer* p, SdrVoice* v, uint16_t word) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The first word of a stream entry is a note command, or a modifier that then skips one more word. The handler table
 // holds the words 0 to 0x2E; the replayer would read other words as table offsets elsewhere in its data.
 
@@ -291,14 +268,12 @@ static bool is_command_word(uint16_t word) {
     return word % 2 == 0 && word < OPCODE_LIMIT;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The modifiers continue while the next word is in 0x24..0x8023.
 
 static bool is_modifier_word(uint16_t word) {
     return word >= FIRST_MODIFIER && (uint16_t)(word - FIRST_MODIFIER) < 0x8000;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The commands of one stream entry: a note and its modifiers. False for a word the replayer cannot handle.
 
 static bool run_commands(SdrPlayer* p, SdrVoice* v) {
@@ -324,8 +299,6 @@ static bool run_commands(SdrPlayer* p, SdrVoice* v) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void load_track_entry(SdrPlayer* p, SdrVoice* v) {
     const SdrTrackEntry entry = sdr_read_track_entry(&p->memory, v->track_next);
     v->commands_start = entry.commands;
@@ -338,7 +311,6 @@ static void load_track_entry(SdrPlayer* p, SdrVoice* v) {
     v->track_next += SDR_TRACK_ENTRY_BYTES;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Read the voice's next command: from its stream, else from the stream's repeats, else from the next track entry.
 // False when the voice has ended.
 
@@ -377,7 +349,6 @@ static bool fetch_commands(SdrPlayer* p, SdrVoice* v, int index) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A table switch whose delay has run out moves the cursor to its target and restarts the cursor's entry.
 
 static void apply_switch(SdrSwitch* pending, SdrCursor* cursor) {
@@ -392,7 +363,6 @@ static void apply_switch(SdrSwitch* pending, SdrCursor* cursor) {
     pending->delay--;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tick's volume: the table's byte (or the default) less the note's and the track's cuts, 0 if negative.
 
 static uint8_t note_volume(SdrPlayer* p, SdrVoice* v) {
@@ -405,14 +375,11 @@ static uint8_t note_volume(SdrPlayer* p, SdrVoice* v) {
     return (volume & 0x80) != 0 ? 0 : volume;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int16_t pitch_table_value(SdrPlayer* p, SdrVoice* v) {
     const uint32_t at = cursor_step(&p->memory, &v->pitch_cursor, v->instrument.pitch_table, 2);
     return (int16_t)sdr_u16(&p->memory, at);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pitch table's word moves the period by a ratio: from the period_up table for 0 and above, else from the
 // period_down table.
 
@@ -430,7 +397,6 @@ static uint16_t note_period(SdrPlayer* p, SdrVoice* v) {
     return scale_period(period, sdr_rom_word(SdrRomTable_PeriodDown, (int16_t)(uint16_t)(-bend * 2), &p->memory.stray));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A slide changes the period by a ratio that itself changes by `slide_ratio` every tick, after its delay.
 
 static uint16_t slide_period(SdrVoice* v, uint16_t period) {
@@ -445,7 +411,6 @@ static uint16_t slide_period(SdrVoice* v, uint16_t period) {
     return scale_period(period, v->slide);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The instrument's fine detune: a byte offset into the ratio tables, the period_up table for a positive one.
 
 static uint16_t detuned_period(SdrPlayer* p, const SdrVoice* v, uint16_t period) {
@@ -459,7 +424,6 @@ static uint16_t detuned_period(SdrPlayer* p, const SdrVoice* v, uint16_t period)
     return scale_period(period, sdr_rom_word(SdrRomTable_PeriodDown, (int16_t)(uint16_t)-detune, &p->memory.stray));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The waveform of a synthesised note: a pulse preset with one byte lowered. The table entry's upper byte is both the
 // preset and the byte; the lower byte is what is subtracted.
 
@@ -477,8 +441,6 @@ static void build_waveform(SdrPlayer* p, SdrVoice* v, int index) {
     buffer[preset] = (int8_t)(buffer[preset] - (int8_t)(step & 0xFF));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void set_sound(SdrPlayer* p, SdrVoice* v, int index, bool loop) {
     NuadePaulaChannel* paula = &v->paula;
     if (v->instrument.waveform != 0) {
@@ -491,7 +453,6 @@ static void set_sound(SdrPlayer* p, SdrVoice* v, int index, bool loop) {
     paula->lc = sdr_sample_pointer(&p->memory, loop ? sample->loop_start : sample->start, paula->len_words);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The note's tick: the period and volume from the tables, and the registers. The sound is written on the note's first
 // tick (and starts the DMA) and its repeat on the second; the DMA stops at the note's last tick unless it is held.
 
@@ -544,8 +505,6 @@ static void play_note(SdrPlayer* p, SdrVoice* v, int index) {
     v->left--;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void sdr_voice_tick(SdrPlayer* p, int index) {
     SdrVoice* v = &p->voices[index];
     p->work++;
@@ -554,8 +513,6 @@ void sdr_voice_tick(SdrPlayer* p, int index) {
     }
     play_note(p, v, index);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SdrTickResult sdr_tick(SdrPlayer* p, NuadeVoices* voices) {
     p->song_ended = false;
@@ -570,7 +527,6 @@ SdrTickResult sdr_tick(SdrPlayer* p, NuadeVoices* voices) {
     return (SdrTickResult) { .looped = p->song_ended };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitSound: each voice starts at the first entry of its track. A track that is empty (starts with 0xFF) ends at once
 // and does not count for SongEnd.
 
@@ -589,8 +545,6 @@ static void start_voice(SdrPlayer* p, int index, uint32_t subsong) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sdr_start(SdrPlayer* p, int subsong) {
     if (subsong < 0 || subsong >= p->subsong_count) {
         return false;
@@ -603,8 +557,6 @@ bool sdr_start(SdrPlayer* p, int subsong) {
     p->song_ended = false;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static SdrPlayer* new_player(const uint8_t* data, size_t size) {
     if (size > UINT32_MAX) {
@@ -626,8 +578,6 @@ static SdrPlayer* new_player(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sdr_probe(const uint8_t* data, size_t size) {
     SdrPlayer* p = new_player(data, size);
     if (p == nullptr) {
@@ -638,8 +588,6 @@ bool sdr_probe(const uint8_t* data, size_t size) {
     sdr_destroy(p);
     return ok;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SdrCreateResult sdr_create(const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
     SdrCreateResult result = { .status = SdrStatus_InvalidData };
@@ -667,8 +615,6 @@ SdrCreateResult sdr_create(const uint8_t* data, size_t size, const char* path, c
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void sdr_destroy(SdrPlayer* p) {
     if (p == nullptr) {
         return;
@@ -678,13 +624,9 @@ void sdr_destroy(SdrPlayer* p) {
     free(p);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int sdr_subsong_count(const SdrPlayer* p) {
     return p->subsong_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SdrVoiceState sdr_voice_state(const SdrPlayer* p, int voice) {
     if (voice < 0 || voice >= SDR_VOICES) {

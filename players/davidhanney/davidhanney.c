@@ -53,25 +53,18 @@
 #define PWM_LOW_VALUE ((int8_t)0xC0)
 #define WAVE_LOOP_AFTER_START_WORDS 1 // the repeat of a one-shot wave
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t module_u8(const DhModule* m, int64_t offset) {
     return offset >= 0 && offset < (int64_t)m->size ? m->data[offset] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t module_u16(const DhModule* m, int64_t offset) {
     return (uint16_t)((module_u8(m, offset) << 8) | module_u8(m, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t module_u32(const DhModule* m, int64_t offset) {
     return ((uint32_t)module_u16(m, offset) << 16) | module_u16(m, offset + 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The data offset of the first chunk with `tag`. A chunk that is not in the list gives the offset just past the zero
 // tag that ends it (past the end of the file if the list runs off it), which is where the replayer looks then.
 static int64_t find_chunk(const DhModule* m, uint32_t tag) {
@@ -89,7 +82,6 @@ static int64_t find_chunk(const DhModule* m, uint32_t tag) {
     return offset + 4;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2: the chunks SEQU, INFO and BLK0 in this order, each skipped by its length, then the tag of BLK1. The
 // replayer checks no size; here every step has to stay in the file.
 bool dh_probe(const uint8_t* data, size_t size) {
@@ -111,7 +103,6 @@ bool dh_probe(const uint8_t* data, size_t size) {
     return offset + 4 <= (int64_t)m.size && module_u32(&m, offset) == TAG_PATTERN_END;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The player
 
 typedef enum Effect {
@@ -122,13 +113,10 @@ typedef enum Effect {
     Effect_Retrigger = 4, // the note starts again half a row later
 } Effect;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t chord_byte(const DhPlayer* p, unsigned byte) {
     return p->chords[byte / DH_CHORD_STEPS][byte % DH_CHORD_STEPS];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period table as the replayer addresses it: the 70 periods, then the chord table read as big-endian words, which
 // is where a note plus a chord step past the last period lands. Past the chords are the replayer's variables, which
 // are not modelled (no song gets there): they read as 0.
@@ -142,8 +130,6 @@ static uint16_t period_at(const DhPlayer* p, uint8_t index) {
     }
     return (uint16_t)(chord_byte(p, byte) << 8 | chord_byte(p, byte + 1));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DhPlayer* dh_create(const uint8_t* data, size_t size) {
     if (!dh_probe(data, size)) {
@@ -165,8 +151,6 @@ DhPlayer* dh_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void dh_destroy(DhPlayer* player) {
     if (player != nullptr) {
         free(player->module.data);
@@ -174,30 +158,23 @@ void dh_destroy(DhPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int dh_note_value(uint8_t note) {
     return note > DH_NOTE_RELEASE ? note - DH_NOTE_TABLE_BIAS + DH_NOTE_VALUE_BASE : -1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pattern number at a sequence position. The replayer adds the position as a signed word.
 static uint8_t sequence_pattern(const DhPlayer* p, uint16_t order) {
     return module_u8(&p->module, p->sequence_base + (int16_t)order);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The data offset of a pattern's row count. The tag is "BLK\0" plus the sign-extended pattern byte.
 static int64_t pattern_base(const DhPlayer* p, uint8_t pattern) {
     return find_chunk(&p->module, TAG_PATTERN + (uint32_t)(int32_t)(int8_t)pattern);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t pattern_rows(const DhPlayer* p, uint8_t pattern) {
     return module_u16(&p->module, pattern_base(p, pattern));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static DhCell pattern_cell(const DhPlayer* p, uint8_t pattern, uint16_t row, int voice) {
     const int64_t offset = pattern_base(p, pattern) + ROW_COUNT_BYTES + (int64_t)row * ROW_BYTES + voice * CELL_BYTES;
@@ -210,7 +187,6 @@ static DhCell pattern_cell(const DhPlayer* p, uint8_t pattern, uint16_t row, int
     };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pattern at the sequence position, from its first row.
 static void select_pattern(DhPlayer* p) {
     p->pattern = sequence_pattern(p, p->position);
@@ -218,7 +194,6 @@ static void select_pattern(DhPlayer* p) {
     p->row = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer clamps the synthetic instruments when the song starts.
 static void sanitize_instrument(DhInstrument* ins) {
     if (ins->wave_kind != 0) {
@@ -248,8 +223,6 @@ static void sanitize_instrument(DhInstrument* ins) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool dh_start(DhPlayer* player, NuadeVoices* voices) {
     if (player == nullptr || voices == nullptr) {
         return false;
@@ -277,14 +250,11 @@ bool dh_start(DhPlayer* player, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void stop_voice(DhVoice* v) {
     nuade_paula_channel_dma_off(&v->paula);
     v->mode = DhVoiceMode_Idle;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note on an instrument: the DMA goes off and the sample registers are written now; period and volume, and the DMA
 // start, follow in the voice's next tick (a one-shot wave sets period and volume at once, and starts a tick later).
 static void start_note(DhVoice* v, DhInstrument* ins) {
@@ -309,7 +279,6 @@ static void start_note(DhVoice* v, DhInstrument* ins) {
     v->mode = DhVoiceMode_StartDma;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A byte of the replayer's data block, addressed from the start of its chord table: the table itself, then the
 // variables behind it. Only the ones a release writes are modelled: the row and last row words. The other bytes it can
 // reach (unused variables, the low byte of the sequence pointer after chord 13, the voice records after chords 14 and
@@ -328,7 +297,6 @@ static void poke_replayer_byte(DhPlayer* p, unsigned offset, uint8_t value) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note byte of 2 is meant to release the envelope. The replayer clears a byte and writes the word 6 at fixed offsets
 // from a pointer it does not set for it: after effect 3 the pointer is the end of the chord just loaded (the chord's
 // address + 8), so the release damages the chord table (the period table index can read it) and, after chords 12 and
@@ -345,7 +313,6 @@ static void release_note(DhPlayer* p, const DhVoice* v) {
     poke_replayer_byte(p, pointer + RELEASE_WORD_OFFSET + 1, RELEASE_WORD & 0xFF);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The note of the cell.
 static void play_note(DhPlayer* p, DhVoice* v) {
     const uint8_t note = v->cell.note;
@@ -371,7 +338,6 @@ static void play_note(DhPlayer* p, DhVoice* v) {
     start_note(v, &p->instruments[v->cell.instrument]);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The event of a row: the effect, then the note. A slide moves the voice to the note and starts no note.
 static void play_cell(DhPlayer* p, DhVoice* v) {
     const DhCell* cell = &v->cell;
@@ -403,7 +369,6 @@ static void play_cell(DhPlayer* p, DhVoice* v) {
     play_note(p, v);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static uint16_t slide_period(const DhVoice* v) {
     const uint32_t from = v->period;
     const uint32_t to = v->slide_target;
@@ -413,7 +378,6 @@ static uint16_t slide_period(const DhVoice* v) {
     return (uint16_t)(from - to > v->slide_speed ? from - v->slide_speed : to);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period of a voice that does not slide: the note plus the chord step, which advances every tick.
 static uint16_t chord_period(const DhPlayer* p, DhVoice* v) {
     const uint8_t index = (uint8_t)(v->note_index + v->chord[v->chord_pos]);
@@ -421,7 +385,6 @@ static uint16_t chord_period(const DhPlayer* p, DhVoice* v) {
     return period_at(p, index);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The vibrato position steps down by the speed and wraps up by twice the wrap value.
 static uint16_t apply_vibrato(DhVoice* v, uint16_t period) {
     const DhInstrument* ins = v->instrument;
@@ -442,7 +405,6 @@ static uint16_t apply_vibrato(DhVoice* v, uint16_t period) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The next stage starts when the level reaches the stage's target; the last stage stays.
 static void step_envelope(DhVoice* v) {
     const DhEnvelopeStage* stage = &v->instrument->envelope[v->envelope_stage];
@@ -457,7 +419,6 @@ static void step_envelope(DhVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pulse width sweep: every `pwm_speed` ticks one byte of the wave is overwritten and the position moves on,
 // turning round at the ends. Voices that share an instrument advance it once per tick.
 static void sweep_wave(const DhPlayer* p, DhInstrument* ins) {
@@ -488,7 +449,6 @@ static void sweep_wave(const DhPlayer* p, DhInstrument* ins) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static void run_voice(const DhPlayer* p, DhVoice* v) {
     uint16_t period;
     if (v->slide_speed != 0) {
@@ -515,15 +475,12 @@ static void run_voice(const DhPlayer* p, DhVoice* v) {
     nuade_paula_channel_dma_on(&v->paula);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The DMA of a one-shot wave starts; the wave's end repeats the first word.
 static void start_one_shot(DhVoice* v) {
     nuade_paula_channel_dma_on(&v->paula);
     v->paula.len_words = WAVE_LOOP_AFTER_START_WORDS;
     v->mode = DhVoiceMode_Idle;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void tick_voice(DhPlayer* p, DhVoice* v) {
     switch (v->mode) {
@@ -543,7 +500,6 @@ static void tick_voice(DhPlayer* p, DhVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static void play_row(DhPlayer* p) {
     p->shown = (DhPosition) {
         .order = p->position, .row = p->row, .rows = (int)p->last_row + 1, .speed = (int)p->speed + 1
@@ -556,7 +512,6 @@ static void play_row(DhPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // To the next row, or at the end of the pattern to the next position; the end of the sequence is the eagleplayer's
 // song end and the song restarts at position 0. Returns true when the sequence wrapped.
 static bool advance_row(DhPlayer* p) {
@@ -572,8 +527,6 @@ static bool advance_row(DhPlayer* p) {
     select_pattern(p);
     return wrapped;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DhTickResult dh_tick(DhPlayer* player, NuadeVoices* voices) {
     DhTickResult result = { 0 };
@@ -592,32 +545,22 @@ DhTickResult dh_tick(DhPlayer* player, NuadeVoices* voices) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 DhPosition dh_position(const DhPlayer* player) {
     return player->shown;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int dh_order_count(const DhPlayer* player) {
     return player->sequence_length;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DhVoiceState dh_voice_state(const DhPlayer* player, int voice) {
     const DhVoice* v = &player->voices[voice];
     return (DhVoiceState) { .note = v->note, .instrument = v->instrument_number };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int dh_pattern_rows(const DhPlayer* player, int order) {
     return pattern_rows(player, sequence_pattern(player, (uint16_t)order));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DhCell dh_pattern_cell(const DhPlayer* player, int order, int voice, int row) {
     return pattern_cell(player, sequence_pattern(player, (uint16_t)order), (uint16_t)row, voice);

@@ -3,8 +3,7 @@
 # Build trees (build*/) are never touched.
 #
 #   scripts/format.sh                format every file of ours in place
-#   scripts/format.sh --check        list files that need formatting and functions without a 119-slash separator
-#                                    (scripts/check_separators.py), change nothing (exit 1 if any)
+#   scripts/format.sh --check        list files that need formatting, change nothing (exit 1 if any)
 #   scripts/format.sh --changed      only files that differ from HEAD or are untracked
 #   scripts/format.sh <path>...      only these files or directories (still limited to our roots)
 
@@ -21,7 +20,7 @@ for arg in "$@"; do
     case "$arg" in
         --check) check=1 ;;
         --changed) changed=1 ;;
-        -h | --help) sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h | --help) sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) paths+=("$arg") ;;
     esac
 done
@@ -61,7 +60,6 @@ if [ "$check" -eq 1 ]; then
             bad=1
         fi
     done
-    python3 scripts/check_separators.py "${kept[@]}" || bad=1
     exit "$bad"
 fi
 

@@ -37,8 +37,6 @@ static const uint16_t k_periods[LME_NOTE_COUNT]
         0x194, 0x17D, 0x168, 0x153, 0x140, 0x12E, 0x11D, 0x10D, 0x0FE, 0x0F0, 0x0E2, 0x0D6, 0x0CA,
         0x0BE, 0x0B4, 0x0AA, 0x0A0, 0x097, 0x08F, 0x087, 0x07F, 0x078, 0x071, 0x06B };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool fetch_u16(const LmeModule* module, uint32_t* pos, uint16_t* value) {
     if (*pos > module->size - 2) {
         return false;
@@ -48,20 +46,16 @@ static bool fetch_u16(const LmeModule* module, uint32_t* pos, uint16_t* value) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t table_long(const LmeModule* module, uint32_t offset) {
     return nuade_read_be32(module->bytes + offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The subsong table entry of `subsong` is the one after the shared first entry.
 
 static uint32_t list_entry(uint32_t subsong, uint32_t voice) {
     return LME_TABLE_BASE + LME_SUBSONG_ENTRY_BYTES * (subsong + 1) + 4 * voice;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer adds up the lengths of the samples (a record counts when its sample offset is above all before it, from 3)
 // and refuses the song when that and the sample base do not fit in the file.
 
@@ -83,8 +77,6 @@ static bool init_player_size_ok(const LmeModule* module, uint32_t sample_base) {
     }
     return total + LME_TABLE_BASE + sample_base + LME_INIT_SAMPLE_SLACK <= module->size;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool lme_module_parse(LmeModule* module, const uint8_t* bytes, size_t size) {
     *module = (LmeModule) { .bytes = bytes, .size = size };
@@ -135,13 +127,9 @@ bool lme_module_parse(LmeModule* module, const uint8_t* bytes, size_t size) {
     return init_player_size_ok(module, samples);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t lme_position_list(const LmeModule* module, uint32_t subsong, uint32_t voice) {
     return LME_TABLE_BASE + table_long(module, list_entry(subsong, voice));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool lme_read_position(const LmeModule* module, uint32_t* list_pos, LmePosition* position) {
     uint16_t word;
@@ -172,8 +160,6 @@ bool lme_read_position(const LmeModule* module, uint32_t* list_pos, LmePosition*
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool lme_note_period(uint16_t note, int16_t transpose, uint16_t* period) {
     const uint16_t index = (uint16_t)(note + (uint16_t)transpose);
     if (index >= LME_NOTE_COUNT) {
@@ -183,7 +169,6 @@ bool lme_note_period(uint16_t note, int16_t transpose, uint16_t* period) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The arpeggio command: the slot count (the note's own period is the first), the ticks between slots and the others.
 
 static bool read_arpeggio(const LmeModule* module, uint32_t* pos, LmeArpeggio* arpeggio) {
@@ -198,8 +183,6 @@ static bool read_arpeggio(const LmeModule* module, uint32_t* pos, LmeArpeggio* a
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 LmeRead lme_read_event(const LmeModule* module, uint32_t* pos, bool first_of_pattern, LmeEvent* event) {
     uint16_t flags;
@@ -234,8 +217,6 @@ LmeRead lme_read_event(const LmeModule* module, uint32_t* pos, bool first_of_pat
                                                                                             : LmeRead_Invalid;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 LmeInstrument lme_instrument(const LmeModule* module, uint32_t index) {
     const uint8_t* r = module->bytes + module->instruments + (uint64_t)index * LME_INSTRUMENT_BYTES;
     return (LmeInstrument) {
@@ -268,13 +249,10 @@ LmeInstrument lme_instrument(const LmeModule* module, uint32_t index) {
     };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const int8_t* lme_sample_at(const LmeModule* module, uint32_t offset) {
     return (const int8_t*)(module->bytes + module->samples + (offset & ~1u));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pulse width grows by one step per tick up to the maximum (the test is the sign of the difference, as in the
 // replayer), then shrinks to the minimum and grows again.
 
@@ -294,7 +272,6 @@ void lme_wave_step(LmeWave* wave) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A sample must lie inside the file: Paula would read whatever the player's memory holds behind it. AUDxLC bit 0 does
 // not exist, so a sample at an odd offset is read from the even address below it.
 
@@ -303,7 +280,6 @@ static bool sample_in_file(const LmeModule* module, uint32_t offset, uint32_t wo
     return words != 0 && end <= module->size;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A synth wave writes `width - 1` bytes of one value, then the rest of the buffer; every width the pulse can take must
 // keep that inside the buffer. The (type, width) pair repeats after at most 2^17 steps.
 
@@ -335,8 +311,6 @@ static bool wave_widths_ok(const LmeInstrument* instrument) {
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool instrument_ok(const LmeModule* module, uint32_t index) {
     const LmeInstrument instrument = lme_instrument(module, index);
     if (instrument.wave.type != LmeWaveType_Sample) {
@@ -346,8 +320,6 @@ static bool instrument_ok(const LmeModule* module, uint32_t index) {
            && sample_in_file(module, instrument.loop_offset, instrument.loop_words);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t gcd(uint32_t a, uint32_t b) {
     while (b != 0) {
         const uint32_t rest = a % b;
@@ -356,8 +328,6 @@ static uint32_t gcd(uint32_t a, uint32_t b) {
     }
     return a;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 typedef struct Walk {
     const LmeModule* module;
@@ -371,7 +341,6 @@ typedef struct WalkVoice {
     bool instrument_selected;
 } WalkVoice;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Checks what one event makes the replayer read.
 
 static bool walk_event(Walk* walk, WalkVoice* voice, const LmeEvent* event) {
@@ -406,7 +375,6 @@ static bool walk_event(Walk* walk, WalkVoice* voice, const LmeEvent* event) {
     return lme_note_period(event->note, voice->transpose, &period) && (event->legato || voice->instrument_selected);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One pattern, event by event, to its end mark.
 
 static bool walk_pattern(Walk* walk, WalkVoice* voice, uint32_t pos) {
@@ -426,7 +394,6 @@ static bool walk_pattern(Walk* walk, WalkVoice* voice, uint32_t pos) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One position list to its end mark; it must name at least one pattern.
 
 static bool walk_list(Walk* walk, uint32_t list_pos) {
@@ -445,8 +412,6 @@ static bool walk_list(Walk* walk, uint32_t list_pos) {
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool lme_module_validate(LmeModule* module) {
     Walk walk = { .module = module,

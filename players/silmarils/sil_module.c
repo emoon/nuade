@@ -23,15 +23,11 @@
 static const uint8_t s_deltas[16]
     = { 0xDE, 0xEB, 0xF3, 0xF8, 0xFB, 0xFD, 0xFE, 0xFF, 0x01, 0x02, 0x03, 0x05, 0x08, 0x0D, 0x15, 0x22 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sil_memory_init(SilMemory* memory, uint32_t size) {
     memory->data = nuade_paula_padded_copy(nullptr, size);
     memory->size = size;
     return memory->data != nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void sil_memory_free(SilMemory* memory) {
     free(memory->data);
@@ -39,39 +35,27 @@ void sil_memory_free(SilMemory* memory) {
     memory->size = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sil_in_memory(const SilMemory* memory, uint64_t address, uint64_t length) {
     return address + length <= memory->size;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint8_t sil_u8(const SilMemory* memory, uint32_t address) {
     return address < memory->size ? memory->data[address] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t sil_u16(const SilMemory* memory, uint32_t address) {
     return sil_in_memory(memory, address, 2) ? nuade_read_be16(memory->data + address) : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t sil_u32(const SilMemory* memory, uint32_t address) {
     return sil_in_memory(memory, address, 4) ? nuade_read_be32(memory->data + address) : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void sil_put8(SilMemory* memory, uint32_t address, uint8_t value) {
     if (address < memory->size) {
         memory->data[address] = value;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sil_block_read(const SilMemory* memory, uint32_t address, SilBlock* block) {
     if (!sil_in_memory(memory, address, SIL_SAMPLE_HEADER)) {
@@ -89,19 +73,14 @@ bool sil_block_read(const SilMemory* memory, uint32_t address, SilBlock* block) 
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sil_block_is_sample(const SilBlock* block) {
     return block->type == SilBlockType_SampleA || block->type == SilBlockType_SampleB;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sil_block_is_music(const SilBlock* block) {
     return block->type == SilBlockType_MusicA || block->type == SilBlockType_MusicB;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The header of the container: its first long, where its table starts (from the header) and the number of blocks.
 
 typedef struct SilHeader {
@@ -110,7 +89,6 @@ typedef struct SilHeader {
     uint16_t blocks;
 } SilHeader;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The header the long at `base` + 0xE finds.
 
 static bool header_read(const SilMemory* memory, uint64_t base, uint64_t* address, SilHeader* header) {
@@ -128,7 +106,6 @@ static bool header_read(const SilMemory* memory, uint64_t base, uint64_t* addres
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The check of the first words of a file: the form (with or without the prefix) and the header.
 
 static bool container_form(const SilMemory* memory, uint32_t start, uint32_t size, uint32_t* base) {
@@ -155,7 +132,6 @@ static bool container_form(const SilMemory* memory, uint32_t start, uint32_t siz
     return sil_u16(memory, at + 18) == SIL_WIDTH_MARK && sil_u16(memory, at + 22) == SIL_WIDTH_MARK;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's check and the sums of its InitPlayer. Offsets in `out` count from `start`.
 
 static bool container_parse(const SilMemory* memory, uint32_t start, uint32_t size, bool need_music,
@@ -207,21 +183,16 @@ static bool container_parse(const SilMemory* memory, uint32_t start, uint32_t si
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sil_container_parse(const uint8_t* file, uint32_t size, bool need_music, SilContainer* out) {
     // A read-only view of the file: the check only reads, through the bounded readers
     const SilMemory view = { .data = (uint8_t*)(uintptr_t)file, .size = size };
     return container_parse(&view, 0, size, need_music, out);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t sil_image_base(const SilImage* image) {
     return image->start + image->container.base;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The block lookup of the script: the header and the table are read again from the memory, so a script that patches
 // them finds what the eagleplayer would.
 
@@ -246,8 +217,6 @@ bool sil_image_block(const SilMemory* memory, const SilImage* image, uint32_t in
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void put_be32(uint8_t* p, uint32_t value) {
     p[0] = (uint8_t)(value >> 24);
     p[1] = (uint8_t)(value >> 16);
@@ -255,7 +224,6 @@ static void put_be32(uint8_t* p, uint32_t value) {
     p[3] = (uint8_t)value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One packed block: the first byte is the first sample, then every nibble adds its delta. The unpacker reads the
 // packed bytes from a copy, writes the samples over the block's data and clears the last two, so a packed block of an
 // odd length never uses the byte after its data. The block's size shrinks by 2.
@@ -288,7 +256,6 @@ static bool unpack_block(SilMemory* memory, uint32_t address, const SilBlock* bl
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The unpacker finds its table from the first byte of the file, not from the base: in the form with the prefix that
 // is a table of no blocks.
 
@@ -315,8 +282,6 @@ bool sil_image_unpack(SilMemory* memory, const SilImage* image) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SilPatch sil_patch_find(const SilMemory* memory, const SilImage* song) {
     static const struct {

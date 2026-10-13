@@ -17,7 +17,6 @@
 
 #define KH_MAX_HUNKS 3
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Memory: the hunks of the song, loaded and relocated. Addresses are the ones the driver sees; reads outside the hunks
 // give 0 and writes are dropped.
 
@@ -31,7 +30,6 @@ void kh_put_u32(KhMemory* memory, uint32_t address, uint32_t value);
 // What AUDxLC takes for `address`: null when it is outside the hunks.
 const int8_t* kh_chip_pointer(const KhMemory* memory, uint32_t address);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Records of the song
 
 #define KH_INSTRUMENT_TABLE 0x10u // the instrument records are listed from here in the song
@@ -88,7 +86,6 @@ uint32_t kh_song_list(const KhMemory* memory, uint32_t song, uint32_t voice);
 // The instrument record at `index` of the song's table; 0 where the table ends.
 uint32_t kh_song_instrument(const KhMemory* memory, uint32_t song, uint32_t index);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The song file
 
 // Offsets of the driver's tables in its data hunk

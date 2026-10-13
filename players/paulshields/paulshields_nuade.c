@@ -7,14 +7,10 @@
 #include <nuade/players/paulshields.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe paulshields_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return psh_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult paulshields_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -31,21 +27,15 @@ static NuadePlayerOpenResult paulshields_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void paulshields_close(void* user_data) {
     psh_destroy((PshPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool paulshields_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)subsong;
     (void)sample_rate;
     return psh_start((PshPlayer*)user_data, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult paulshields_tick(void* user_data, NuadeVoices* voices) {
     const PshTickResult tick = psh_tick((PshPlayer*)user_data, voices);
@@ -59,14 +49,10 @@ static NuadeTickResult paulshields_tick(void* user_data, NuadeVoices* voices) {
     return (NuadeTickResult) { .length = PSH_TICK_LENGTH, .flags = flags };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void paulshields_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Paul Shields");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t paulshields_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const PshPlayer* player = (const PshPlayer*)user_data;
@@ -77,8 +63,6 @@ static uint32_t paulshields_voice_info(void* user_data, NuadeVoiceInfo* out, uin
     }
     return count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_paulshields = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -94,8 +78,6 @@ const NuadePlayer nuade_player_paulshields = {
     .metadata = paulshields_metadata,
     .voice_info = paulshields_voice_info,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PshPlayer* psh_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_paulshields) {

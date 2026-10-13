@@ -10,7 +10,6 @@
 #include "nuade_base.h"
 #include <nuade/players/stevebarrett.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module is a 68k program: four `bra.w` entries (init, song select, tick, stop), the game's title, the driver, its
 // variables and tables, then the IFF 8SVX samples. The driver's register a4 points six bytes before the module: every
 // song address in the tables is a 16-bit offset from a4.
@@ -25,21 +24,17 @@
 // follows holds the samples' addresses.
 #define SBR_LOAD_ADDRESS 0xf000u
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module's byte offset of an address given as a 16-bit offset from a4.
 
 static inline int64_t sbr_offset(int32_t from_a4) {
     return (int64_t)from_a4 - SBR_A4_BIAS;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The module check and the proof that the songs stay inside the port, on the copy of the module that the driver's init
 // patches (owned by `m` once this returns Ok).
 SbrStatus sbr_module_open(SbrModule* m, const uint8_t* data, size_t size);
 void sbr_module_close(SbrModule* m);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module's records.
 
 uint8_t sbr_module_byte(const SbrModule* m, int64_t offset); // 0 outside the module
@@ -96,7 +91,6 @@ unsigned sbr_module_period_voice(const SbrModule* m, unsigned index);
 // The byte offset in the voice records of a Record index.
 unsigned sbr_module_period_record(const SbrModule* m, unsigned index);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pattern byte code. A note is some prefixes and a note byte; the driver reads them in this order.
 
 typedef enum SbrEventKind {

@@ -10,7 +10,6 @@
 // The most work (see TICK_WORK in ufo_state.c) one proof run does before the song is refused.
 #define PROOF_WORK_BUDGET 20000000
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Every read of the song is a function of the sequencer state: the song positions, delays, repeat commands and the
 // tempo counter, and the channel records the notes check. The run ticks the replayer until that state repeats (all
 // channels together, found with Brent's cycle detection) or the song stops; a read outside the song, a block that does
@@ -42,14 +41,10 @@ static bool prove_song(const UfoSong* song) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool ufo_probe(const uint8_t* data, size_t size) {
     UfoSong song;
     return ufo_song_parse(&song, data, size) && prove_song(&song);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void ufo_destroy(UfoPlayer* player) {
     if (player == nullptr) {
@@ -59,8 +54,6 @@ void ufo_destroy(UfoPlayer* player) {
     free(player->bank_memory);
     free(player);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static UfoStatus load_player(UfoPlayer* p, const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
     if (!ufo_song_parse(&p->song, data, size)) {
@@ -81,8 +74,6 @@ static UfoStatus load_player(UfoPlayer* p, const uint8_t* data, size_t size, con
     return UfoStatus_Ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 UfoCreateResult ufo_create(const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
     UfoCreateResult result = { .status = UfoStatus_OutOfMemory };
     UfoPlayer* p = calloc(1, sizeof(UfoPlayer));
@@ -99,8 +90,6 @@ UfoCreateResult ufo_create(const uint8_t* data, size_t size, const char* path, c
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool ufo_start(UfoPlayer* player, NuadeVoices* voices) {
     if (player == nullptr || voices == nullptr) {
         return false;
@@ -112,8 +101,6 @@ bool ufo_start(UfoPlayer* player, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 UfoTickResult ufo_tick(UfoPlayer* player, NuadeVoices* voices) {
     UfoState* state = &player->state;
     ufo_state_tick(&player->song, state);
@@ -122,8 +109,6 @@ UfoTickResult ufo_tick(UfoPlayer* player, NuadeVoices* voices) {
     }
     return (UfoTickResult) { .looped = state->looped, .ended = state->ended };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 UfoVoiceState ufo_voice_state(const UfoPlayer* player, int voice) {
     if (voice < 0 || voice >= UFO_VOICES) {

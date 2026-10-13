@@ -68,8 +68,6 @@
 
 #define MAX_EVENTS_PER_TICK 65536
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // frequency * 0x8000 of the 240 steps of an octave: 0x8000 * 2^(step / 240), rounded down but for two entries.
 static const uint16_t k_frequency[STEPS_PER_OCTAVE] = {
     0x8000, 0x805E, 0x80BD, 0x811D, 0x817C, 0x81DC, 0x823C, 0x829D, 0x82FD, 0x835E, 0x83C0, 0x8421, 0x8483, 0x84E5,
@@ -95,8 +93,6 @@ static const uint16_t k_frequency[STEPS_PER_OCTAVE] = {
 // What a one-shot sample repeats: two silent words.
 static const int8_t k_silence[4] = { 0 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 typedef enum EventKind {
     EventKind_End = 0x1,
     EventKind_NoteOff = 0x8,
@@ -118,8 +114,6 @@ typedef struct Event {
     uint8_t data1;
     uint8_t data2;
 } Event;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 typedef struct LoadedSample {
     int8_t* data; // owned
@@ -150,8 +144,6 @@ typedef enum VoiceScore {
     VoiceScore_Retrigger = 0x30, // a released voice of the same channel (unless channel 15 is tied to a voice)
 } VoiceScore;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static CwZone read_zone(const uint8_t* record) {
     CwZone zone = { 0 };
     memcpy(zone.name, record, CW_ZONE_NAME_SIZE);
@@ -167,8 +159,6 @@ static CwZone read_zone(const uint8_t* record) {
     zone.end = (int32_t)nuade_read_be32(record + 0x16);
     return zone;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static CwInstrument read_instrument(const uint8_t* block) {
     CwInstrument ins = { 0 };
@@ -192,8 +182,6 @@ static CwInstrument read_instrument(const uint8_t* block) {
     return ins;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // An event past the end of the file reads as the end event.
 static Event read_event(const CwModule* m, size_t offset) {
     if (offset + EVENT_SIZE > m->size) {
@@ -207,13 +195,9 @@ static Event read_event(const CwModule* m, size_t offset) {
                      .data2 = e[4] };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool has_event_magic(const uint8_t* data, size_t size, size_t offset) {
     return offset + 4 <= size && memcmp(data + offset, MAGIC_EVENTS, 4) == 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool cw_probe(const uint8_t* data, size_t size) {
     if (data == nullptr || size <= COUNT_OFFSET || memcmp(data, MAGIC_INSTRUMENTS, 4) != 0) {
@@ -231,8 +215,6 @@ bool cw_probe(const uint8_t* data, size_t size) {
     }
     return false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // InitPlayer: the instrument table, the channel map and the event stream, which must hold the end event.
 static bool parse_module(CwModule* m, const uint8_t* data, size_t size) {
@@ -272,16 +254,12 @@ static bool parse_module(CwModule* m, const uint8_t* data, size_t size) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void free_loaded(SampleLoader* loader) {
     for (int i = 0; i < loader->count; i++) {
         free(loader->loaded[i].data);
         loader->loaded[i].data = nullptr;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The sample data of an IFF file: what follows the first BODY chunk header at an even offset (the replayer never reads
 // the chunk length). Returns false if the file is not an IFF file with a BODY chunk.
@@ -298,8 +276,6 @@ static bool find_body(const uint8_t* file, size_t size, size_t* offset, size_t* 
     }
     return false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // ExtLoad: the sample file of a zone is Instruments/<name>.
 static CwStatus load_sample(SampleLoader* loader, const CwZone* zone) {
@@ -327,8 +303,6 @@ static CwStatus load_sample(SampleLoader* loader, const CwZone* zone) {
     NuadeIo_free_url_to_memory(loader->io, file.data);
     return status;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // ExtLoad loads the samples of the zones in file order; InitPlayer then hands them out to the zones of the
 // instruments by program number, in the order they were loaded. The two orders differ when the blocks are not in
@@ -367,8 +341,6 @@ static CwStatus load_samples(CwModule* m, SampleLoader* loader) {
     return CwStatus_Ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A song without samples needs no Instruments/ directory.
 static bool needs_samples(const CwModule* m) {
     for (int i = 0; i < m->instrument_count; i++) {
@@ -380,8 +352,6 @@ static bool needs_samples(const CwModule* m) {
     }
     return false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static CwStatus load_module_samples(CwModule* m, const char* path, const NuadeIo* io, char* missing,
                                     size_t missing_cap) {
@@ -408,8 +378,6 @@ static CwStatus load_module_samples(CwModule* m, const char* path, const NuadeIo
     return status;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void free_module_samples(CwModule* m) {
     for (int i = 0; i < m->instrument_count; i++) {
         for (int z = 0; z < CW_ZONES_PER_INSTRUMENT; z++) {
@@ -418,8 +386,6 @@ static void free_module_samples(CwModule* m) {
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CwCreateResult cw_create(const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
     CwCreateResult result = { .status = CwStatus_InvalidData };
@@ -443,8 +409,6 @@ CwCreateResult cw_create(const uint8_t* data, size_t size, const char* path, con
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void cw_destroy(CwPlayer* player) {
     if (player != nullptr) {
         free_module_samples(&player->module);
@@ -452,35 +416,25 @@ void cw_destroy(CwPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The instrument of a program, 0 if there is none (a note then plays nothing: the replayer would read address 0).
 static const CwInstrument* program_instrument(const CwModule* m, uint8_t program) {
     return program < CW_PROGRAMS && m->block_of_program[program] >= 0 ? &m->instruments[m->block_of_program[program]]
                                                                       : nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A stage of an envelope table; a stage outside it (a release stage past the table) reads as 0.
 static uint8_t stage_value(const uint8_t* table, int8_t stage) {
     return stage >= 0 && stage < CW_ENVELOPE_STAGES ? table[stage] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The sign-extended byte as a 16-bit value, which is how the replayer compares the key bounds of a zone.
 static uint16_t sign_extended(uint8_t value) {
     return (uint16_t)(int16_t)(int8_t)value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool zone_covers(const CwZone* zone, uint8_t key) {
     return key >= sign_extended(zone->key_low) && key <= sign_extended(zone->key_high);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The first zone that covers the key; the keys of the zones that follow it are not tried.
 static const CwZone* find_zone(const CwInstrument* ins, uint8_t key) {
@@ -492,8 +446,6 @@ static const CwZone* find_zone(const CwInstrument* ins, uint8_t key) {
     return nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // AUDxLC and AUDxLEN for the sample bytes from `from` to the end of the zone. A start outside the loaded data has a
 // null AUDxLC; a length that runs past it plays the zeros behind the padded copy (Paula would read on into whatever
 // follows it).
@@ -502,8 +454,6 @@ static void set_window(const CwZone* zone, int32_t from, const int8_t** lc, uint
     *len_words = (uint16_t)((int32_t)((uint32_t)zone->end - (uint32_t)from) / 2);
     *lc = first >= 0 && (uint32_t)first <= zone->size ? zone->data + first : nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The voice stops, then starts the zone's sample with volume 0 and the period register at its start
 // value. The repeat registers follow DMA_LATCH_TICKS ticks later.
@@ -539,16 +489,12 @@ static void voice_start(CwVoice* v, const CwChannel* channel, const CwInstrument
     set_window(zone, zone->start, &v->paula.lc, &v->paula.len_words);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The note off of a voice: both envelopes jump to their release stages. The pedal bit stays.
 static void voice_release(CwVoice* v, const CwInstrument* ins) {
     v->volume_stage = (int8_t)ins->volume_release;
     v->pitch_stage = (int8_t)ins->pitch_release;
     v->key_down = false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Higher is better. `oldest` is the age of the oldest note seen so far.
 static int score_voice(const CwModule* m, const CwVoice* v, uint8_t channel, uint8_t key, uint8_t* oldest) {
@@ -578,8 +524,6 @@ static int score_voice(const CwModule* m, const CwVoice* v, uint8_t channel, uin
     return score;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The voice for a note: the one the map ties the channel to, else the best scoring one (the first of equals; none
 // when all score 0).
 static int choose_voice(const CwPlayer* p, uint8_t channel, uint8_t key) {
@@ -600,8 +544,6 @@ static int choose_voice(const CwPlayer* p, uint8_t channel, uint8_t key) {
     return best;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void note_on(CwPlayer* p, uint8_t channel, uint8_t key, uint8_t velocity) {
     const Note note = { .channel = channel, .program = p->channels[channel].program, .key = key, .velocity = velocity };
     const CwInstrument* ins = program_instrument(&p->module, note.program);
@@ -615,8 +557,6 @@ static void note_on(CwPlayer* p, uint8_t channel, uint8_t key, uint8_t velocity)
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void note_off(CwPlayer* p, uint8_t channel, uint8_t key) {
     for (int i = 0; i < CW_VOICES; i++) {
         CwVoice* v = &p->voices[i];
@@ -625,8 +565,6 @@ static void note_off(CwPlayer* p, uint8_t channel, uint8_t key) {
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The pedal of a channel changed. A voice whose key is down remembers it; a voice whose key is up and held by the
 // pedal is released again when the pedal goes up.
@@ -645,15 +583,11 @@ static void set_pedal(CwPlayer* p, uint8_t channel, bool pedal) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void reset_channels(CwPlayer* p) {
     for (int i = 0; i < CW_CHANNEL_COUNT; i++) {
         p->channels[i] = (CwChannel) { .program = (uint8_t)i, .bend = BEND_CENTER, .volume = 0x7F };
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The voices stop being allocated (their registers keep playing), the channels and the sequencer start over.
 static void restart_song(CwPlayer* p) {
@@ -667,16 +601,12 @@ static void restart_song(CwPlayer* p) {
     p->sequencer.delay = read_event(&p->module, p->sequencer.position).delay;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The end event: SongEnd, then a pause with the audio off, then the song again.
 static void end_song(CwPlayer* p) {
     p->looped = true;
     p->sequencer.pause = PAUSE_TICKS;
     restart_song(p);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void run_event(CwPlayer* p, const Event* e) {
     CwChannel* channel = &p->channels[e->channel];
@@ -714,8 +644,6 @@ static void run_event(CwPlayer* p, const Event* e) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Runs the events that are due. Returns false if the song ended (the voices are left alone this tick).
 static bool run_events(CwPlayer* p) {
     CwSequencer* s = &p->sequencer;
@@ -734,8 +662,6 @@ static bool run_events(CwPlayer* p) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The volume envelope moves the level to the target of its stage at the stage's rate; a stage with rate 0 holds while
 // the key is down. A level below 1 or a stage past the last frees the voice.
@@ -773,8 +699,6 @@ static void volume_envelope(CwVoice* v, const CwInstrument* ins, bool key_down) 
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The pitch envelope, the same way (unsigned 16-bit levels).
 static void pitch_envelope(CwVoice* v, const CwInstrument* ins, bool key_down) {
     if (v->pitch_stage >= CW_ENVELOPE_STAGES) {
@@ -800,8 +724,6 @@ static void pitch_envelope(CwVoice* v, const CwInstrument* ins, bool key_down) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void vibrato_tick(CwVoice* v, const CwInstrument* ins) {
     v->vibrato = (int16_t)(v->vibrato + v->vibrato_step);
     if (v->vibrato < 0) {
@@ -814,8 +736,6 @@ static void vibrato_tick(CwVoice* v, const CwInstrument* ins) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The pitch in 1/20 semitones: key and transpose, vibrato, pitch envelope and pitch bend, all in 16-bit arithmetic.
 static int16_t voice_pitch(const CwVoice* v, const CwInstrument* ins, const CwChannel* channel) {
     const int key = ins->bend_range == BEND_FIXED_PITCH ? FIXED_PITCH_KEY : v->key;
@@ -826,8 +746,6 @@ static int16_t voice_pitch(const CwVoice* v, const CwInstrument* ins, const CwCh
     bend = (uint16_t)(bend * STEPS_PER_SEMITONE);
     return (int16_t)(pitch + (uint16_t)((int16_t)bend >> 6));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The period register: the zone's period of key 60 divided by the frequency ratio of the pitch.
 static uint16_t voice_period(const CwVoice* v, int16_t pitch) {
@@ -846,8 +764,6 @@ static uint16_t voice_period(const CwVoice* v, int16_t pitch) {
     return (uint16_t)((int64_t)(int32_t)((uint32_t)v->period_scale << PERIOD_SHIFT) / (int32_t)frequency);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // AUDxVOL: velocity (plus the instrument's boost, at most 127) times the channel volume times the envelope.
 static uint8_t voice_volume(const CwVoice* v, const CwInstrument* ins, const CwChannel* channel) {
     int16_t velocity = (int16_t)(v->velocity + ins->velocity_boost);
@@ -859,8 +775,6 @@ static uint8_t voice_volume(const CwVoice* v, const CwInstrument* ins, const CwC
     volume = volume >> 9;
     return volume & VOLUME_REGISTER_MASK;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The interrupt, for one voice. The original waits several raster lines before it switches the DMA on.
 static void voice_tick(CwPlayer* p, CwVoice* v) {
@@ -890,8 +804,6 @@ static void voice_tick(CwPlayer* p, CwVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool cw_start(CwPlayer* player, NuadeVoices* voices) {
     if (player == nullptr || voices == nullptr) {
         return false;
@@ -906,8 +818,6 @@ bool cw_start(CwPlayer* player, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A pause after the end event: the DMA of all voices is off.
 static void pause_tick(CwPlayer* p) {
     for (int i = 0; i < CW_VOICES; i++) {
@@ -915,8 +825,6 @@ static void pause_tick(CwPlayer* p) {
     }
     p->sequencer.pause--;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CwTickResult cw_tick(CwPlayer* player, NuadeVoices* voices) {
     player->looped = false;
@@ -933,8 +841,6 @@ CwTickResult cw_tick(CwPlayer* player, NuadeVoices* voices) {
     return (CwTickResult) { .looped = player->looped };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const char* cw_instrument_name(const CwPlayer* player, int instrument) {
     const CwInstrument* ins = instrument >= 0 ? program_instrument(&player->module, (uint8_t)instrument) : nullptr;
     for (int i = 0; ins != nullptr && i < CW_ZONES_PER_INSTRUMENT; i++) {
@@ -944,8 +850,6 @@ const char* cw_instrument_name(const CwPlayer* player, int instrument) {
     }
     return "";
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CwVoiceState cw_voice_state(const CwPlayer* player, int voice) {
     const CwVoice* v = &player->voices[voice];

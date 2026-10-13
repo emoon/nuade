@@ -16,47 +16,39 @@
 
 #define JB_NOT_FOUND 0xFFFFFFFFu
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline uint8_t jbm_u8(const JbModule* m, uint32_t offset) {
     return offset < m->size ? m->data[offset] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline uint16_t jbm_u16(const JbModule* m, uint32_t offset) {
     return (uint16_t)((jbm_u8(m, offset) << 8) | jbm_u8(m, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline int16_t jbm_s16(const JbModule* m, uint32_t offset) {
     return (int16_t)jbm_u16(m, offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline uint32_t jbm_u32(const JbModule* m, uint32_t offset) {
     return ((uint32_t)jbm_u16(m, offset) << 16) | jbm_u16(m, offset + 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline void jbm_set8(JbModule* m, uint32_t offset, uint8_t value) {
     if (offset < m->size) {
         m->data[offset] = value;
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline void jbm_set16(JbModule* m, uint32_t offset, uint16_t value) {
     jbm_set8(m, offset, (uint8_t)(value >> 8));
     jbm_set8(m, offset + 1, (uint8_t)value);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A paula pointer to `offset` into the module; null past its end. `m` must come from nuade_paula_padded_copy, so that a
 // sample that starts inside the module plays zeros past its end.
 static inline const int8_t* jbm_sample(const JbModule* m, uint32_t offset) {
     return offset <= m->size ? (const int8_t*)(m->data + offset) : nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An offset the driver adds to the module address with adda.w: the 16 bit value sign extended
 static inline uint32_t jb_offset16(uint16_t value) {
     return (uint32_t)(int32_t)(int16_t)value;
@@ -66,7 +58,6 @@ static inline uint32_t jb_offset16(uint16_t value) {
 // digit matches any value ("43fa xxxx", "103b 00xx"). JB_NOT_FOUND if there is none.
 uint32_t jbm_find(const JbModule* m, uint32_t from, uint32_t to, const char* pattern);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The voices' song loop detection: the driver's SongEnd patch clears one flag per voice that passed the end of its
 // track list and signals the loop when all four are clear. Returns true when `voice` was the last one.
 static inline bool jb_voice_wrapped(bool wrapped[JB_VOICES], int voice) {
@@ -86,7 +77,6 @@ static inline bool jb_voice_wrapped(bool wrapped[JB_VOICES], int voice) {
 // forever; the driver would too)
 #define JB_MAX_STEP_BYTES 0x10000
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // JbVersion A: the 1987-90 driver with a PWM waveform, volume envelopes and pitch sequences. The
 // code differs between games in table positions, in a handful of instructions and in the command set; the locator
 // reads those out of the code.
@@ -102,7 +92,6 @@ typedef struct JbASample {
     int16_t loop;        // offset of the loop in bytes; negative = one-shot
 } JbASample;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline JbASample jb_a_sample(const JbModule* m, const JbATables* t, uint8_t index) {
     const uint32_t record = t->samples + JB_A_SAMPLE_SIZE * (uint32_t)index;
     return (JbASample) { .multiplier = jbm_u16(m, record),
@@ -124,7 +113,6 @@ typedef struct JbASong {
     JbATrack tracks[JB_VOICES];
 } JbASong;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline JbASong jb_a_song(const JbModule* m, const JbATables* t, int subsong) {
     const uint32_t record = t->songs + JB_A_SONG_SIZE * (uint32_t)subsong;
     JbASong song = { .tempo = jbm_u8(m, record) };
@@ -149,7 +137,6 @@ typedef enum JbAGlobalByte {
     JbAGlobalByte_Transpose = 12,
 } JbAGlobalByte;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The global bytes the module file holds (the init routine sets the accumulators, the tempo and the play flag)
 static inline JbAGlobals jb_a_globals(const JbModule* m, const JbATables* t) {
     const uint32_t g = t->globals;
@@ -167,7 +154,6 @@ bool jb_a_locate(const JbModule* m, uint32_t entry, JbAConfig* config);
 void jb_a_start(JbA* a, const JbModule* m, int subsong);
 JbTickResult jb_a_tick(JbA* a, JbModule* m, NuadeVoices* voices);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // JbVersion B: the early driver (Feud, Pac-Land, World Darts): four voices playing 128-byte blocks of one sample bank.
 // Three code variants: Feud (no master scale, byte envelope index, vibrato hold), Pac-Land (master scale, separate
 // envelope table and a word index, vibrato hold), World Darts (master scale, byte envelope index, no vibrato hold).
@@ -195,7 +181,6 @@ typedef struct JbBSong {
     uint16_t track_lists[JB_VOICES];
 } JbBSong;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline JbBSong jb_b_song(const JbModule* m, const JbBTables* t, int subsong) {
     const uint32_t record = t->songs + JB_B_SONG_SIZE * (uint32_t)subsong;
     JbBSong song = { .tempo = jbm_u8(m, record + 1) };

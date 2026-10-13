@@ -31,37 +31,26 @@
 #define MAX_BLOCKS 256u
 #define MAX_POSITIONS 256u
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t smst_u8(const SmstModule* m, uint32_t address) {
     return address < m->limit ? m->memory[address] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t smst_u16(const SmstModule* m, uint32_t address) {
     return (uint16_t)(smst_u8(m, address) << 8 | smst_u8(m, address + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t smst_u32(const SmstModule* m, uint32_t address) {
     return (uint32_t)smst_u16(m, address) << 16 | smst_u16(m, address + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const int8_t* smst_sample_pointer(const SmstModule* m, uint32_t address) {
     return (const int8_t*)(m->memory + (address < m->size ? (address & ~1u) : m->size));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t smst_period(const SmstModule* m, uint8_t index) {
     return smst_u16(m, m->version->period_at + 2u * index);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample slot a sample number selects. Offsets layout: ten bytes a slot, the offset counted from the slot table,
 // which the replayer adds the sample base to. Fixed layout: four columns, indexed with byte arithmetic that drops the
 // high bits of the number.
@@ -83,8 +72,6 @@ SmstSlot smst_slot(const SmstModule* m, uint8_t number) {
                         .loop_offset = smst_u16(m, columns + FIXED_LOOP_OFFSET_COLUMN + word),
                         .loop_length = smst_u16(m, columns + FIXED_LOOP_LENGTH_COLUMN + word) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SmstInstrument smst_instrument(const SmstModule* m, uint8_t number) {
     const uint32_t at = m->tables.instruments + (uint32_t)number * m->version->instrument_size;
@@ -109,7 +96,6 @@ SmstInstrument smst_instrument(const SmstModule* m, uint8_t number) {
     return ins;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The seven versions, named in the notes by their code size. The signature is FNV-1a over the code before the
 // variables: it covers the code, the displacements of every table and variable it addresses, and the period table. The
 // module's own bytes start at the variables.
@@ -196,8 +182,6 @@ static const SmstVersion s_versions[] = {
 };
 // clang-format on
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint64_t fnv1a(const uint8_t* data, size_t size) {
     uint64_t hash = 0xcbf29ce484222325ull;
     for (size_t i = 0; i < size; i++) {
@@ -205,8 +189,6 @@ static uint64_t fnv1a(const uint8_t* data, size_t size) {
     }
     return hash;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const SmstVersion* smst_find_version(const uint8_t* data, size_t size) {
     for (size_t i = 0; i < nuade_sizeof_array(s_versions); i++) {
@@ -218,27 +200,19 @@ const SmstVersion* smst_find_version(const uint8_t* data, size_t size) {
     return nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t smst_initial_wave_switches(const SmstModule* m) {
     return (uint8_t)smst_u16(m, m->version->vars + m->version->speed_at - FIXED_DMA_OFF_BEFORE_HEADER);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t smst_initial_fade(const SmstModule* m) {
     return smst_u8(m, m->version->vars + m->version->speed_at - FIXED_FADE_BEFORE_HEADER);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SmstSubsong smst_subsong(const SmstModule* m, uint32_t index) {
     const uint32_t at
         = m->version->vars + m->version->dummy_at + SUBSONG_TABLE_AFTER_DUMMY + index * SUBSONG_ENTRY_SIZE;
     return (SmstSubsong) { .position = smst_u8(m, at), .loop_start = smst_u8(m, at + 1), .end = smst_u8(m, at + 2) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int smst_count_subsongs(const SmstModule* m) {
     switch (m->version->init) {
@@ -263,7 +237,6 @@ int smst_count_subsongs(const SmstModule* m) {
     return 1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // True when the bytes [from, from + bytes) of the module memory, counted modulo 2^32 like the addresses of the
 // original, include one the replayer writes.
 
@@ -282,7 +255,6 @@ static bool reaches_writes(const SmstModule* m, uint32_t from, uint32_t bytes) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tables the replayer reads as data, with the most it can reach through any note, row or position number.
 
 static bool tables_clear_of_writes(const SmstModule* m) {
@@ -308,8 +280,6 @@ static bool tables_clear_of_writes(const SmstModule* m) {
            && !reaches_writes(m, t->patterns, pattern_bytes) && !reaches_writes(m, t->samples, samples)
            && !reaches_writes(m, t->dummy, 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool smst_locate(SmstModule* m, const SmstVersion* version) {
     m->version = version;

@@ -11,8 +11,6 @@
 // A number of a list ends at a comma, the end of the string, a line feed or a carriage return.
 #define PN_LIST_SEPARATOR ','
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 PnToolType pn_info_find(const PnInfo* info, const char* key) {
     const size_t key_length = strlen(key);
     PnToolType tool = { 0 };
@@ -28,7 +26,6 @@ PnToolType pn_info_find(const PnInfo* info, const char* key) {
     return tool;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The text behind the key; past the end of the file it is zeros.
 
 static uint8_t tool_byte(const PnToolType* tool, size_t index) {
@@ -36,7 +33,6 @@ static uint8_t tool_byte(const PnToolType* tool, size_t index) {
     return at < tool->size ? tool->data[at] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer compares a fixed number of bytes, the terminator included.
 
 bool pn_tool_type_is(const PnToolType* tool, const char* text) {
@@ -52,7 +48,6 @@ bool pn_tool_type_is(const PnToolType* tool, const char* text) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One hexadecimal number: the digit value of a character is its distance from '0', less 7 from 'A' on and less 0x27
 // from 'a' on, whatever the character is, and the values are or'ed in a nibble at a time.
 
@@ -74,7 +69,6 @@ static uint32_t read_hex(const PnToolType* tool, size_t* index, uint8_t* termina
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // SONGS=<last>[,<default>[,<first>]]: the subsong numbers the eagleplayer reports (the numbers are one less than the
 // values; the subtraction does not borrow out of the low byte; absent values are 0). Then the glue and the frontend
 // make them consistent: the default 0 means the first subsong, a negative default is 0, and a range that does not

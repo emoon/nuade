@@ -61,14 +61,12 @@ typedef enum NoteKind {
 
 static void update_track(Context* c, int index);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The envelope and the master fade compare their levels as signed bytes.
 
 static bool signed_less(uint8_t a, uint8_t b) {
     return (int8_t)a < (int8_t)b;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Ticks a note sounds: the track's speed times the global speed, less the cut.
 
 static uint16_t note_length(const Ems6Track* t, const Ems6Sequencer* seq) {
@@ -77,7 +75,6 @@ static uint16_t note_length(const Ems6Track* t, const Ems6Sequencer* seq) {
     return left < 0 ? 0 : (uint16_t)left;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The master volume moves one step towards its target every `speed + 1` ticks.
 
 static void fade_master(Context* c) {
@@ -97,7 +94,6 @@ static void fade_master(Context* c) {
     c->mx->master_volume = s->master_volume;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Start the instrument's sample on the mixer voice, then run the track's per-tick update.
 
 static void start_sample(Context* c, int index) {
@@ -126,7 +122,6 @@ static void start_sample(Context* c, int index) {
     update_track(c, index);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The retrigger command: every few ticks the note's sample starts again.
 
 static void run_retrigger(Context* c, int index) {
@@ -143,7 +138,6 @@ static void run_retrigger(Context* c, int index) {
     start_sample(c, index);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The wavetable sweep: the voice's loop is the wave at the current position, which bounces between two limits.
 
 static void sweep_wavetable(Context* c, Ems6Track* t, Ems6MixVoice* v) {
@@ -170,7 +164,6 @@ static void sweep_wavetable(Context* c, Ems6Track* t, Ems6MixVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The glide: the period moves by 1 / divisor of the distance between the periods of the start and the target note per
 // tick, for `glide_steps` ticks, then lands on the target.
 
@@ -191,7 +184,6 @@ static void glide_tick(Ems6Track* t, Ems6MixVoice* v) {
     t->glide_steps = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The arpeggio: a list of note offsets, 0xFF jumps to the list index that follows it, 0xFE ends it. Returns false at
 // the end, where the vibrato takes over.
 
@@ -210,7 +202,6 @@ static bool arpeggio_tick(Context* c, Ems6Track* t, Ems6MixVoice* v) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The vibrato: the period steps up for `depth` ticks, down twice as far for `depth` ticks, up again for `depth` ticks
 // and starts over.
 
@@ -243,7 +234,6 @@ static void vibrato_tick(Ems6Track* t, Ems6MixVoice* v) {
     t->vibrato_phase++;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume envelope moves the level towards its target by `envelope_step` every `envelope_reload + 1` ticks.
 
 static void envelope_tick(Ems6Track* t) {
@@ -272,7 +262,6 @@ static void envelope_tick(Ems6Track* t) {
     t->volume = target;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The per-tick work of a track: the wavetable sweep, the pitch (glide, arpeggio or vibrato), the envelope, the
 // retrigger timer and the release at the end of the note. Writes the mixer voice's period and volume.
 
@@ -303,7 +292,6 @@ static void update_track(Context* c, int index) {
     v->volume = (int8_t)released < 0 ? 0 : released;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note: the pattern position advances (unless the skip count holds it), the note sets the period and the volume, the
 // vibrato restarts, and the sample starts unless the note only continues a glide.
 
@@ -336,7 +324,6 @@ static void play_note(Context* c, int index, uint8_t note, uint32_t next_pos, No
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The speed command: below TEMPO_MIN the ticks per row, else beats per minute (the length of a tick in samples).
 
 static void set_speed(Context* c, uint8_t value) {
@@ -348,7 +335,6 @@ static void set_speed(Context* c, uint8_t value) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Read the pattern commands of a track up to its next note, tie or the end of the pattern; each command spends one of
 // `budget`. Returns false at the end of the pattern (or when the budget is spent), which makes the track read its
 // list again.
@@ -458,7 +444,6 @@ static bool read_pattern(Context* c, int index, uint32_t pattern, int* budget) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A track's next event: the commands of its list up to the next pattern number, then that pattern's commands up to a
 // note. The list loops (0xFFFF + position / 2), ends (0xFFFE) or changes transpose, instrument shift, repeat count and
 // the master fade on the way. List words and pattern commands share one budget.
@@ -518,7 +503,6 @@ static void read_track(Context* c, int index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sequencer tick. Once per `speed` ticks every active track counts its row down and reads its next event; on the
 // other ticks the tracks only run their per-tick update.
 
@@ -547,7 +531,6 @@ void e6_sequencer_tick(Ems6Sequencer* s, Ems6Mixer* mx, const Ems6Module* m) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitSound: every track starts at the beginning of its list, every note restarts its sample.
 
 void e6_sequencer_init(Ems6Sequencer* s, const Ems6Subsong* subsong) {
@@ -561,7 +544,6 @@ void e6_sequencer_init(Ems6Sequencer* s, const Ems6Subsong* subsong) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The song is over when every track has jumped back or ended: the eagleplayer's SongEnd.
 
 bool e6_sequencer_finished(const Ems6Sequencer* s) {
@@ -572,8 +554,6 @@ bool e6_sequencer_finished(const Ems6Sequencer* s) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t e6_sequencer_used_tracks(const Ems6Module* m, const Ems6Subsong* subsong) {
     uint32_t used = 1;

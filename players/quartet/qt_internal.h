@@ -41,7 +41,6 @@ const int8_t* qt_samples_lc(const QtSamples* samples, uint32_t offset, uint16_t 
 // The sample set's checks and layout (InitPlayer); false when the replayer would not accept the set.
 bool qt_samples_parse(QtSamples* samples, const uint8_t* file, uint32_t size);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer
 
 // Whether the whole song only does what the replayer model covers (a dry run of the rows, no audio). Without a sample

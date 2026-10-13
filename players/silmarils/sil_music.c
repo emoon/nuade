@@ -35,7 +35,6 @@ static const uint16_t s_periods[SIL_NOTES] = {
     0x007F, 0x007F, 0x007F, 0x007F, 0x007F, 0x007F, 0x007F, 0x007F, 0x007F, 0x007F,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The header in front of a sample's data. A loop start of 0 means no loop; a loop end of 0 means the data ends where
 // the block does.
 
@@ -43,7 +42,6 @@ static bool read_header(const SilMemory* memory, uint32_t sample, SilBlock* head
     return sample >= SIL_SAMPLE_HEADER && sil_block_read(memory, sample - SIL_SAMPLE_HEADER, header);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What AUDxLC and AUDxLEN hold for `bytes` of data at `address`: AUDxLC ignores its lowest bit, AUDxLEN counts words.
 // The port plays runs of 1 .. SIL_MAX_WORDS words that lie inside the memory.
 
@@ -51,8 +49,6 @@ typedef struct Run {
     uint32_t address;
     uint16_t words;
 } Run;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool make_run(const SilMemory* memory, uint64_t address, uint32_t bytes, Run* run) {
     const uint32_t words = bytes >> 1;
@@ -64,20 +60,16 @@ static bool make_run(const SilMemory* memory, uint64_t address, uint32_t bytes, 
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t first_end(const SilBlock* header) {
     return header->loop_end != 0 ? header->loop_end : header->size - SIL_SAMPLE_HEADER;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The first block of a note: from the start of the data to the loop end (or the end of the data).
 
 static bool first_run(const SilMemory* memory, uint32_t sample, const SilBlock* header, Run* run) {
     return make_run(memory, sample, first_end(header), run);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The repeat of a sample with a loop: from the loop start to the loop end.
 
 static bool loop_run(const SilMemory* memory, uint32_t sample, const SilBlock* header, Run* run) {
@@ -86,14 +78,11 @@ static bool loop_run(const SilMemory* memory, uint32_t sample, const SilBlock* h
            && make_run(memory, (uint64_t)sample + header->loop_start, end - header->loop_start, run);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void set_registers(const SilMemory* memory, NuadePaulaChannel* paula, const Run* run) {
     paula->lc = (const int8_t*)(memory->data + run->address);
     paula->len_words = run->words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // DMACON switches the channel on, and the audio interrupt of the DMA start runs the handler.
 
 static void start_dma(const SilMemory* memory, SilChannel* c) {
@@ -122,8 +111,6 @@ static void start_dma(const SilMemory* memory, SilChannel* c) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool select_instrument(SilMusic* music, SilChannel* c, uint8_t instrument) {
     if (instrument >= SIL_SLOTS) {
         return false;
@@ -134,7 +121,6 @@ static bool select_instrument(SilMusic* music, SilChannel* c, uint8_t instrument
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note command stops the channel; with a volume it also loads the registers and asks for the DMA start at the end of
 // the tick.
 
@@ -165,7 +151,6 @@ static bool play_note(SilMusic* music, SilChannel* c, uint8_t note, uint8_t volu
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the channel's voice does now. The validation pass has no voices and gets a voice that runs and has not wrapped.
 
 static NuadeVoiceState channel_voice(const SilMusic* music, const SilChannel* c) {
@@ -176,7 +161,6 @@ static NuadeVoiceState channel_voice(const SilMusic* music, const SilChannel* c)
     return state;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Whether the channel's DMA still runs: the voice plays and is not a one-shot past its end.
 
 static bool channel_running(const SilMusic* music, const SilChannel* c) {
@@ -186,7 +170,6 @@ static bool channel_running(const SilMusic* music, const SilChannel* c) {
     return c->paula.dma && state.playing && !past_end;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tail command plays the part of the sample after its loop end, once. The command switches DMACON off and on again
 // with no wait in between, so a channel that still runs does not notice and takes the tail as its next block, after
 // the block that runs now; a channel that has stopped starts again. A sample without a tail is just stopped.
@@ -229,7 +212,6 @@ static bool play_tail(SilMusic* music, SilChannel* c) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The stop that the handler runs at the start of a tail: the voice has switched to the tail.
 
 static void run_stops(SilMusic* music) {
@@ -243,8 +225,6 @@ static void run_stops(SilMusic* music) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool read_byte(SilMusic* music, uint8_t* value) {
     if (!sil_in_memory(music->memory, music->position, 1)) {
         return false;
@@ -253,7 +233,6 @@ static bool read_byte(SilMusic* music, uint8_t* value) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The command at the stream position: its arguments follow it. False when the port does not model it.
 
 static bool run_command(SilMusic* music) {
@@ -276,7 +255,6 @@ static bool run_command(SilMusic* music) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The command a stream byte introduces: the kind in the low six bits, the channel in the top two; 0xFF is the end.
 
 static void decode_command(SilMusic* music, uint8_t byte) {
@@ -285,7 +263,6 @@ static void decode_command(SilMusic* music, uint8_t byte) {
     music->command_channel = end ? 0 : byte >> SIL_COMMAND_CHANNEL_SHIFT;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Reads commands until a wait byte or the end command. A byte below 0x80 repeats the last command with new arguments;
 // 0xFF introduces a command (0xFF as the command is the end command).
 
@@ -322,7 +299,6 @@ static SilBatch run_batch(SilMusic* music) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The end of the tick: the interrupt enables go out first, then DMACON, and the audio interrupt of each DMA start runs.
 
 static void commit(SilMusic* music) {
@@ -342,8 +318,6 @@ static void commit(SilMusic* music) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void sil_music_start(SilMusic* music, SilMemory* memory, const SilSlot* slots, uint32_t stream, uint8_t tempo,
                      bool slot_parameters) {
     *music = (SilMusic) { .memory = memory, .slots = slots, .start = stream, .position = stream };
@@ -356,8 +330,6 @@ void sil_music_start(SilMusic* music, SilMemory* memory, const SilSlot* slots, u
         music->channels[i].note = -1;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sil_music_tick(SilMusic* music, const NuadeVoices* voices, bool* looped) {
     *looped = false;
@@ -381,8 +353,6 @@ bool sil_music_tick(SilMusic* music, const NuadeVoices* voices, bool* looped) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // What carries over from one pass of the stream to the next. Built zeroed, so that two states compare with memcmp.
 typedef struct PassChannel {
     uint32_t sample;
@@ -402,8 +372,6 @@ typedef struct PassState {
     uint8_t command_channel;
     PassChannel channels[SIL_USED_VOICES];
 } PassState;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static PassState pass_state(const SilMusic* music) {
     PassState state;
@@ -426,7 +394,6 @@ static PassState pass_state(const SilMusic* music) {
     return state;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The stream is read from its start to its end command, again and again, and what carries over from pass to pass is the
 // state above. When a pass starts with a state that an earlier pass started with, every later pass repeats that one, so
 // the passes run so far have seen everything the music will do. The validation's voice always runs, so the runtime's
@@ -472,7 +439,6 @@ bool sil_music_validate(SilMusic* music, uint32_t* budget) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A sample is a block that plays once, or the block and then the repeat. The voices play what the DMA run was started
 // with; nuade_paula_channel_sync does the same for a block that repeats whole, but cannot stop at the end of a block.
 
@@ -486,8 +452,6 @@ static NuadeSample block_sample(const int8_t* lc, uint16_t words, bool repeats) 
         .loop_length = repeats ? bytes : 0,
     };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void sync_channel(SilChannel* c, uint32_t voice, NuadeVoices* voices) {
     NuadePaulaChannel* paula = &c->paula;
@@ -521,8 +485,6 @@ static void sync_channel(SilChannel* c, uint32_t voice, NuadeVoices* voices) {
         paula->sent_len_words = paula->len_words;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void sil_music_sync(SilMusic* music, NuadeVoices* voices) {
     for (uint32_t i = 0; i < SIL_USED_VOICES; i++) {

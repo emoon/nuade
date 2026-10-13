@@ -20,8 +20,6 @@ static const uint32_t k_paula_channel[H7V_PAULA_TRACKS] = { 3, 1, 2 };
 #define MIX_CHANNEL 0
 #define START_MARGIN_FRAMES 3
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 H7vPlayer* h7v_create(const uint8_t* data, size_t size) {
     H7vPlayer* p = calloc(1, sizeof(H7vPlayer));
     if (p == nullptr) {
@@ -34,8 +32,6 @@ H7vPlayer* h7v_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void h7v_destroy(H7vPlayer* player) {
     if (player != nullptr) {
         h7v_module_close(&player->module);
@@ -43,13 +39,10 @@ void h7v_destroy(H7vPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int h7v_subsong_count(const H7vPlayer* player) {
     return player->module.subsong_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer's init with subsong n (1-based). The first track position (which no subsong plays) holds the mixer's
 // settings: the sign of the tempo offset is its second byte, the clip mode the effect byte.
 
@@ -77,15 +70,12 @@ bool h7v_start(H7vPlayer* player, int subsong, uint32_t sample_rate, NuadeVoices
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void apply_sequencer_output(H7vMixer* mixer, H7vSequencerOutput output) {
     if (output.tempo_changed) {
         h7v_mixer_set_tempo(mixer, output.tempo_offset);
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sequencers of the tracks from `first` to `end` (mixed tracks 3..6, or Paula tracks 0..2)
 
 static void run_sequencers(H7vPlayer* p, int first, int end) {
@@ -94,7 +84,6 @@ static void run_sequencers(H7vPlayer* p, int first, int end) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tick after the song stopped itself: all audio DMA off.
 
 static void stop_audio(H7vPlayer* p, NuadeVoices* voices) {
@@ -109,7 +98,6 @@ static void stop_audio(H7vPlayer* p, NuadeVoices* voices) {
     nuade_paula_channel_sync(&p->mixer.output, MIX_CHANNEL, voices);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Every voice's work for the tick: Paula channels first, then the mixed voices.
 
 static void run_voices(H7vPlayer* p) {
@@ -122,7 +110,6 @@ static void run_voices(H7vPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A mixed voice that started a sample once is on in every tick from here on.
 
 static void switch_on_started_voices(H7vSong* s) {
@@ -130,8 +117,6 @@ static void switch_on_started_voices(H7vSong* s) {
         s->voices[i].mixer_on = s->voices[i].mixer_on || s->voices[i].mixer_started;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 H7vTickResult h7v_tick(H7vPlayer* player, NuadeVoices* voices) {
     H7vSong* s = &player->song;
@@ -187,13 +172,9 @@ H7vTickResult h7v_tick(H7vPlayer* player, NuadeVoices* voices) {
     return (H7vTickResult) { .length = playing_words * 2 * output->period + margin, .looped = s->looped };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int h7v_speed(const H7vPlayer* player) {
     return player->song.speed;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 H7vTrackState h7v_track_state(const H7vPlayer* player, int track) {
     const H7vVoice* v = &player->song.voices[track];

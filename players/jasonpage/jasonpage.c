@@ -12,13 +12,9 @@
 
 #include <stdlib.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool jp_probe(const uint8_t* data, size_t size) {
     return jp_module_probe(data, size);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 JpCreateResult jp_create(const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
     JpCreateResult result = { .status = JpStatus_InvalidData };
@@ -37,8 +33,6 @@ JpCreateResult jp_create(const uint8_t* data, size_t size, const char* path, con
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void jp_destroy(JpPlayer* player) {
     if (player == nullptr) {
         return;
@@ -47,13 +41,10 @@ void jp_destroy(JpPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int jp_subsong_count(const JpPlayer* player) {
     return player->layout.subsongs;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitSound: the subsong's tables and the voices at the head of their track lists. Virocop and Realms also write 0 to
 // the volume registers.
 
@@ -65,8 +56,6 @@ static void init_song(JpPlayer* player, int subsong) {
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool jp_start(JpPlayer* player, int subsong, NuadeVoices* voices) {
     if (player == nullptr || voices == nullptr || subsong < 0 || subsong >= player->layout.subsongs) {
@@ -85,8 +74,6 @@ bool jp_start(JpPlayer* player, int subsong, NuadeVoices* voices) {
     init_song(player, subsong);
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 JpTickResult jp_tick(JpPlayer* player, NuadeVoices* voices) {
     player->looped = false;
@@ -114,8 +101,6 @@ JpTickResult jp_tick(JpPlayer* player, NuadeVoices* voices) {
     return (JpTickResult) { .looped = player->looped, .ended = player->failed };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t jp_grid_ticks(const JpPlayer* player, int subsong) {
     if (player == nullptr || subsong < 0 || subsong >= player->layout.subsongs) {
         return 0;
@@ -123,8 +108,6 @@ uint32_t jp_grid_ticks(const JpPlayer* player, int subsong) {
     const uint32_t index = (uint32_t)subsong & JP_SUBSONG_MASK;
     return jp_table_value(player, player->layout.speed_table, index) + 1u;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 JpVoiceState jp_voice_state(const JpPlayer* player, int voice) {
     if (player == nullptr || voice < 0 || voice >= JP_VOICES) {

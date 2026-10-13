@@ -10,7 +10,6 @@
 
 #include <nuade/players/pokeynoise.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The Atari: memory and the 6502 interpreter (pn_cpu.c)
 
 // The POKEY registers the player reads, in the page the Atari maps POKEY to; AUDFn / AUDCn are at 2 * (n - 1) and
@@ -45,7 +44,6 @@ uint16_t pn_machine_u16(const PnMachine* machine, uint16_t address);
 // The next byte of the generator (RANDOM reads a different byte of the same step).
 uint8_t pn_machine_random_byte(PnMachine* machine);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The ".info" file (pn_info.c)
 
 typedef struct PnInfo {
@@ -69,7 +67,6 @@ bool pn_tool_type_is(const PnToolType* tool, const char* text);
 
 PnSongRange pn_info_song_range(const PnInfo* info);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // POKEY to Paula (pn_pokey.c)
 
 // Waveforms: the data hunk of the eagleplayer (pn_waves.c). A wave is a byte offset into it and a length in words.

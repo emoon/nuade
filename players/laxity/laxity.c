@@ -66,8 +66,6 @@
 // Where a pointer outside the module memory points: chip memory that reads as zeros.
 #define OFFSET_ZERO_WORD (-1)
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const char k_default_title[LX_NAME_SIZE + 1] = "YET ANOTHER COOL";
 
 // The replayer indexes two tables with note * 2 from adjacent bases: the scale of the instrument's finetune (note 1 is
@@ -104,8 +102,6 @@ static const uint8_t k_arpeggio_step[MAX_SPEED] = {
     2, 0, 2, 2, 1, 0, 2, 2, 2, 0, 2, 2, 2, 2, 2, 0, 2, 2, 0, 2, 2, 0, 2, 2, 0, 2, 2, 2, 2, 0, 1, 0,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Word `index` of the replayer's table area: word 0 is the code before the scale table, words 1..60 the scale table
 // and 61..123 the period table with the three words that follow it. 0 past the area.
 static uint16_t table_word(unsigned index) {
@@ -116,19 +112,13 @@ static uint16_t table_word(unsigned index) {
     return index > SCALE_COUNT && period < PERIOD_COUNT ? k_periods[period] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t finetune_scale(unsigned note) {
     return table_word(note);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t note_period(unsigned note) {
     return table_word(PERIOD_BASE + note);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A read-only view of module memory: bytes outside it read as zero.
 typedef struct Memory {
@@ -136,39 +126,27 @@ typedef struct Memory {
     uint32_t size;
 } Memory;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t memory_u8(Memory m, int64_t offset) {
     return offset >= 0 && offset < (int64_t)m.size ? m.bytes[offset] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t memory_u16(Memory m, int64_t offset) {
     return (uint16_t)((uint16_t)memory_u8(m, offset) << 8 | memory_u8(m, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t memory_u32(Memory m, int64_t offset) {
     return (uint32_t)memory_u16(m, offset) << 16 | memory_u16(m, offset + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Record n sits at n * 0x18; record 0 is the header and the title.
 static int64_t record_offset(int n) {
     return (int64_t)n * RECORD_SIZE;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The replayer indexes with word registers, which sign-extend.
 static int32_t sign_extend16(uint16_t value) {
     return (int16_t)value;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 typedef struct Instrument {
     uint16_t length;      // words, a sample's first pass
@@ -180,8 +158,6 @@ typedef struct Instrument {
     int8_t synth_width_min; // the sweep's limits
     int8_t synth_width_max;
 } Instrument;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The record at `offset` (instrument n sits at n * 0x18; the finetune of a note without an instrument is read from
 // wherever the replayer's stale index points).
@@ -195,8 +171,6 @@ static Instrument read_instrument(Memory m, int64_t offset) {
                           .synth_width_min = (int8_t)memory_u8(m, offset + 3),
                           .synth_width_max = (int8_t)memory_u8(m, offset + 5) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void decode_volume_column(LxCell* cell, uint8_t byte) {
     cell->volume_byte = byte;
@@ -214,8 +188,6 @@ static void decode_volume_column(LxCell* cell, uint8_t byte) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static LxCell decode_cell(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3) {
     LxCell cell = {
         .note = b0 & 0x3F, .instrument = (uint8_t)(((b0 >> 6) << 4) | (b2 >> 4)), .effect = b2 & 0x0F, .param = b3
@@ -224,20 +196,14 @@ static LxCell decode_cell(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3) {
     return cell;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static LxCell read_cell(Memory m, int64_t offset) {
     return decode_cell(memory_u8(m, offset), memory_u8(m, offset + 1), memory_u8(m, offset + 2),
                        memory_u8(m, offset + 3));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t pattern_size_offset(const LxHeader* h) {
     return (uint16_t)(HEADER_SIZE + h->instrument_bytes);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The position list byte of `voice` at `position`: the lists are `steps` bytes each, behind the pattern size.
 static uint8_t order_entry(Memory m, const LxHeader* h, uint16_t position, int voice) {
@@ -245,20 +211,14 @@ static uint8_t order_entry(Memory m, const LxHeader* h, uint16_t position, int v
     return memory_u8(m, base + (int64_t)voice * h->steps);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The 16-bit product the replayer forms from a list entry (sign-extended to a word first) and the pattern size.
 static uint16_t pattern_product(const LxHeader* h, uint8_t entry) {
     return (uint16_t)((uint16_t)(int16_t)(int8_t)entry * h->pattern_size);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int64_t pattern_offset(const LxHeader* h, uint8_t entry) {
     return h->pattern_base + sign_extend16(pattern_product(h, entry));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // InitPlayer/InitSound: the header fields, the pattern size and where each instrument's sample starts. The samples
 // follow the patterns: the replayer skips (highest list entry + 1) patterns behind the lists, as a 16-bit offset.
@@ -298,8 +258,6 @@ static bool parse_header(Memory m, LxHeader* h) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The voice records as the replayer's data block holds them at start. The first tick runs the effects of these cells,
 // and voices 0-2 start with a synth record sweeping a pulse in the buffer their sample pointer names.
 static const struct {
@@ -336,8 +294,6 @@ static const struct {
       { .active = false } },
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The sweep's widths stay inside the 32-byte wave: the replayer's fill counts are 16-bit, so a wider pulse would write
 // 64 KB over whatever follows the buffer (the width sweeps between its limits, one step past them at most).
 static bool synth_widths_fit(const Instrument* ins) {
@@ -345,8 +301,6 @@ static bool synth_widths_fit(const Instrument* ins) {
     const int high = ins->synth_width_min < ins->synth_width_max ? ins->synth_width_max : ins->synth_width_min;
     return low >= 0 && high <= SYNTH_MAX_WIDTH;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The patterns one voice's list names are inside the module and clear of the synth buffers, none of their cells names
 // an instrument past the table, an arpeggio cannot index past the period table (the replayer would read its variables
@@ -402,8 +356,6 @@ static bool scan_voice(Memory m, const LxHeader* h, int voice, unsigned initial_
     return highest_note + highest_arpeggio <= MAX_NOTE;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool validate_patterns(Memory m, const LxHeader* h) {
     bool has_synth = false;
     for (int i = 1; i <= h->instrument_count; i++) {
@@ -427,8 +379,6 @@ static bool validate_patterns(Memory m, const LxHeader* h) {
     return highest_speed <= MAX_SPEED;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Check2.
 static bool check_module(Memory file) {
     const int64_t record2 = record_offset(2);
@@ -444,8 +394,6 @@ static bool check_module(Memory file) {
            || memcmp(file.bytes + record_offset(0) + RECORD_NAME_OFFSET, k_default_title, LX_NAME_SIZE) == 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool lx_probe(const uint8_t* data, size_t size) {
     if (data == nullptr || size > MAX_MODULE_SIZE) {
         return false;
@@ -458,13 +406,9 @@ bool lx_probe(const uint8_t* data, size_t size) {
     return parse_header(file, &header) && validate_patterns(file, &header);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static Memory module_memory(const LxModule* m) {
     return (Memory) { m->image, m->image_size };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // An AUDxLC value for a module offset: Paula ignores bit 0.
 static const int8_t* chip_pointer(const LxModule* m, int64_t offset) {
@@ -475,39 +419,27 @@ static const int8_t* chip_pointer(const LxModule* m, int64_t offset) {
     return (const int8_t*)m->image + offset;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Paula register writes (DeliTracker's PokeAdr, PokeLen, PokePer, PokeVol).
 
 static void poke_address(const LxModule* m, LxVoice* v, int64_t offset) {
     v->paula.lc = chip_pointer(m, offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void poke_length(LxVoice* v, uint16_t words) {
     v->paula.len_words = words;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void poke_period(LxVoice* v, uint16_t period) {
     v->paula.period = period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void poke_volume(LxVoice* v, uint8_t volume) {
     v->paula.volume = volume;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void voice_dma_off(LxVoice* v) {
     nuade_paula_channel_dma_off(&v->paula);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Every voice's loop pointer and length: the repeat of the sounds just started.
 static void set_loop_registers(LxSong* s, const LxModule* m) {
@@ -518,15 +450,11 @@ static void set_loop_registers(LxSong* s, const LxModule* m) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Switches DMA on for the voice and writes the loop registers.
 static void voice_dma_on_and_set_loops(LxSong* s, const LxModule* m, LxVoice* started) {
     nuade_paula_channel_dma_on(&started->paula);
     set_loop_registers(s, m);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The width sweep of the synth instruments: writes a 32-byte pulse wave, 0x80 for the first part, `width` zeros, 0x7F
 // for the rest. lx_probe keeps the widths up to 32, so the wave fits the buffer.
@@ -541,8 +469,6 @@ static void write_wave(LxModule* m, uint32_t offset, uint8_t width) {
     memset(wave + first, 0x00, width);
     memset(wave + first + width, 0x7F, last);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void synth_update(LxSong* s, LxModule* m) {
     for (int i = 0; i < LX_VOICES; i++) {
@@ -569,8 +495,6 @@ static void synth_update(LxSong* s, LxModule* m) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void synth_start(LxVoice* v, int voice, const Instrument* ins) {
     v->synth = (LxSynthWave) { .active = true,
                                .offset = SYNTH_BUFFER_OFFSET + SYNTH_BUFFER_SIZE * (uint32_t)voice,
@@ -582,8 +506,6 @@ static void synth_start(LxVoice* v, int voice, const Instrument* ins) {
                                .width_max = ins->synth_width_max };
     v->sample = v->synth.offset;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Sets the voice's sample, loop and lengths from instrument `number` (the replayer's table is by instrument number).
 static void start_instrument(LxVoice* v, const LxModule* m, int voice, int number, const Instrument* ins) {
@@ -606,8 +528,6 @@ static void start_instrument(LxVoice* v, const LxModule* m, int voice, int numbe
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void volume_up(LxVoice* v, uint8_t amount) {
     v->volume = (int8_t)(v->volume + amount);
     if (v->volume > MAX_VOLUME) {
@@ -616,15 +536,11 @@ static void volume_up(LxVoice* v, uint8_t amount) {
     poke_volume(v, (uint8_t)v->volume);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void volume_down(LxVoice* v, uint8_t amount) {
     const int result = v->volume - amount;
     v->volume = result >= 0 ? (int8_t)result : 0;
     poke_volume(v, (uint8_t)v->volume);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The cell's volume column slides and breaks. Runs on every tick.
 static void volume_column(LxSong* s, LxVoice* v) {
@@ -642,8 +558,6 @@ static void volume_column(LxSong* s, LxVoice* v) {
             break;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The effects that act on the row's first tick.
 static void row_effect(LxSong* s, LxVoice* v) {
@@ -674,8 +588,6 @@ static void row_effect(LxSong* s, LxVoice* v) {
             break;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // One voice's row: its list entry at `position`, the cell at `row_offset`, then instrument, note and effect.
 static void row_voice(LxSong* s, LxModule* m, int index, uint16_t position, uint16_t row_offset) {
@@ -737,14 +649,10 @@ static void row_voice(LxSong* s, LxModule* m, int index, uint16_t position, uint
     row_effect(s, v);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Arpeggio period for the note `steps` semitones above the last one, at the same finetune.
 static uint16_t arpeggio_period(const LxVoice* v, unsigned semitones) {
     return (uint16_t)(note_period(v->note_index / 2U + semitones) + v->finetune_offset);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void effect_arpeggio(const LxSong* s, LxVoice* v) {
     uint8_t param = v->cell.param;
@@ -764,8 +672,6 @@ static void effect_arpeggio(const LxSong* s, LxVoice* v) {
     poke_period(v, arpeggio_period(v, param & 0x0F));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void effect_slide(LxVoice* v, int direction) {
     v->period = (uint16_t)(v->period + direction * v->cell.param);
     if (direction < 0 && (int16_t)v->period < MIN_SLIDE_PERIOD) {
@@ -773,8 +679,6 @@ static void effect_slide(LxVoice* v, int direction) {
     }
     poke_period(v, v->period);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Tone portamento. Only a target below the current period starts it, and since the target is never stored it runs down
 // to period 0.
@@ -790,8 +694,6 @@ static void effect_tone_portamento(LxVoice* v) {
     }
     poke_period(v, v->period);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void effect_vibrato(LxVoice* v) {
     const uint8_t param = v->cell.param;
@@ -811,8 +713,6 @@ static void effect_vibrato(LxVoice* v) {
     v->vibrato_pos = (uint8_t)(v->vibrato_pos + (((v->vibrato >> 2) & 0x3C)));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Volume slide by 1 every n ticks (n = a nibble of the parameter), counted in one counter shared by the voices.
 static void effect_timed_volume_slide(LxSong* s, LxVoice* v) {
     s->slide_counter--;
@@ -829,8 +729,6 @@ static void effect_timed_volume_slide(LxSong* s, LxVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Restarts the sound every `param` ticks.
 static void effect_retrigger(LxSong* s, const LxModule* m, LxVoice* v) {
     const unsigned param = v->cell.param;
@@ -843,8 +741,6 @@ static void effect_retrigger(LxSong* s, const LxModule* m, LxVoice* v) {
     voice_dma_on_and_set_loops(s, m, v);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void effect_volume_slide(LxVoice* v) {
     const uint8_t up = v->cell.param >> 4;
     if (up != 0) {
@@ -853,8 +749,6 @@ static void effect_volume_slide(LxVoice* v) {
         volume_down(v, v->cell.param & 0x0F);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The effects of a tick that does not start a row.
 static void tick_voice(LxSong* s, const LxModule* m, LxVoice* v) {
@@ -890,8 +784,6 @@ static void tick_voice(LxSong* s, const LxModule* m, LxVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void end_pattern(LxSong* s, const LxHeader* h) {
     s->row_offset = 0;
     s->break_count = 0;
@@ -901,8 +793,6 @@ static void end_pattern(LxSong* s, const LxHeader* h) {
         s->position = h->loop_step;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void row_tick(LxSong* s, LxModule* m) {
     // The list and pattern offsets are fixed for the whole row, whatever a jump or break of an earlier voice sets.
@@ -937,8 +827,6 @@ static void row_tick(LxSong* s, LxModule* m) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void play_tick(LxSong* s, LxModule* m) {
     s->counter--;
     if (s->counter > 0) {
@@ -954,8 +842,6 @@ static void play_tick(LxSong* s, LxModule* m) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void trim_name(char* out, Memory m, int64_t offset) {
     for (int i = 0; i < LX_NAME_SIZE; i++) {
         const uint8_t c = memory_u8(m, offset + i);
@@ -967,8 +853,6 @@ static void trim_name(char* out, Memory m, int64_t offset) {
     }
     out[end] = '\0';
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 LxPlayer* lx_create(const uint8_t* data, size_t size) {
     if (!lx_probe(data, size)) {
@@ -999,8 +883,6 @@ LxPlayer* lx_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void lx_destroy(LxPlayer* player) {
     if (player == nullptr) {
         return;
@@ -1009,8 +891,6 @@ void lx_destroy(LxPlayer* player) {
     free(player->module.zeros);
     free(player);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // InitSound.
 bool lx_start(LxPlayer* player, NuadeVoices* voices) {
@@ -1039,8 +919,6 @@ bool lx_start(LxPlayer* player, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 LxTickResult lx_tick(LxPlayer* player, NuadeVoices* voices) {
     LxSong* s = &player->song;
     s->looped = false;
@@ -1051,13 +929,9 @@ LxTickResult lx_tick(LxPlayer* player, NuadeVoices* voices) {
     return (LxTickResult) { .looped = s->looped };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const char* lx_title(const LxPlayer* player) {
     return player->module.title;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const char* lx_instrument_name(const LxPlayer* player, int instrument) {
     if (instrument < 1 || instrument > LX_MAX_INSTRUMENT) {
@@ -1066,13 +940,9 @@ const char* lx_instrument_name(const LxPlayer* player, int instrument) {
     return player->module.names[instrument];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int lx_instrument_count(const LxPlayer* player) {
     return player->module.header.instrument_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 LxPosition lx_position(const LxPlayer* player) {
     const LxSong* s = &player->song;
@@ -1082,20 +952,14 @@ LxPosition lx_position(const LxPlayer* player) {
                           .speed = s->speed };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int lx_order_count(const LxPlayer* player) {
     return player->module.header.steps;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 LxVoiceState lx_voice_state(const LxPlayer* player, int voice) {
     const LxVoice* v = &player->song.voices[voice];
     return (LxVoiceState) { .note = v->note, .instrument = v->instrument };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 LxCell lx_pattern_cell(const LxPlayer* player, int order, int voice, int row) {
     const LxModule* m = &player->module;

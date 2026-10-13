@@ -10,7 +10,6 @@
 #include "nuade_paula_channel.h"
 #include <nuade/players/hippelhip.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module bytes: reads past the end return 0 (UADE's memory behind the module is clear). The allocation is a
 // nuade_paula_padded_copy, so a sample that starts inside the module can run past its end with any AUDxLEN.
 
@@ -24,28 +23,23 @@
 #define HH_SUBSONG_RECORD_SIZE 6
 #define HH_SAMPLE_RECORD_SIZE 30
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline uint8_t hhm_u8(const HhModule* m, uint32_t offset) {
     return offset < m->size ? m->data[offset] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline uint16_t hhm_u16(const HhModule* m, uint32_t offset) {
     return (uint16_t)((hhm_u8(m, offset) << 8) | hhm_u8(m, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline uint32_t hhm_u32(const HhModule* m, uint32_t offset) {
     return ((uint32_t)hhm_u16(m, offset) << 16) | hhm_u16(m, offset + 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Offset of table record `number` for a table of `record_size` byte records, as the replayer's word arithmetic forms it
 static inline uint32_t hhm_record(uint32_t table, uint32_t number, uint32_t record_size) {
     return table + (uint32_t)(uint16_t)(number * record_size);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Frequency and volume sequence commands: a byte from 0xe0 up is a command, anything below is a value
 
 typedef enum HhCommand {
@@ -62,39 +56,33 @@ typedef enum HhCommand {
     HhCommand_PackedSample = 0xe9,
 } HhCommand;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Replayer engines and versions
 
 extern const HhEngine k_hh_engine_a; // wings of death, dragonflight: sweeping sample windows, sample packs
 extern const HhEngine k_hh_engine_b; // leaving teramis, seven gates of jambala: repeat registers every tick
 extern const HhEngine k_hh_engine_c; // shaolin, warp, battle valley: repeat registers a tick after the start
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // hh_common.c: what the engines share
 
 // AUDxLC = `offset` in the module, AUDxLEN = `words` as the replayer writes it (0 plays 65536 words)
 HhRegisters hh_registers(const HhModule* m, uint32_t offset, uint16_t words);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline void hh_write_registers(NuadePaulaChannel* paula, HhRegisters registers) {
     paula->lc = registers.lc;
     paula->len_words = registers.len_words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer switches a channel's DMA off
 static inline void hh_channel_stop(HhVoice* v) {
     nuade_paula_channel_dma_off(&v->paula);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ... and switches it on again at the end of the tick
 static inline void hh_channel_restart(HhVoice* v) {
     hh_channel_stop(v);
     v->dma_restart = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline void hh_restart_volume(HhVoice* v) {
     v->vseq_pos = 0;
     v->vseq_counter = 1;

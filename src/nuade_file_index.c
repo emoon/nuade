@@ -30,8 +30,6 @@ typedef struct ListCtx {
     const char* dir;
 } ListCtx;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool equals_nocase(const char* lower_key, const char* name) {
     for (; *lower_key != '\0'; lower_key++, name++) {
         if (tolower((unsigned char)*name) != *lower_key) {
@@ -40,8 +38,6 @@ static bool equals_nocase(const char* lower_key, const char* name) {
     }
     return *name == '\0';
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool add_entry(NuadeFileIndex* index, const char* dir, const char* name) {
     if (index->count == index->capacity) {
@@ -70,8 +66,6 @@ static bool add_entry(NuadeFileIndex* index, const char* dir, const char* name) 
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const char* find_cached(const NuadeFileIndex* index, const char* name);
 
 static void visit_entry(const char* name, bool is_dir, void* ctx) {
@@ -83,8 +77,6 @@ static void visit_entry(const char* name, bool is_dir, void* ctx) {
         list->index->out_of_memory = true;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 NuadeFileIndex* nuade_file_index_create(const NuadeIo* io, const char* const* dirs, size_t dir_count) {
     NuadeFileIndex* index = (NuadeFileIndex*)calloc(1, sizeof(NuadeFileIndex));
@@ -122,8 +114,6 @@ NuadeFileIndex* nuade_file_index_create(const NuadeIo* io, const char* const* di
     return index;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void nuade_file_index_destroy(NuadeFileIndex* index) {
     if (index == nullptr) {
         return;
@@ -140,8 +130,6 @@ void nuade_file_index_destroy(NuadeFileIndex* index) {
     free(index);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const char* find_cached(const NuadeFileIndex* index, const char* name) {
     for (size_t i = 0; i < index->count; i++) {
         const bool match = index->probe_io != nullptr ? strcmp(index->entries[i].key, name) == 0
@@ -152,8 +140,6 @@ static const char* find_cached(const NuadeFileIndex* index, const char* name) {
     }
     return nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Without directory listings only the exact name can be tried; a hit is cached so the url stays valid.
 static const char* probe_exact(NuadeFileIndex* index, const char* name) {
@@ -170,8 +156,6 @@ static const char* probe_exact(NuadeFileIndex* index, const char* name) {
     }
     return nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const char* nuade_file_index_find(NuadeFileIndex* index, const char* name) {
     if (index == nullptr || name == nullptr || name[0] == '\0') {

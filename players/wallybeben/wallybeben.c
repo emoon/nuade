@@ -10,8 +10,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Loads the module and proves that its replay never leaves what the port models; both draw on one work budget.
 static bool open_module(WbModule* module, const uint8_t* data, size_t size) {
     WbBudget budget = { .left = WB_WORK_BUDGET };
@@ -25,8 +23,6 @@ static bool open_module(WbModule* module, const uint8_t* data, size_t size) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool wb_probe(const uint8_t* data, size_t size) {
     WbModule module;
     if (!open_module(&module, data, size)) {
@@ -35,8 +31,6 @@ bool wb_probe(const uint8_t* data, size_t size) {
     wb_module_free(&module);
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 WbPlayer* wb_create(const uint8_t* data, size_t size) {
     WbPlayer* player = calloc(1, sizeof(*player));
@@ -56,8 +50,6 @@ WbPlayer* wb_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void wb_destroy(WbPlayer* player) {
     if (player != nullptr) {
         free(player->sample_ptr);
@@ -66,19 +58,13 @@ void wb_destroy(WbPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t wb_subsong_count(const WbPlayer* player) {
     return player->module.subsong_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const char* wb_version_name(const WbPlayer* player) {
     return player->module.version->name;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool wb_start(WbPlayer* player, uint32_t subsong, NuadeVoices* voices) {
     if (player == nullptr || subsong >= player->module.subsong_count) {
@@ -94,8 +80,6 @@ bool wb_start(WbPlayer* player, uint32_t subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 WbTickResult wb_tick(WbPlayer* player, NuadeVoices* voices) {
     wb_replay_tick(&player->replay);
     for (uint32_t v = 0; v < WB_VOICES; v++) {
@@ -104,8 +88,6 @@ WbTickResult wb_tick(WbPlayer* player, NuadeVoices* voices) {
     return (WbTickResult) { .looped = player->replay.song_end,
                             .ended = player->replay.stopped || player->replay.fault };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 WbVoiceState wb_voice_state(const WbPlayer* player, uint32_t voice) {
     return (WbVoiceState) { .period = player->replay.last_period[voice],

@@ -17,12 +17,8 @@
 #define VIBRATO_OCTAVE_NOTES 12
 #define VIBRATO_WIDENED_BELOW 48 // notes below the 4th octave
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // AUDxLC before a voice plays anything: one silent word
 static const int8_t k_silence[2] = { 0, 0 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 HhRegisters hh_registers(const HhModule* m, uint32_t offset, uint16_t words) {
     // Past the module the memory is clear, so an AUDxLC there reads the same zeros as the module's end, which has
@@ -32,8 +28,6 @@ HhRegisters hh_registers(const HhModule* m, uint32_t offset, uint16_t words) {
     return (HhRegisters) { .lc = (const int8_t*)m->data + lc, .len_words = words };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 HhSample hh_sample(const HhModule* m, uint8_t number) {
     const uint32_t record = hhm_record(m->samples, number, HH_SAMPLE_RECORD_SIZE);
     return (HhSample) { .start = hhm_u32(m, record + 0x12),
@@ -42,8 +36,6 @@ HhSample hh_sample(const HhModule* m, uint8_t number) {
                         .loop_length = hhm_u16(m, record + 0x1c) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // AUDxLC/AUDxLEN = the sample, the repeat registers = its loop (engines A and B)
 static void load_sample(const HhModule* m, HhVoice* v, uint8_t number) {
     const HhSample sample = hh_sample(m, number);
@@ -51,8 +43,6 @@ static void load_sample(const HhModule* m, HhVoice* v, uint8_t number) {
     hh_write_registers(&v->paula, hh_registers(m, start, sample.length));
     v->repeat = hh_registers(m, start + sample.loop_offset, sample.loop_length);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 HhPack hh_sample_pack(const HhModule* m, uint8_t number) {
     const uint32_t block = m->sample_data + hh_sample(m, number).start;
@@ -64,14 +54,10 @@ HhPack hh_sample_pack(const HhModule* m, uint8_t number) {
                       .data = records + (uint32_t)hhm_u16(m, block + 4) * SAMPLE_PACK_RECORD_SIZE + extra };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 HhPackEntry hh_pack_entry(const HhModule* m, const HhPack* pack, uint8_t record) {
     const uint32_t entry = pack->records + (uint32_t)record * SAMPLE_PACK_RECORD_SIZE;
     return (HhPackEntry) { .start = hhm_u32(m, entry), .end = hhm_u32(m, entry + 4) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void hh_command_sample(const HhModule* m, HhVoice* v, uint8_t number) {
     v->current_sample = 0xff;
@@ -82,15 +68,11 @@ void hh_command_sample(const HhModule* m, HhVoice* v, uint8_t number) {
     v->fseq_pos += 2;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void hh_command_sample_no_reset(const HhModule* m, HhVoice* v, uint8_t number) {
     load_sample(m, v, number);
     v->sweep.active = false;
     v->fseq_pos += 2;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void hh_command_sample_if_new(const HhModule* m, HhVoice* v, uint8_t number) {
     if (number != v->current_sample) {
@@ -103,15 +85,11 @@ void hh_command_sample_if_new(const HhModule* m, HhVoice* v, uint8_t number) {
     v->fseq_pos += 2;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void hh_command_vibrato(const HhModule* m, HhVoice* v, uint32_t at) {
     v->vibrato_speed = hhm_u8(m, at + 1);
     v->vibrato_depth = hhm_u8(m, at + 2);
     v->fseq_pos += 3;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void hh_run_fseq_chain(const HhModule* m, const HhVersion* version, HhVoice* v, HhCommandFn command_fn) {
     bool count_wait = true;
@@ -149,8 +127,6 @@ void hh_run_fseq_chain(const HhModule* m, const HhVersion* version, HhVoice* v, 
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A volume sequence record: 5 header bytes, then the sequence
 typedef struct Instrument {
     uint8_t speed;
@@ -161,7 +137,6 @@ typedef struct Instrument {
     uint32_t sequence; // module offset
 } Instrument;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static Instrument read_instrument(const HhModule* m, uint8_t number) {
     const uint32_t record = hhm_record(m->vseqs, number, HH_SEQUENCE_RECORD_SIZE);
     return (Instrument) { .speed = hhm_u8(m, record),
@@ -172,8 +147,6 @@ static Instrument read_instrument(const HhModule* m, uint8_t number) {
                           .sequence = record + VSEQ_HEADER };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A position of a track, for one voice
 typedef struct TrackRow {
     uint8_t pattern;
@@ -181,14 +154,11 @@ typedef struct TrackRow {
     uint8_t instrument_transpose;
 } TrackRow;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static TrackRow read_track_row(const HhModule* m, uint32_t offset) {
     return (TrackRow) { .pattern = hhm_u8(m, offset),
                         .note_transpose = hhm_u8(m, offset + 1),
                         .instrument_transpose = hhm_u8(m, offset + 2) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A row of a pattern: the note (bit 7: tie, no instrument) and the info byte
 typedef struct PatternRow {
@@ -196,12 +166,9 @@ typedef struct PatternRow {
     uint8_t info;
 } PatternRow;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static PatternRow read_pattern_row(const HhModule* m, uint32_t offset) {
     return (PatternRow) { .note = hhm_u8(m, offset), .info = hhm_u8(m, offset + 1) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Voice `index` of a subsong: its column of the first and of the last track position
 static void init_track(const HhModule* m, const HhSubsong* subsong, int index, HhVoice* v) {
@@ -214,8 +181,6 @@ static void init_track(const HhModule* m, const HhSubsong* subsong, int index, H
     v->note_transpose = row.note_transpose;
     v->instrument_transpose = row.instrument_transpose;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The replayer's init for one voice: its sequences, its track and first pattern, and the channel's registers
 static void init_voice(const HhModule* m, const HhVersion* version, const HhSubsong* subsong, int index, HhVoice* v) {
@@ -246,8 +211,6 @@ static void init_voice(const HhModule* m, const HhVersion* version, const HhSubs
     v->paula.volume = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void hh_song_start(HhSong* song, const HhModule* m, const HhVersion* version) {
     const HhEngine* engine = version->engine;
     song->counter = engine->first_step_in_first_tick ? 1 : song->subsong.speed;
@@ -259,16 +222,12 @@ void hh_song_start(HhSong* song, const HhModule* m, const HhVersion* version) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t hh_file_note(const HhModule* m, const HhVersion* version, int voice) {
     const HhEngine* engine = version->engine;
     return engine->record_size == 0
                ? 0
                : hhm_u8(m, version->voice_records + (uint32_t)voice * engine->record_size + engine->record_note_offset);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The next position of the voice's track. A position whose instrument transpose is 0x80 stops the song; running off
 // the end of the subsong wraps to its start.
@@ -290,16 +249,12 @@ static void read_track(const HhModule* m, HhSong* song, HhVoice* v) {
     v->track_pos += HH_TRACK_ROW_SIZE;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // What a sequencer step asks of the voice
 typedef struct Step {
     bool new_note; // a note that starts an instrument
     uint8_t instrument;
     bool alt_fseq; // the frequency sequence is the one named by the voice's porta_param
 } Step;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // One voice's step: the next pattern row, the next track position when the pattern is used up
 static Step step_voice(const HhModule* m, HhSong* song, HhVoice* v) {
@@ -327,8 +282,6 @@ static Step step_voice(const HhModule* m, HhSong* song, HhVoice* v) {
     return step;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A note starts an instrument: its volume sequence, vibrato and frequency sequence
 static void start_instrument(const HhModule* m, const HhEngine* engine, HhVoice* v, const Step* step) {
     const Instrument instrument = read_instrument(m, step->instrument);
@@ -350,8 +303,6 @@ static void start_instrument(const HhModule* m, const HhEngine* engine, HhVoice*
     v->last_instrument = step->instrument;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The tick counter, and when it runs out one sequencer step of every voice
 static void step_voices(const HhModule* m, const HhVersion* version, HhSong* song) {
     song->counter--;
@@ -370,8 +321,6 @@ static void step_voices(const HhModule* m, const HhVersion* version, HhSong* son
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void run_vseq(const HhModule* m, const HhEngine* engine, HhVoice* v) {
     for (int guard = 0; guard < 256; guard++) {
@@ -406,8 +355,6 @@ static void run_vseq(const HhModule* m, const HhEngine* engine, HhVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The index into the period table: the frequency sequence's value is a note offset, or with bit 7 an absolute note
 static uint8_t note_index(const HhVoice* v) {
     uint8_t index = v->fseq_value;
@@ -416,8 +363,6 @@ static uint8_t note_index(const HhVoice* v) {
     }
     return index & PERIOD_INDEX_MASK;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The vibrato of engine A adds the distance from the middle of the swing to the period, the same at every pitch.
 static uint16_t apply_vibrato_flat(HhVoice* v, uint16_t period) {
@@ -452,8 +397,6 @@ static uint16_t apply_vibrato_flat(HhVoice* v, uint16_t period) {
     return (uint16_t)(period + (value - depth));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Engines B and C: the swing is a byte, doubled for every octave that the note is below the 4th
 static uint16_t apply_vibrato_scaled(HhVoice* v, uint16_t period, uint8_t index) {
     if (v->vibrato_delay != 0) {
@@ -484,8 +427,6 @@ static uint16_t apply_vibrato_scaled(HhVoice* v, uint16_t period, uint8_t index)
     return (uint16_t)(period + swing);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The portamento slides by an amount that grows every tick; the info byte of the previous row gives its speed
 static uint16_t apply_portamento(HhVoice* v, uint16_t period) {
     if (!v->portamento) {
@@ -500,8 +441,6 @@ static uint16_t apply_portamento(HhVoice* v, uint16_t period) {
     return (uint16_t)(period + (uint16_t)(v->porta >> 16));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The replayer's DMA mask so far in the tick: the channels of voices 0..`last` whose DMA a command switched off
 static uint16_t dma_shadow(const HhSong* song, int last) {
     uint16_t shadow = 0;
@@ -513,14 +452,10 @@ static uint16_t dma_shadow(const HhSong* song, int last) {
     return shadow;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Is the word at `at` the replayer variable `distance` bytes in front of the header?
 static bool variable_at(const HhModule* m, uint32_t at, uint8_t distance) {
     return distance != 0 && at == m->header - distance;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A word of the period table. The table has 72 entries; behind it come the replayer's variables (versions that have
 // them) and the header and song data. A note past the table reads them: the variables as the running replayer holds
@@ -546,8 +481,6 @@ static uint16_t period_table_word(const HhModule* m, const HhVersion* version, u
     return hhm_u16(m, at);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The period of a voice: its note from the period table, then vibrato and portamento
 static uint16_t voice_period(const HhModule* m, const HhVersion* version, HhVoice* v, uint16_t shadow) {
     const uint8_t index = note_index(v);
@@ -555,8 +488,6 @@ static uint16_t voice_period(const HhModule* m, const HhVersion* version, HhVoic
     period = version->engine->flat_vibrato ? apply_vibrato_flat(v, period) : apply_vibrato_scaled(v, period, index);
     return apply_portamento(v, period);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // One voice's tick: the sequences and the effects. Leaves AUDxPER and AUDxVOL in the channel.
 static void run_voice(const HhModule* m, const HhVersion* version, HhSong* song, int index) {
@@ -567,8 +498,6 @@ static void run_voice(const HhModule* m, const HhVersion* version, HhSong* song,
     v->paula.period = v->period;
     v->paula.volume = v->volume;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void hh_song_tick(HhSong* song, const HhModule* m, const HhVersion* version, NuadeVoices* voices) {
     if (song->stopped) {

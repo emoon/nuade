@@ -52,7 +52,6 @@
 
 #define INFO_BYTES 0x34
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period tables of the 16 finetunes, 36 notes each and a 0 after them. A lookup always stops at the 0.
 static const uint16_t k_periods[FINETUNES * PERIOD_ROW] = {
     856, 808, 762, 720, 678, 640, 604, 570, 538, 508, 480, 453, 428, 404, 381, 360, 339, 320, 302, 285, 269, 254, 240,
@@ -136,14 +135,10 @@ typedef enum ExtendedEffect {
 
 // Pt4Module parsing
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A sample the port models: its finetune indexes the period tables, and it starts inside the file.
 static bool sample_usable(const Pt4Module* m, const Pt4Sample* sample) {
     return sample->finetune < FINETUNES && sample->start <= m->size;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool find_chunk(const uint8_t* data, size_t size, uint32_t from, uint32_t form_size, uint32_t tag,
                        uint32_t* at) {
@@ -171,8 +166,6 @@ static bool find_chunk(const uint8_t* data, size_t size, uint32_t from, uint32_t
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The cell at `p`: a 12 bit period, the sample number split over the first and third byte, effect and parameter.
 static Pt4Cell read_cell(const uint8_t* p) {
     return (Pt4Cell) { .period = (uint16_t)((p[0] & 0x0F) << 8 | p[1]),
@@ -188,8 +181,6 @@ typedef struct InfoChunk {
     bool tempo_commands; // flags bit 0: Fxx from 0x20 on sets the tempo (otherwise a speed)
 } InfoChunk;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // `chunk` has INFO_BYTES
 static InfoChunk read_info(const uint8_t* chunk) {
     InfoChunk info = { .bpm = nuade_read_be16(chunk + 0x30), .tempo_commands = (chunk[0x32] & 1) != 0 };
@@ -204,8 +195,6 @@ typedef struct PtdtHeader {
     bool eight_channels; // the tag is "8CHN"
 } PtdtHeader;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // `module` has PTDT_HEADER_BYTES
 static PtdtHeader read_ptdt_header(const uint8_t* module) {
     PtdtHeader h
@@ -214,15 +203,11 @@ static PtdtHeader read_ptdt_header(const uint8_t* module) {
     return h;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The song length the position jump compares with: the replayer reads that byte of the file, as if the module started
 // there instead of in the PTDT chunk.
 static uint8_t read_jump_song_length(const uint8_t* file) {
     return file[SONG_LENGTH_OFFSET];
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static Pt4Sample read_sample(const uint8_t* module, uint32_t start, unsigned index) {
     const uint8_t* h = module + 20 + index * 30 + SAMPLE_NAME_SIZE;
@@ -233,8 +218,6 @@ static Pt4Sample read_sample(const uint8_t* module, uint32_t start, unsigned ind
                          .loop_start = nuade_read_be16(h + 4),
                          .loop_length = nuade_read_be16(h + 6) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The cells of the played positions must stay inside what the port models: pattern numbers below 0x80, sample numbers
 // 1..31 of samples that start in the file and have a finetune of 0..15. (A row past the end of a pattern, reached by a
@@ -264,8 +247,6 @@ static bool reachable_cells_ok(const Pt4Module* m, const uint8_t* data) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The checks of Check2, InitPlayer and InitSound, then the module's tables. `data` is only read.
 static bool parse_module(const uint8_t* data, size_t size, Pt4Module* m) {
@@ -320,8 +301,6 @@ static bool parse_module(const uint8_t* data, size_t size, Pt4Module* m) {
     return reachable_cells_ok(m, data);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool pt4_probe(const uint8_t* data, size_t size) {
     Pt4Module m;
     return data != nullptr && parse_module(data, size, &m);
@@ -329,14 +308,10 @@ bool pt4_probe(const uint8_t* data, size_t size) {
 
 // Paula
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // PokeLen: a length of 0 or 1 word is written as 0 (65536 words)
 static void write_length(Pt4Voice* v, uint32_t length) {
     v->paula.len_words = length <= 1 ? 0 : (uint16_t)length;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // PokeAdr. Paula ignores bit 0 of the address.
 static void write_address(const Pt4Song* s, Pt4Voice* v, const int8_t* sample) {
@@ -346,8 +321,6 @@ static void write_address(const Pt4Song* s, Pt4Voice* v, const int8_t* sample) {
     v->paula.lc = sample;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t timer_for_bpm(uint16_t bpm) {
     const uint32_t timer = TIMER_DIVIDEND / bpm;
     // The divide overflows below 28 BPM and leaves the dividend, of which the timer takes the low word
@@ -355,8 +328,6 @@ static uint16_t timer_for_bpm(uint16_t bpm) {
 }
 
 // Period tables
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A word of the replayer's data block by word index from the start of the period tables. The tables end the block's
 // first part; the word after them is the channel count and voice 0's record follows (the Amiga addresses in it, the
@@ -392,8 +363,6 @@ static uint16_t table_word(const Pt4Song* s, unsigned index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The index of the first entry of the finetune's row that is at or below `period` (the row's 0 always is).
 static unsigned period_index(uint8_t finetune, uint16_t period) {
     unsigned i = 0;
@@ -404,8 +373,6 @@ static unsigned period_index(uint8_t finetune, uint16_t period) {
 }
 
 // Effects
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 1A92: EFx moves the loop byte that is inverted through the sample's loop
 static void funk_step(Pt4Song* s, Pt4Voice* v) {
@@ -433,8 +400,6 @@ static void funk_step(Pt4Song* s, Pt4Voice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // 164E: 9xx
 static void sample_offset(Pt4Voice* v) {
     if (v->cell.param != 0) {
@@ -451,8 +416,6 @@ static void sample_offset(Pt4Voice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // 1688: add to the volume, at most 64
 static void volume_up(Pt4Voice* v, uint8_t amount) {
     v->volume = (uint8_t)(v->volume + amount);
@@ -462,8 +425,6 @@ static void volume_up(Pt4Voice* v, uint8_t amount) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // 16AA: subtract from the volume, at least 0
 static void volume_down(Pt4Voice* v, uint8_t amount) {
     v->volume = (uint8_t)(v->volume - amount);
@@ -471,8 +432,6 @@ static void volume_down(Pt4Voice* v, uint8_t amount) {
         v->volume = 0;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 167C: Axy
 static void volume_slide(Pt4Voice* v) {
@@ -483,8 +442,6 @@ static void volume_slide(Pt4Voice* v) {
         volume_down(v, v->cell.param & 0x0F);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 1982: restart the sample (E9x, EDx): DMA off, the sample, DMA on, then the repeat
 static void retrigger(const Pt4Song* s, Pt4Voice* v) {
@@ -498,8 +455,6 @@ static void retrigger(const Pt4Song* s, Pt4Voice* v) {
     v->paula.period = v->period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // 1370: 1xx, E1x
 static void porta_up(Pt4Song* s, Pt4Voice* v) {
     const uint8_t amount = v->cell.param & s->fine_mask;
@@ -511,8 +466,6 @@ static void porta_up(Pt4Song* s, Pt4Voice* v) {
     v->paula.period = v->period & 0xFFF;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // 13C0: 2xx, E2x
 static void porta_down(Pt4Song* s, Pt4Voice* v) {
     const uint8_t amount = v->cell.param & s->fine_mask;
@@ -523,8 +476,6 @@ static void porta_down(Pt4Song* s, Pt4Voice* v) {
     }
     v->paula.period = v->period & 0xFFF;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 13FE: 3xx / 5xy at a row with a note: the note's period becomes the target
 static void tone_porta_setup(Pt4Voice* v) {
@@ -540,8 +491,6 @@ static void tone_porta_setup(Pt4Voice* v) {
         v->porta_down = true;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 146E: one step of the tone portamento (3xx, 5xy)
 static void tone_porta_step(Pt4Voice* v) {
@@ -568,8 +517,6 @@ static void tone_porta_step(Pt4Voice* v) {
     v->paula.period = period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // 1460: 3xx
 static void tone_porta(Pt4Voice* v) {
     if (v->cell.param != 0) {
@@ -578,8 +525,6 @@ static void tone_porta(Pt4Voice* v) {
     }
     tone_porta_step(v);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 12FE: 0xy
 static void arpeggio(const Pt4Song* s, Pt4Voice* v) {
@@ -599,8 +544,6 @@ static void arpeggio(const Pt4Song* s, Pt4Voice* v) {
     v->paula.period = table_word(s, v->finetune * PERIOD_ROW + i + semitones);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The vibrato and tremolo shape: 0 sine, 1 ramp down, otherwise square. The ramp takes its sign from the vibrato
 // position, also for the tremolo.
 static uint8_t wave_amplitude(const Pt4Voice* v, uint8_t position, uint8_t waveform) {
@@ -615,8 +558,6 @@ static uint8_t wave_amplitude(const Pt4Voice* v, uint8_t position, uint8_t wavef
     return 0xFF;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // 14F4 / 159E: 4xy, 7xy; the parameter nibbles that are zero keep the old speed or depth
 static void update_wave_parameter(const Pt4Voice* v, uint8_t* speed, uint8_t* depth) {
     if (v->cell.param & 0x0F) {
@@ -627,8 +568,6 @@ static void update_wave_parameter(const Pt4Voice* v, uint8_t* speed, uint8_t* de
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // 151E
 static void vibrato_step(Pt4Voice* v) {
     const uint8_t amplitude = wave_amplitude(v, v->vibrato_pos, v->vibrato_wave);
@@ -636,8 +575,6 @@ static void vibrato_step(Pt4Voice* v) {
     v->paula.period = (v->vibrato_pos & 0x80) ? (uint16_t)(v->period - delta) : (uint16_t)(v->period + delta);
     v->vibrato_pos = (uint8_t)(v->vibrato_pos + v->vibrato_speed * 4);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 15CA: the tremolo writes the volume itself
 static void tremolo_step(Pt4Voice* v) {
@@ -653,8 +590,6 @@ static void tremolo_step(Pt4Voice* v) {
     v->paula.volume = (uint8_t)volume;
     v->tremolo_pos = (uint8_t)(v->tremolo_pos + v->tremolo_speed * 4);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 1912: E8x averages the loop's bytes with their neighbours, in the sample memory
 static void smooth_loop(Pt4Song* s, Pt4Voice* v) {
@@ -686,8 +621,6 @@ static void smooth_loop(Pt4Song* s, Pt4Voice* v) {
         m->mem[at] = (uint8_t)((a + b) >> 1);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 17E6: Exy, on the row and on every tick; most take effect on the first tick only
 static void extended_effect(Pt4Song* s, Pt4Voice* v) {
@@ -785,8 +718,6 @@ static void extended_effect(Pt4Song* s, Pt4Voice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // 16BA: Bxx. A jump to the position being played ends the song when that is the last one, which the replayer decides
 // from the song length byte it reads from the file start (see read_jump_song_length).
 static void position_jump(Pt4Song* s, const Pt4Voice* v) {
@@ -800,16 +731,12 @@ static void position_jump(Pt4Song* s, const Pt4Voice* v) {
     s->jump_pending = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // 171C: Dxx, a row past the pattern's end jumps to row 0
 static void pattern_break(Pt4Song* s, const Pt4Voice* v) {
     const unsigned row = (v->cell.param >> 4) * 10 + (v->cell.param & 0x0F);
     s->jump_row = row > PT4_ROWS ? 0 : (uint16_t)row;
     s->jump_pending = true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 1744: Fxx
 static void set_speed_or_tempo(Pt4Song* s, const Pt4Voice* v) {
@@ -824,8 +751,6 @@ static void set_speed_or_tempo(Pt4Song* s, const Pt4Voice* v) {
     s->counter = 0;
     s->speed = param;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 17AC: the effects of the first tick of a row
 static void row_effect(Pt4Song* s, Pt4Voice* v) {
@@ -853,8 +778,6 @@ static void row_effect(Pt4Song* s, Pt4Voice* v) {
             break;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 1278: the effects of the other ticks, then the volume
 static void tick_voice(Pt4Song* s, Pt4Voice* v) {
@@ -908,8 +831,6 @@ static void tick_voice(Pt4Song* s, Pt4Voice* v) {
 
 // Rows
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // 0FD4: a sample number selects the sample, its loop, finetune and volume
 static void select_sample(const Pt4Module* m, Pt4Voice* v, unsigned number) {
     if (number > PT4_SAMPLES || !sample_usable(m, &m->samples[number - 1])) {
@@ -930,8 +851,6 @@ static void select_sample(const Pt4Module* m, Pt4Voice* v, unsigned number) {
     }
     v->funk_pos = v->loop;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 10C8: a note starts the sample: DMA off, the sample's registers; the DMA starts after the row
 static void start_note(Pt4Song* s, Pt4Voice* v) {
@@ -959,8 +878,6 @@ static void start_note(Pt4Song* s, Pt4Voice* v) {
     v->started = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // 0FD4: one cell of the row
 static void play_cell(Pt4Song* s, Pt4Voice* v, const Pt4Cell* cell) {
     if (v->cell.period == 0 && v->cell.sample == 0 && v->cell.effect == 0 && v->cell.param == 0) {
@@ -987,8 +904,6 @@ static void play_cell(Pt4Song* s, Pt4Voice* v, const Pt4Cell* cell) {
     row_effect(s, v);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // 0FAA: after the row, the voices that got a note start their DMA, then every voice's repeat is written (the
 // eagleplayer waits for the DMA start in between)
 static void start_dma(Pt4Song* s) {
@@ -1003,8 +918,6 @@ static void start_dma(Pt4Song* s) {
         write_length(v, v->loop_length);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // F82: play the row
 static void play_row(Pt4Song* s) {
@@ -1029,15 +942,11 @@ static void play_row(Pt4Song* s) {
     start_dma(s);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // EB6: the pattern of the position
 static void load_pattern(Pt4Song* s) {
     const Pt4Module* m = s->module;
     s->pattern = m->patterns + (uint32_t)m->orders[s->order & (PT4_ORDERS - 1)] * PATTERN_BYTES;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 120C: on to the next position
 static void next_position(Pt4Song* s) {
@@ -1051,8 +960,6 @@ static void next_position(Pt4Song* s) {
     }
     load_pattern(s);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 11B2: on to the next row
 static void advance_row(Pt4Song* s) {
@@ -1077,8 +984,6 @@ static void advance_row(Pt4Song* s) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // F26: the interrupt
 static void run_interrupt(Pt4Song* s) {
     s->counter++;
@@ -1101,8 +1006,6 @@ static void run_interrupt(Pt4Song* s) {
         next_position(s);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Pt4Player* pt4_create(const uint8_t* data, size_t size) {
     Pt4Player* p = calloc(1, sizeof(Pt4Player));
@@ -1129,8 +1032,6 @@ Pt4Player* pt4_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void pt4_destroy(Pt4Player* player) {
     if (player == nullptr) {
         return;
@@ -1139,8 +1040,6 @@ void pt4_destroy(Pt4Player* player) {
     free(player->module.original);
     free(player);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // D42: InitSound. The file is loaded afresh: the replayer patches the sample data as it plays.
 bool pt4_start(Pt4Player* player, NuadeVoices* voices) {
@@ -1160,8 +1059,6 @@ bool pt4_start(Pt4Player* player, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 Pt4TickResult pt4_tick(Pt4Player* player, NuadeVoices* voices) {
     Pt4Song* s = &player->song;
     s->looped = false;
@@ -1174,33 +1071,23 @@ Pt4TickResult pt4_tick(Pt4Player* player, NuadeVoices* voices) {
     return (Pt4TickResult) { .looped = s->looped, .length = length };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 Pt4Position pt4_position(const Pt4Player* player) {
     const Pt4Song* s = &player->song;
     return (Pt4Position) { .order = s->shown_order, .row = s->shown_row, .speed = s->speed };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int pt4_order_count(const Pt4Player* player) {
     return player->module.order_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const char* pt4_title(const Pt4Player* player) {
     return player->module.title;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 Pt4VoiceState pt4_voice_state(const Pt4Player* player, int voice) {
     const Pt4Voice* v = &player->song.voices[voice];
     return (Pt4VoiceState) { .note = v->note, .sample = v->sample_number };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Pt4Cell pt4_pattern_cell(const Pt4Player* player, int order, int voice, int row) {
     const Pt4Module* m = &player->module;

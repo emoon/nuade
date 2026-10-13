@@ -19,25 +19,17 @@
 #define TFOL_SONG0_STREAM_HEAD 0x81043202u
 #define TFOL_SONG0_STREAM_TAIL 0x8f00u
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool tfol_has(size_t size, uint32_t offset, uint32_t length) {
     return size >= length && offset <= size - length;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t tfol_file_u16(const uint8_t* data, size_t size, uint32_t offset) {
     return tfol_has(size, offset, 2) ? nuade_read_be16(data + offset) : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t tfol_file_u32(const uint8_t* data, size_t size, uint32_t offset) {
     return tfol_has(size, offset, 4) ? nuade_read_be32(data + offset) : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The first branch of Check2: six jmp instructions.
 static bool tfol_starts_with_jumps(const uint8_t* data, size_t size) {
@@ -48,8 +40,6 @@ static bool tfol_starts_with_jumps(const uint8_t* data, size_t size) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The second branch of Check2: an optional TOS header, a data mark and the four equal stream addresses of song 0.
 // Returns the offset of the song table (the word after the mark), or 0 when the check fails.
@@ -76,8 +66,6 @@ static uint32_t tfol_data_start(const uint8_t* data, size_t size) {
     return table;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // InitPlayer for a module without the jump table: the offset is where the stream of song 0 really is minus the address
 // the table gives for it.
 static bool tfol_find_song0_stream(const uint8_t* data, size_t size, uint32_t table, uint32_t* out_found) {
@@ -90,8 +78,6 @@ static bool tfol_find_song0_stream(const uint8_t* data, size_t size, uint32_t ta
     }
     return false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The relocation loop adds the offset to longs while their high byte is 0; the player needs it to cover the whole
 // table of songs and instrument tables.
@@ -106,8 +92,6 @@ static bool tfol_table_is_relocated(const uint8_t* data, size_t size, uint32_t t
     }
     return data[table + TFOL_RELOCATED_LONGS * 4] != 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool tfol_module_locate(const uint8_t* data, size_t size, TfolModule* module) {
     if (size > TFOL_MAX_SIZE) {
@@ -146,19 +130,13 @@ bool tfol_module_locate(const uint8_t* data, size_t size, TfolModule* module) {
     return proved;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t tfol_module_u8(const TfolModule* module, uint32_t offset) {
     return offset < module->size ? module->mem[offset] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t tfol_module_u32(const TfolModule* module, uint32_t offset) {
     return tfol_has(module->size, offset, 4) ? nuade_read_be32(module->mem + offset) : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void tfol_module_poke(TfolModule* module, uint32_t offset, uint8_t value) {
     if (offset < module->size) {
@@ -166,13 +144,9 @@ void tfol_module_poke(TfolModule* module, uint32_t offset, uint8_t value) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t tfol_module_offset(const TfolModule* module, uint32_t address) {
     return address + module->address_delta;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TfolSong tfol_module_song(const TfolModule* module, uint32_t song) {
     const uint32_t record = module->table + TFOL_SONG_VOICES_OFFSET + song * TFOL_SONG_RECORD_SIZE;
@@ -187,8 +161,6 @@ TfolSong tfol_module_song(const TfolModule* module, uint32_t song) {
                      : TFOL_MIN_VOICES;
     return out;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TfolInstrument tfol_module_instrument(const TfolModule* module, uint32_t instrument_table, uint8_t index) {
     const uint32_t offset = tfol_module_offset(module, tfol_module_u32(module, instrument_table + index * 4u));
@@ -205,8 +177,6 @@ TfolInstrument tfol_module_instrument(const TfolModule* module, uint32_t instrum
     return out;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The argument bytes of each command.
 static const uint8_t tfol_argument_counts[TfolCommand_Count] = {
     [TfolCommand_Instrument] = 1, [TfolCommand_LoopStart] = 1,  [TfolCommand_Envelope] = 3,
@@ -214,8 +184,6 @@ static const uint8_t tfol_argument_counts[TfolCommand_Count] = {
     [TfolCommand_Transpose] = 1,  [TfolCommand_NoteLength] = 1, [TfolCommand_EnvelopeRestart] = 1,
     [TfolCommand_WaveFlags] = 1,  [TfolCommand_SweepRate] = 1,  [TfolCommand_EnvelopeStep] = 1,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TfolEvent tfol_module_read_event(const TfolModule* module, uint32_t at, bool note_has_length) {
     TfolEvent ev = { .start = at, .next = at };

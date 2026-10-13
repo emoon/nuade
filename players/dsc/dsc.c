@@ -25,8 +25,6 @@
 // The silent block the interrupt handler chains after the last loop: 2 words (UADE reads zeros there).
 #define SILENCE_WORDS 2
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const int8_t k_silence[SILENCE_WORDS * 2] = { 0 };
 
 typedef struct Sound {
@@ -44,32 +42,22 @@ typedef struct Entry {
     uint8_t lines;
 } Entry;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t mod_byte(const DscModule* m, uint32_t offset) {
     return offset < m->size ? m->data[offset] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t mod_word(const DscModule* m, uint32_t offset) {
     return (uint16_t)(mod_byte(m, offset) << 8 | mod_byte(m, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t mod_long(const DscModule* m, uint32_t offset) {
     return (uint32_t)mod_word(m, offset) << 16 | mod_word(m, offset + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static Entry entry_at(const DscModule* m, uint32_t index) {
     const uint32_t at = m->entries + index * ENTRY_SIZE;
     return (Entry) { .line = mod_long(m, at), .repeats = mod_byte(m, at + 4), .lines = mod_byte(m, at + 5) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static Sound sound_at(const DscModule* m, uint8_t index) {
     const uint32_t at = m->sounds + (uint32_t)index * SOUND_SIZE;
@@ -81,8 +69,6 @@ static Sound sound_at(const DscModule* m, uint8_t index) {
                      .volume = (int8_t)mod_byte(m, at + 0x10) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // AUDxLC for a byte offset into the sample data of sound `index`. InitPlayer turns the sample offsets of the sound
 // table into addresses, so a sound number past the table plays an unrelocated offset (low memory, not the module): it
 // gets a null AUDxLC, as does an address past the module. Any AUDxLEN can follow an AUDxLC inside the module: what runs
@@ -91,8 +77,6 @@ static const int8_t* sample_pointer(const DscModule* m, uint8_t index, uint64_t 
     const uint64_t at = m->samples + offset;
     return index < m->sound_count && at <= m->size ? (const int8_t*)m->data + at : nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The channel's audio interrupt, at every block start: chain the loop again, or the silence after the last one, then
 // switch itself off.
@@ -114,7 +98,6 @@ static void audio_interrupt(DscVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Block starts the mixer played since the last tick are the interrupts that fired in between.
 
 static void answer_interrupts(DscVoice* v, uint32_t index, const NuadeVoices* voices) {
@@ -125,8 +108,6 @@ static void answer_interrupts(DscVoice* v, uint32_t index, const NuadeVoices* vo
     }
     v->wraps_seen = state.wraps;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void start_sound(const DscModule* m, DscVoice* v, uint8_t index) {
     const Sound s = sound_at(m, index);
@@ -146,8 +127,6 @@ static void start_sound(const DscModule* m, DscVoice* v, uint8_t index) {
     v->irq_enabled = true;
     audio_interrupt(v); // DMA start is a block start: its interrupt writes the repeat
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void play_line(DscPlayer* p) {
     const DscModule* m = &p->module;
@@ -183,8 +162,6 @@ static void play_line(DscPlayer* p) {
     s->line = e.line;
     s->repeats = e.repeats;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool dsc_probe(const uint8_t* data, size_t size) {
     if (data == nullptr || size < HEADER_SIZE) {
@@ -225,8 +202,6 @@ bool dsc_probe(const uint8_t* data, size_t size) {
     return offset + mod_long(&m, at - SOUND_SIZE + 2) == sample_size;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 DscPlayer* dsc_create(const uint8_t* data, size_t size) {
     if (!dsc_probe(data, size)) {
         return nullptr;
@@ -264,8 +239,6 @@ DscPlayer* dsc_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void dsc_destroy(DscPlayer* player) {
     if (player != nullptr) {
         free(player->data);
@@ -273,13 +246,9 @@ void dsc_destroy(DscPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int dsc_subsong_count(const DscPlayer* player) {
     return player->module.subsong_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool dsc_start(DscPlayer* player, int subsong, NuadeVoices* voices) {
     if (player == nullptr || voices == nullptr || subsong < 0 || subsong >= player->module.subsong_count) {
@@ -313,8 +282,6 @@ bool dsc_start(DscPlayer* player, int subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 DscTickResult dsc_tick(DscPlayer* player, NuadeVoices* voices) {
     DscSong* s = &player->song;
     s->looped = false;
@@ -332,13 +299,9 @@ DscTickResult dsc_tick(DscPlayer* player, NuadeVoices* voices) {
     return (DscTickResult) { .looped = s->looped };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int dsc_tempo(const DscPlayer* player) {
     return player->song.tempo;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DscVoiceState dsc_voice_state(const DscPlayer* player, int voice) {
     return (DscVoiceState) { .sound = player->song.voices[voice].sound };

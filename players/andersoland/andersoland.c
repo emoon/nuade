@@ -69,16 +69,12 @@
 #define PERIOD_COUNT 72
 #define NOTE_BASE 12 // semitones from C-0 of table entry 0 less 12: entry 24 (856) is C-1 = 12
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const uint16_t k_periods[PERIOD_COUNT] = {
     3424, 3232, 3048, 2880, 2712, 2560, 2416, 2280, 2152, 2032, 1920, 1812, 1712, 1616, 1524, 1440,   1356,   1280,
     1208, 1140, 1076, 1016, 960,  906,  856,  808,  762,  720,  678,  640,  604,  570,  538,  508,    480,    453,
     428,  404,  381,  360,  339,  320,  302,  285,  269,  254,  240,  226,  214,  202,  190,  180,    170,    160,
     151,  143,  135,  127,  120,  114,  107,  101,  95,   85,   80,   80,   80,   80,   80,   0x8000, 0x00FF, 0x5754,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A run of sample data: where it starts in the sample chunk and how many words it plays.
 typedef struct SampleRef {
@@ -113,39 +109,29 @@ typedef struct Subsong {
     uint8_t loop_point[AO_VOICES];
 } Subsong;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AoModule reads; the original reads whatever memory lies around the module, here it is zero.
 
 static uint8_t module_u8(const AoModule* m, uint32_t offset) {
     return offset < m->size ? m->data[offset] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t module_u16(const AoModule* m, uint32_t offset) {
     return (uint16_t)(module_u8(m, offset) << 8 | module_u8(m, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t module_u32(const AoModule* m, uint32_t offset) {
     return (uint32_t)module_u16(m, offset) << 16 | module_u16(m, offset + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 typedef struct Chunks {
     uint32_t mdt; // offset of the song data chunk
     uint32_t msm; // offset of the sample chunk
 } Chunks;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool tag_is(const uint8_t* chunk, const char* tag) {
     return chunk[0] == (uint8_t)tag[0] && chunk[1] == (uint8_t)tag[1] && chunk[2] == (uint8_t)tag[2];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's Check2: the chunks "mpl", "mdt" and "msm" one after the other, sizes counting their header and
 // even for the first two, together at most the file size. The original subtracts each size from the bytes left as a
 // signed long and refuses a negative result; a size that moves the next chunk out of the file fails the tag test here.
@@ -173,13 +159,10 @@ static bool probe_chunks(const uint8_t* data, size_t size, Chunks* chunks) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool ao_probe(const uint8_t* data, size_t size) {
     return data != nullptr && probe_chunks(data, size, nullptr);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A cursor over the word offsets at the start of the mdt chunk's data; each is the (signed) offset of a table from the
 // start of that data.
 
@@ -189,21 +172,16 @@ typedef struct HeaderReader {
     uint32_t pos;
 } HeaderReader;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t header_table(HeaderReader* r) {
     const uint32_t table = r->base + (uint32_t)(int32_t)(int16_t)module_u16(r->module, r->pos);
     r->pos += 2;
     return table;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void header_skip(HeaderReader* r) {
     r->pos += 2;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The attack part of a sample as the note start reads it: the sample number is doubled in a byte to index the length
 // table and again to index the start table, so a number from 64 on wraps.
 
@@ -214,7 +192,6 @@ static SampleRef attack_part(const AoModule* m, uint8_t sample) {
                          .length_words = module_u16(m, m->sample_lengths + length_index) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The loop part, which the second tick of a step reads with long arithmetic on the number (no wrap).
 
 static SampleRef loop_part(const AoModule* m, uint8_t sample) {
@@ -222,7 +199,6 @@ static SampleRef loop_part(const AoModule* m, uint8_t sample) {
                          .length_words = module_u16(m, m->loop_lengths + (uint32_t)sample * 2u) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Where a sample starts in the module: AUDxLC ignores its lowest bit, so a sample at an odd offset is fetched from the
 // byte before it (the module sits at an even address).
 
@@ -230,7 +206,6 @@ static uint64_t sample_start(const AoModule* m, uint32_t offset) {
     return ((uint64_t)m->samples + offset) & ~(uint64_t)1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The furthest sample start the tables name. Samples may start (and run) past the file, the Amiga then plays what
 // follows the module in memory: zeros here.
 
@@ -249,7 +224,6 @@ static uint64_t sample_starts_end(const AoModule* m) {
     return end;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Zeros up to the last sample start; the Paula tail of nuade_paula_padded_copy then covers any length from there.
 
 static bool pad_samples(AoModule* m) {
@@ -268,7 +242,6 @@ static bool pad_samples(AoModule* m) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer: the table addresses. The probe has checked that the chunks lie inside the file.
 
 static bool load_module(AoModule* m, const uint8_t* data, size_t size, const Chunks* chunks) {
@@ -302,8 +275,6 @@ static bool load_module(AoModule* m, const uint8_t* data, size_t size, const Chu
     return pad_samples(m);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 AoPlayer* ao_create(const uint8_t* data, size_t size) {
     Chunks chunks;
     if (data == nullptr || !probe_chunks(data, size, &chunks)) {
@@ -320,8 +291,6 @@ AoPlayer* ao_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void ao_destroy(AoPlayer* player) {
     if (player == nullptr) {
         return;
@@ -330,13 +299,10 @@ void ao_destroy(AoPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int ao_subsong_count(const AoPlayer* player) {
     return (int)player->module.subsong_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample data of a run; null if it does not start inside the module (with its padding). Any length can follow: the
 // padded copy has the Paula tail behind the module.
 
@@ -347,8 +313,6 @@ static const int8_t* sample_data(const AoModule* m, SampleRef ref) {
     return (const int8_t*)m->data + sample_start(m, ref.start);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static Instrument instrument_at(const AoModule* m, uint8_t number) {
     const uint32_t entry = m->instruments + (uint32_t)number * INSTRUMENT_SIZE;
     return (Instrument) { .envelope = { module_u8(m, entry), module_u8(m, entry + 1) },
@@ -358,8 +322,6 @@ static Instrument instrument_at(const AoModule* m, uint8_t number) {
                           .vibrato_period = module_u8(m, entry + 6) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static Envelope envelope_at(const AoModule* m, uint8_t number) {
     const uint32_t entry = m->envelopes + (uint32_t)number * ENVELOPE_SIZE;
     return (Envelope) { .level = module_u8(m, entry),
@@ -367,8 +329,6 @@ static Envelope envelope_at(const AoModule* m, uint8_t number) {
                         .count = module_u8(m, entry + 2),
                         .next = module_u8(m, entry + 3) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static Subsong subsong_at(const AoModule* m, uint32_t number) {
     const uint32_t params = m->subsong_params + number * SUBSONG_ENTRY_SIZE;
@@ -382,13 +342,10 @@ static Subsong subsong_at(const AoModule* m, uint32_t number) {
     return subsong;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t period_at(uint8_t index) {
     return index < PERIOD_COUNT ? k_periods[index] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // SongEnd bookkeeping: the song has reached its end when each voice has reached the end of its track list since the
 // last time. It is a loop if some voice still plays, the end of the song if every voice has stopped.
 
@@ -408,21 +365,18 @@ static void voice_ended(AoSong* s, AoVoice* v) {
     s->ended = !any_enabled;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The byte of the voice's pattern. The pattern the replayer starts on is a lone PATTERN_END.
 
 static uint8_t pattern_byte(const AoModule* m, const AoVoice* v, uint32_t pos) {
     return v->has_pattern ? module_u8(m, v->pattern + pos) : PATTERN_END;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pattern a track list entry names.
 
 static uint32_t pattern_start(const AoModule* m, uint8_t number) {
     return m->patterns + module_u32(m, m->patterns + (uint32_t)number * BYTES_PER_LONG);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The track list gave the end of the pattern: take the next one. Returns false if the voice stops.
 
 static bool next_pattern(const AoModule* m, AoSong* s, AoVoice* v) {
@@ -449,7 +403,6 @@ static bool next_pattern(const AoModule* m, AoSong* s, AoVoice* v) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An effect byte: fade, speed change, or a pitch slide for the next note.
 
 static void run_effect(const AoModule* m, AoSong* s, AoVoice* v, uint8_t number) {
@@ -465,7 +418,6 @@ static void run_effect(const AoModule* m, AoSong* s, AoVoice* v, uint8_t number)
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Event layout: flags (duration in the low 5 bits), then an instrument byte or an effect byte (its top bit says no note
 // follows), then the note byte unless the flags say otherwise. Without instrument or effect byte, the alternate flag
 // means no note either.
@@ -527,7 +479,6 @@ static void read_event(const AoModule* m, AoSong* s, AoVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The events of two voices that are due.
 
 static void read_events(const AoModule* m, AoSong* s, int first) {
@@ -544,7 +495,6 @@ static void read_events(const AoModule* m, AoSong* s, int first) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // DMA is off for the voices with a new note that do not keep their sample on the last tick of a step; on again for all
 // voices on the other ticks.
 
@@ -561,7 +511,6 @@ static void switch_dma(AoSong* s, bool last_tick) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The second tick of a step: voices that read an event in the previous step get the loop part of their sample, which
 // the channel takes up when the attack ends. The first tick's DMA start has latched the attack by now.
 
@@ -577,8 +526,6 @@ static void write_loops(const AoModule* m, AoSong* s) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void start_vibrato(const AoModule* m, AoVoice* v) {
     const Instrument inst = instrument_at(m, v->instrument);
     v->vibrato_offset = 0;
@@ -589,7 +536,6 @@ static void start_vibrato(const AoModule* m, AoVoice* v) {
     v->vibrato_phase = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The end of a step: a voice with a new note gets its sample (the attack part), its pitch and its first envelope level.
 // DMA is off for these voices until the next tick.
 
@@ -618,8 +564,6 @@ static void start_notes(const AoModule* m, AoSong* s) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_vibrato(AoVoice* v) {
     if (v->vibrato_delay == NO_VIBRATO) {
         return;
@@ -637,7 +581,6 @@ static void run_vibrato(AoVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume envelope: while an entry's count lasts its step is added to the volume, then the next entry is loaded.
 
 static void run_envelope(const AoModule* m, AoVoice* v) {
@@ -655,7 +598,6 @@ static void run_envelope(const AoModule* m, AoVoice* v) {
     v->envelope = entry.next;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The fade takes volume 64 and up down by the number of ticks since the first fade, for the voices that come before
 // the fade ends. The counter advances once for every voice.
 
@@ -666,8 +608,6 @@ static void run_fade(AoSong* s, AoVoice* v) {
         s->fade = false;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void run_modulation(const AoModule* m, AoSong* s) {
     for (int i = 0; i < AO_VOICES; i++) {
@@ -683,7 +623,6 @@ static void run_modulation(const AoModule* m, AoSong* s) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Period and volume registers, every tick.
 
 static void write_registers(AoSong* s) {
@@ -698,7 +637,6 @@ static void write_registers(AoSong* s) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The first tick of a step reads the events of voices 0 and 1 (after keeping the last step's flags), the second those
 // of voices 2 and 3.
 
@@ -717,7 +655,6 @@ static void read_step_events(const AoModule* m, AoSong* s) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer's interrupt.
 
 static void run_tick(AoPlayer* p) {
@@ -740,7 +677,6 @@ static void run_tick(AoPlayer* p) {
     write_registers(s);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitSound
 
 bool ao_start(AoPlayer* player, int subsong, NuadeVoices* voices) {
@@ -766,8 +702,6 @@ bool ao_start(AoPlayer* player, int subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 AoTickResult ao_tick(AoPlayer* player, NuadeVoices* voices) {
     AoSong* s = &player->song;
     s->looped = false;
@@ -779,16 +713,12 @@ AoTickResult ao_tick(AoPlayer* player, NuadeVoices* voices) {
     return (AoTickResult) { .looped = s->looped, .ended = s->ended };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t ao_grid_ticks(const AoPlayer* player, int subsong) {
     if (subsong < 0 || (uint32_t)subsong >= player->module.subsong_count) {
         return 0;
     }
     return subsong_at(&player->module, (uint32_t)subsong).speed;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 AoVoiceState ao_voice_state(const AoPlayer* player, int voice) {
     if (voice < 0 || voice >= AO_VOICES) {

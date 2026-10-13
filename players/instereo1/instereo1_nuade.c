@@ -16,15 +16,11 @@
 #define INSTEREO1_NOTE_STOP 0x7f
 #define INSTEREO1_OCTAVE_SHIFT (-3)
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The module mark is specific enough to be sure.
 static NuadeProbe instereo1_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return is1_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult instereo1_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -44,28 +40,20 @@ static NuadePlayerOpenResult instereo1_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void instereo1_close(void* user_data) {
     is1_destroy((Is1Module*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool instereo1_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return is1_start((Is1Module*)user_data, (int)subsong, voices);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult instereo1_tick(void* user_data, NuadeVoices* voices) {
     (void)voices;
     return (NuadeTickResult) { .length = 1,
                                .flags = is1_tick((Is1Module*)user_data) ? NuadeTick_Looped : NuadeTick_None };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void instereo1_metadata(void* user_data, const NuadeMetadataSink* sink) {
     const Is1Module* module = (const Is1Module*)user_data;
@@ -74,8 +62,6 @@ static void instereo1_metadata(void* user_data, const NuadeMetadataSink* sink) {
         sink->set_tag(sink->ctx, NUADE_META_TITLE, is1_title(module));
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePositionResult instereo1_position(void* user_data) {
     const Is1Position p = is1_position((const Is1Module*)user_data);
@@ -86,8 +72,6 @@ static NuadePositionResult instereo1_position(void* user_data) {
                                                  .rows = (uint32_t)p.rows,
                                                  .speed = (uint32_t)p.speed } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t instereo1_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const Is1Module* module = (const Is1Module*)user_data;
@@ -102,8 +86,6 @@ static uint32_t instereo1_voice_info(void* user_data, NuadeVoiceInfo* out, uint3
     }
     return n;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTrackerInfoResult instereo1_tracker_info(void* user_data, const NuadePosition* at) {
     const Is1Module* module = (const Is1Module*)user_data;
@@ -120,8 +102,6 @@ static NuadeTrackerInfoResult instereo1_tracker_info(void* user_data, const Nuad
                                                              { "fx", NuadeColumn_Hex, 1, 0 },
                                                              { "arg", NuadeColumn_Hex, 2, 0 } } } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePatternCell instereo1_cell(const void* ctx, uint32_t order, uint32_t channel, uint32_t row) {
     NuadePatternCell cell = nuade_cell_empty();
@@ -144,16 +124,12 @@ static NuadePatternCell instereo1_cell(const void* ctx, uint32_t order, uint32_t
     return cell;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t instereo1_tracker_cells(void* user_data, const NuadePosition* at, uint32_t channel, int32_t row_lo,
                                         int32_t row_hi, NuadePatternCell* out, uint32_t cap) {
     const uint32_t rows = at->rows != 0 ? at->rows : (uint32_t)is1_default_rows((const Is1Module*)user_data);
     return nuade_tracker_fill(at, INSTEREO1_NUADE_VOICES, rows, channel, row_lo, row_hi, out, cap, instereo1_cell,
                               user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_instereo1 = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -172,8 +148,6 @@ const NuadePlayer nuade_player_instereo1 = {
     .tracker_info = instereo1_tracker_info,
     .tracker_cells = instereo1_tracker_cells,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Is1Module* is1_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_instereo1) {

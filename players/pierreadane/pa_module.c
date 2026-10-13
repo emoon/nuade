@@ -34,25 +34,17 @@
 #define SAMPLE_SET_FALLBACK "SMP.set"
 #define CLEARED_BYTES 4 // the replayer clears the first long of every sample
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool module_has(const PaModule* module, int64_t offset, uint32_t bytes) {
     return offset >= 0 && offset <= (int64_t)module->size - (int64_t)bytes;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t module_u16(const PaModule* module, uint32_t offset) {
     return nuade_read_be16(module->data + offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t pa_module_list_start(const PaModule* module, uint32_t voice) {
     return module_u16(module, 2 * voice);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool pa_module_list_entry(const PaModule* module, uint32_t voice, int16_t position, uint16_t* track) {
     const uint16_t base = pa_module_list_start(module, voice);
@@ -63,8 +55,6 @@ bool pa_module_list_entry(const PaModule* module, uint32_t voice, int16_t positi
     *track = module_u16(module, (uint32_t)offset);
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool pa_module_instrument(const PaModule* module, uint32_t number, PaInstrument* out) {
     const uint32_t offset = INSTRUMENT_BYTES * number;
@@ -78,15 +68,11 @@ bool pa_module_instrument(const PaModule* module, uint32_t number, PaInstrument*
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static PaNote note_at(const uint8_t* p) {
     return (PaNote) {
         .period = nuade_read_be16(p), .instrument = p[2] >> 4, .effect = (PaEffect)(p[2] & 15), .param = p[3]
     };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool pa_module_track_entry(const PaModule* module, int16_t position, PaTrackEntry* out) {
     if (!module_has(module, position, 1)) {
@@ -105,7 +91,6 @@ bool pa_module_track_entry(const PaModule* module, int16_t position, PaTrackEntr
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2: the four list offsets are positive, even, and the lists follow each other (list 0 has one entry more than
 // the others, its 0 terminator); the first track starts with a length marker; every list entry is even and not beyond
 // the first list's offset.
@@ -144,7 +129,6 @@ static bool check2(const PaModule* module) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The number of instrument records before the 0xFF terminator, or -1 when the table does not end inside the file or
 // has no room in the replayer's sample pointer table.
 
@@ -161,7 +145,6 @@ static int32_t instrument_table_count(const PaModule* module) {
     return -1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The checks of the song file alone; fills in the instrument count.
 
 static bool module_ok(PaModule* module) {
@@ -173,8 +156,6 @@ static bool module_ok(PaModule* module) {
     return pa_song_modeled(module);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool pa_probe(const uint8_t* data, size_t size) {
     if (data == nullptr || size > UINT32_MAX) {
         return false;
@@ -183,7 +164,6 @@ bool pa_probe(const uint8_t* data, size_t size) {
     return module_ok(&module);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer's fix for one broken rip, found by the song's size: the length of its second instrument.
 
 static void module_patch(uint8_t* data, const PaModule* module) {
@@ -198,14 +178,11 @@ static void module_patch(uint8_t* data, const PaModule* module) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const int8_t* pa_samples_lc(const PaSamples* samples, uint32_t offset) {
     const uint32_t even = offset & ~1u;
     return samples->data != nullptr && even < samples->size ? (const int8_t*)samples->data + even : nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer lays the samples out one after the other. Its length register keeps the upper word between records, so
 // after a length of 0x8000 words or more every later sample moves by at least 0x20000 bytes more.
 
@@ -223,15 +200,12 @@ void pa_module_sample_layout(const PaModule* module, uint32_t start[PA_MAX_INSTR
     *end = offset > UINT32_MAX ? UINT32_MAX : (uint32_t)offset;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ExtLoad: "SMP.<name>" for a song called "PAP.<name>" (any case), else the song's name without its last character,
 // both in the song's directory; when that file is missing, "SMP.set".
 
 static bool has_sample_prefix(const char* name) {
     return strncasecmp(name, SAMPLE_PREFIX, SAMPLE_PREFIX_LENGTH) == 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t* read_url(const NuadeIo* io, NuadeFileIndex* index, const char* name, uint64_t* size) {
     const char* url = nuade_file_index_find(index, name);
@@ -242,8 +216,6 @@ static uint8_t* read_url(const NuadeIo* io, NuadeFileIndex* index, const char* n
     *size = file.size;
     return file.data;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t* read_sample_set(const char* path, const NuadeIo* io, uint64_t* size) {
     char dir[1024] = { 0 };
@@ -273,7 +245,6 @@ static uint8_t* read_sample_set(const char* path, const NuadeIo* io, uint64_t* s
     return data;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The set must hold every sample, the cleared long of each, and the part of a looped instrument that repeats: the
 // replayer does not check and would read the memory behind the set.
 
@@ -285,8 +256,6 @@ static bool loop_fits(const PaInstrument* instrument, uint32_t start, uint32_t s
     const uint64_t loop_start = (uint64_t)start + instrument->loop_offset;
     return loop_start + 2u * words <= set_size;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool samples_layout(PaPlayer* player, uint32_t set_size) {
     PaSamples* samples = &player->samples;
@@ -305,8 +274,6 @@ static bool samples_layout(PaPlayer* player, uint32_t set_size) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static PaStatus load_samples(PaPlayer* player, const char* path, const NuadeIo* io) {
     uint64_t size = 0;
@@ -327,8 +294,6 @@ static PaStatus load_samples(PaPlayer* player, const char* path, const NuadeIo* 
     NuadeIo_free_url_to_memory(io, file);
     return status;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PaCreateResult pa_create(const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
     PaCreateResult result = { .status = PaStatus_InvalidData };
@@ -362,8 +327,6 @@ PaCreateResult pa_create(const uint8_t* data, size_t size, const char* path, con
     result.player = player;
     return result;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void pa_destroy(PaPlayer* player) {
     if (player == nullptr) {

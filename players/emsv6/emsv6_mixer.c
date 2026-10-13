@@ -24,7 +24,6 @@
 // Loop restarts within one block of one voice, at most.
 #define MAX_REBASES 4096
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume table: row `volume`, column = the sample byte. The magnitude is cut at every step, then negated.
 
 static void build_volume_table(int16_t* table, int channels) {
@@ -39,7 +38,6 @@ static void build_volume_table(int16_t* table, int channels) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The split table: a 16-bit sum -> its high byte and its low six bits, negated together for a negative sum.
 
 static void build_split_table(Ems6SplitEntry* table) {
@@ -58,8 +56,6 @@ static void build_split_table(Ems6SplitEntry* table) {
         table[index] = (Ems6SplitEntry) { .high = (int8_t)high, .low = (int8_t)low };
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool e6_mixer_init(Ems6Mixer* mx, int channels) {
     *mx = (Ems6Mixer) { .channels = (uint16_t)(channels > 0 ? channels : 1) };
@@ -83,8 +79,6 @@ bool e6_mixer_init(Ems6Mixer* mx, int channels) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void e6_mixer_free(Ems6Mixer* mx) {
     free(mx->volume_table);
     free(mx->split_table);
@@ -97,14 +91,11 @@ void e6_mixer_free(Ems6Mixer* mx) {
     *mx = (Ems6Mixer) { 0 };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Rounded up to an even count.
 uint16_t e6_mixer_ticks_for_bpm(uint32_t bpm) {
     return (uint16_t)((E6_RATE * 5 / (bpm * 2) + 1) & 0xFFFE);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitSound's part of the mixer: empty rings and voices, the rate and the tick lengths.
 
 void e6_mixer_reset(Ems6Mixer* mx) {
@@ -120,7 +111,6 @@ void e6_mixer_reset(Ems6Mixer* mx) {
     mx->per_tick = ((uint32_t)E6_RATE << 8) / E6_SEQUENCER_HZ;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The writer fills the rings up to two interrupts behind the model of the read position, i.e. the whole lap minus a
 // margin.
 
@@ -139,14 +129,10 @@ uint16_t e6_mixer_room(const Ems6Mixer* mx) {
     return room < MIN_ROOM ? 0 : (uint16_t)room;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The offset register is a signed word: after 32 kB bytes are read backwards.
 static uint8_t sample_byte(const Ems6Module* m, uint32_t pointer, uint16_t whole) {
     return e6_module_u8(m, pointer + (uint32_t)(int32_t)(int16_t)whole);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Source bytes per output sample as 16.16: (clock / period << 14) / (rate >> 4), two integer divisions.
 static uint32_t voice_step(uint16_t period) {
@@ -154,20 +140,15 @@ static uint32_t voice_step(uint16_t period) {
     return quotient / (E6_RATE >> 4);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The remaining length is a 68k long: a damaged module's length wraps it as the replayer's 32-bit arithmetic does.
 static int32_t wrap_s32(uint32_t value) {
     return value <= INT32_MAX ? (int32_t)value : (int32_t)(value - 0x80000000u) + INT32_MIN;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void zero_words(int16_t* out, uint32_t count) {
     memset(out, 0, count * sizeof(int16_t));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A voice with volume 0 produces nothing but its position still moves on.
 
 static void advance_silent(Ems6MixVoice* v, uint32_t samples) {
@@ -189,7 +170,6 @@ static void advance_silent(Ems6MixVoice* v, uint32_t samples) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The end of a block: the whole bytes are folded into the pointer. A voice that ran past its end wraps to the loop.
 
 static void finish_block(Ems6MixVoice* v) {
@@ -209,7 +189,6 @@ static void finish_block(Ems6MixVoice* v) {
     v->remaining = wrap_s32((uint32_t)v->remaining + v->loop_length);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The remaining length as a 16.16 distance. A length over 64 kB is cut by replacing its low word only, so its high word
 // ends up in the fraction.
 
@@ -218,7 +197,6 @@ static uint32_t remaining_16_16(uint32_t remaining) {
     return cut << 16 | cut >> 16;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One output sample's step. The replayer adds the swapped long (fraction high, whole bytes low) and then the carry of
 // that add (`addx`) to the whole bytes, so a carry out of the whole bytes also lands in the fraction.
 
@@ -227,7 +205,6 @@ static uint32_t step_position(uint32_t position, uint32_t step) {
     return position + step + whole_carry;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Mix `count` samples of one voice into `out` (written for the first voice of a side, added for the others).
 
 static void mix_voice(const Ems6Mixer* mx, const Ems6Module* m, Ems6MixVoice* v, int16_t* out, uint32_t count,
@@ -299,8 +276,6 @@ static void mix_voice(const Ems6Mixer* mx, const Ems6Module* m, Ems6MixVoice* v,
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The first voice of the side overwrites the buffer, the others add to it. With one channel only the first voice of
 // each side is mixed.
 static void mix_side(Ems6Mixer* mx, const Ems6Module* m, E6Side side, uint32_t count) {
@@ -314,8 +289,6 @@ static void mix_side(Ems6Mixer* mx, const Ems6Module* m, E6Side side, uint32_t c
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void append_to_rings(Ems6Mixer* mx, E6Side side, uint32_t count) {
     int8_t* high = mx->ring[side == E6Side_Left ? E6Ring_HighLeft : E6Ring_HighRight];
     int8_t* low = mx->ring[side == E6Side_Left ? E6Ring_LowLeft : E6Ring_LowRight];
@@ -326,8 +299,6 @@ static void append_to_rings(Ems6Mixer* mx, E6Side side, uint32_t count) {
         low[at] = split.low;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void e6_mixer_render_block(Ems6Mixer* mx, const Ems6Module* m, uint32_t count) {
     if (count >= MIX_BUFFER_WORDS) {

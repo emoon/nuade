@@ -62,7 +62,6 @@ enum {
     Pattern_EndMark = 0x7f,     // the second byte of the word after the last row of a pattern
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample record
 
 typedef struct Sample {
@@ -79,8 +78,6 @@ typedef struct Sample {
     uint8_t volume;
     uint8_t level;
 } Sample;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static Sample read_sample(const JoModule* m, uint32_t offset) {
     const uint8_t waits_a = jom_u8(m, offset + 0xf);
@@ -100,19 +97,13 @@ static Sample read_sample(const JoModule* m, uint32_t offset) {
                       .level = jom_u8(m, offset + 0x13) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t sample_offset(const JoAVersion* version, const Voice* v) {
     return version->samples + jom_offset16(v->sample_entry);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t period_at(const JoAVersion* version, const JoModule* m, uint32_t index) {
     return jom_u16(m, version->periods + 2 * index);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const JoAVersion* jo_a_detect(const JoModule* m) {
     if (jom_u16(m, 0) != 0x6000) {
@@ -126,15 +117,11 @@ const JoAVersion* jo_a_detect(const JoModule* m) {
     return nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The eagleplayer counts the song records between the table and the first track list
 int jo_a_subsong_count(const JoAVersion* version, const JoModule* m) {
     const int count = (int)((jom_u16(m, version->songs) - version->songs) / version->song_size);
     return count > 0 ? count : 1;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A record of the song table
 typedef struct SongRecord {
@@ -144,8 +131,6 @@ typedef struct SongRecord {
     uint8_t master;
 } SongRecord;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static SongRecord read_song(const JoAVersion* version, const JoModule* m, int subsong) {
     const uint32_t at = version->songs + version->song_size * (uint32_t)subsong;
     return (SongRecord) { .tracks = { jom_u16(m, at), jom_u16(m, at + 2), jom_u16(m, at + 4), jom_u16(m, at + 6) },
@@ -154,15 +139,11 @@ static SongRecord read_song(const JoAVersion* version, const JoModule* m, int su
                           .master = jom_u8(m, at + 0xa) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The tempo byte: A1 alternates between its two nibbles, A2 uses the low one
 static void set_tempo(JoA* a, uint8_t tempo) {
     a->tempo[0] = a->version->kind == JoKind_A1 ? tempo >> 4 : tempo & 0x0f;
     a->tempo[1] = tempo & 0x0f;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void jo_a_start(JoA* a, const JoAVersion* version, const JoModule* m, int subsong) {
     *a = (JoA) { .version = version };
@@ -192,7 +173,6 @@ void jo_a_start(JoA* a, const JoAVersion* version, const JoModule* m, int subson
     jo_song_end_start(&a->end, has_track);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Row fetch
 
 // The field commands in front of the pattern of an A1 track entry, in this order: repeat count, transpose, master
@@ -223,8 +203,6 @@ static uint32_t track_commands_a1(JoA* a, const JoModule* m, Voice* v, uint32_t 
     return at;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The field commands in front of the pattern of an A2 track entry, in this order: global transpose, voice transpose,
 // master volume, tempo. Returns the position after them.
 static uint32_t track_commands_a2(JoA* a, const JoModule* m, Voice* v, uint32_t at) {
@@ -247,8 +225,6 @@ static uint32_t track_commands_a2(JoA* a, const JoModule* m, Voice* v, uint32_t 
     return at;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The effect word of a row: flags, the portamento value and the slide speed
 static void set_effect(Voice* v, JoKind kind, uint8_t flags) {
     if (kind == JoKind_A1) {
@@ -262,8 +238,6 @@ static void set_effect(Voice* v, JoKind kind, uint8_t flags) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The sample number of a row: A1 maps it through a table, A2 uses it as it is
 static uint16_t row_sample_entry(const JoAVersion* version, const JoModule* m, const Voice* v, uint16_t number) {
     if (version->kind == JoKind_A2) {
@@ -272,8 +246,6 @@ static uint16_t row_sample_entry(const JoAVersion* version, const JoModule* m, c
     const uint32_t index = (uint32_t)((uint16_t)(number + v->table_base) & 0xfffu) * 2;
     return jom_u16(m, version->sample_entries + index);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The program offsets of an A1 row: three words, each behind its own marker
 static uint32_t program_offsets(const JoModule* m, Voice* v, uint32_t at) {
@@ -291,8 +263,6 @@ static uint32_t program_offsets(const JoModule* m, Voice* v, uint32_t at) {
     }
     return at;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The words of one row of the pattern: a rest, or sample change, offsets, row length, effects and the note.
 // Returns the position after the row.
@@ -371,15 +341,11 @@ static uint32_t read_row(JoA* a, const JoModule* m, Voice* v, uint32_t at, Nuade
     return at + 2;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // What a fetch gives the tick
 typedef struct Fetch {
     bool ended;      // the track ended: the voice stops
     uint16_t adjust; // added to the period of this tick
 } Fetch;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The row of a voice has run out: the track gives the pattern, the pattern the next row
 static Fetch fetch(JoA* a, const JoModule* m, Voice* v, int index, NuadePaulaChannel* paula) {
@@ -419,7 +385,6 @@ static Fetch fetch(JoA* a, const JoModule* m, Voice* v, int index, NuadePaulaCha
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Between rows
 
 // Pitch changes of one tick: the slide moves the period, the pitch program offsets it
@@ -427,8 +392,6 @@ typedef struct Pitch {
     uint16_t slide;
     uint16_t offset;
 } Pitch;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The portamento moves the note towards a target note; reaching it ends the slide
 static bool portamento_reached(const JoAVersion* version, const JoModule* m, Voice* v) {
@@ -461,8 +424,6 @@ static bool portamento_reached(const JoAVersion* version, const JoModule* m, Voi
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static Pitch slide_and_pitch(const JoAVersion* version, const JoModule* m, Voice* v, const Sample* sample) {
     Pitch pitch = { 0 };
     const bool has_portamento = version->kind == JoKind_A1 ? (v->portamento & 0x80) == 0 : v->portamento != 0;
@@ -491,21 +452,15 @@ static Pitch slide_and_pitch(const JoAVersion* version, const JoModule* m, Voice
     return pitch;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // An entry of the sample program: a block of the sample
 typedef struct SampleBlock {
     uint32_t start;
     uint16_t length; // words
 } SampleBlock;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static SampleBlock read_block(const JoModule* m, uint32_t at) {
     return (SampleBlock) { .start = jom_u32(m, at), .length = jom_u16(m, at + 4) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Whether the volume program moves on after the entry `volume`: some entries hold until the row is nearly over
 static bool volume_entry_moves_on(JoKind kind, const Voice* v, const Sample* sample, JoPair volume) {
@@ -517,8 +472,6 @@ static bool volume_entry_moves_on(JoKind kind, const Voice* v, const Sample* sam
     }
     return v->reload < Reload_KeepSample && (volume.first & 0x7f) >= (uint16_t)v->counter;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The volume, note and sample programs: each steps when its counter runs out
 static void run_programs(const JoAVersion* version, const JoModule* m, Voice* v, const Sample* sample,
@@ -552,8 +505,6 @@ static void run_programs(const JoAVersion* version, const JoModule* m, Voice* v,
     v->step++;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The first tick of a note loads the program positions of the sample record; A1 adds the offsets of the row, a carry
 // of the note program position runs into the sample program position
 static void start_programs(Voice* v, const Sample* sample) {
@@ -568,7 +519,6 @@ static void start_programs(Voice* v, const Sample* sample) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Registers
 
 // The period and volume registers of a voice
@@ -582,8 +532,6 @@ static void write_registers(const JoA* a, const JoModule* m, Voice* v, NuadePaul
     const uint16_t level = (uint16_t)((uint16_t)(v->instrument_volume * v->volume_level) >> 4);
     paula->volume = (uint8_t)((uint16_t)(level * master) >> 4);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void run_voice(JoA* a, const JoModule* m, int index) {
     const JoAVersion* version = a->version;
@@ -619,8 +567,6 @@ static void run_voice(JoA* a, const JoModule* m, int index) {
     write_registers(a, m, v, paula, pitch.slide, pitch.offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 JoTickResult jo_a_tick(JoA* a, const JoModule* m, NuadeVoices* voices) {
     if (a->counter == 1) {
         for (int i = 0; i < JO_VOICES; i++) {
@@ -650,8 +596,6 @@ JoTickResult jo_a_tick(JoA* a, const JoModule* m, NuadeVoices* voices) {
     }
     return jo_song_end_result(&a->end, voices_play);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 JoVoiceState jo_a_voice_state(const JoA* a, int voice) {
     const JoAVoice* v = &a->voices[voice];

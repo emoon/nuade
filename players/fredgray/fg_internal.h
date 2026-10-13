@@ -31,28 +31,23 @@
 #define FG_PERIOD_TABLE_BYTES (2 * FG_PERIOD_STEPS)
 #define FG_INSTRUMENT_SIZE 4
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The `len` bytes at `at` are inside the module (written so that it cannot wrap)
 static inline bool fg_in_module(const FgModule* m, uint32_t at, uint32_t len) {
     return at < m->size && len <= m->size - at;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline uint8_t fg_u8(const FgModule* m, uint32_t at) {
     return fg_in_module(m, at, 1) ? m->image[at] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline uint16_t fg_u16(const FgModule* m, uint32_t at) {
     return fg_in_module(m, at, 2) ? nuade_read_be16(m->image + at) : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline uint32_t fg_u32(const FgModule* m, uint32_t at) {
     return fg_in_module(m, at, 4) ? nuade_read_be32(m->image + at) : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static inline void fg_set16(FgModule* m, uint32_t at, uint16_t value) {
     if (fg_in_module(m, at, 2)) {
         m->image[at] = (uint8_t)(value >> 8);
@@ -73,7 +68,6 @@ uint32_t fg_header_subsongs(const FgModule* m);
 const char* fg_header_title(const FgModule* m);
 const char* fg_header_author(const FgModule* m);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Module records. A command record is the block of a voice record from the pitch to the flags, so the command table
 // and the voice records share it.
 
@@ -109,7 +103,6 @@ typedef enum FgRecordField {
 FgInstrument fg_read_instrument(const FgModule* m, uint32_t at);
 FgCommand fg_read_command(const FgModule* m, uint32_t at);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The four engine versions found so far. The engine is told apart by a signature of its code (fg_locate.c); the rest of
 // what differs between the versions is listed here.
 
@@ -124,13 +117,11 @@ typedef struct FgTraits {
 
 const FgTraits* fg_traits(FgVersion version);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A song section as a list of operations (see fg_section.h). The "step" is the section's working copy of the
 // position; a Branch tests it and jumps to `jump` (an index into the section's list).
 
 #define FG_NO_JUMP 0xffff
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Where the engine finds its tables, from the operands of the code
 
 // Finds the engine in the code and decodes the sections; false (with the layout cleared) for unknown code.

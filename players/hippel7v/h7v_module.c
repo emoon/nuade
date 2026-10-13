@@ -24,7 +24,6 @@
 #define SAMPLE_RECORD_SIZE 0x1e
 #define MAX_MODULE_SIZE 0x10000000
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Reads of a file that has not been accepted yet: one past the end fails the check.
 
 typedef struct Raw {
@@ -32,8 +31,6 @@ typedef struct Raw {
     size_t size;
     bool bad;
 } Raw;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t raw_word(Raw* r, uint64_t at) {
     if (at + 2 > r->size) {
@@ -43,8 +40,6 @@ static uint16_t raw_word(Raw* r, uint64_t at) {
     return nuade_read_be16(r->data + at);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t raw_long(Raw* r, uint64_t at) {
     if (at + 4 > r->size) {
         r->bad = true;
@@ -53,7 +48,6 @@ static uint32_t raw_long(Raw* r, uint64_t at) {
     return nuade_read_be32(r->data + at);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The entry code some games put in front of the replayer: moveq #1,d0; moveq #20,d1; bra.b +14; move.w #$f,$dff096;
 // moveq #0,d0; moveq #0,d1; nop. The replayer's `bra.w` follows it at offset 20. Check2 looks at offset 0 only, so
 // it refuses such a file; the port takes this exact entry and nothing else.
@@ -61,7 +55,6 @@ static uint32_t raw_long(Raw* r, uint64_t at) {
 static const uint8_t ENTRY_CODE[ENTRY_SIZE] = { 0x70, 0x01, 0x72, 0x14, 0x60, 0x0e, 0x33, 0xfc, 0x00, 0x0f,
                                                 0x00, 0xdf, 0xf0, 0x96, 0x70, 0x00, 0x72, 0x00, 0x4e, 0x71 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's module check (DTP_Check2) up to the header: a file that starts with `bra.w` has the replayer in
 // front, whose code holds `move.w d1,(a0)` + `lea d16(pc),a0` within the first words; that displacement leads to the
 // header. Any other file has to start with the header. `base` is where the replayer starts (0, or ENTRY_SIZE behind the
@@ -94,7 +87,6 @@ static bool check_find_header(Raw* r, uint64_t base, uint64_t* header) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's init finds the header on its own way: a "TFMX" file starts with it, any other file has it at the
 // displacement of the first `lea` that follows a `move.w d1,(a0)` word anywhere in the file.
 
@@ -119,7 +111,6 @@ static bool init_find_header(Raw* r, uint64_t* header) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The "TFMX" header as the file holds it (counts are one less than the number of records).
 
 typedef struct TfmxHeader {
@@ -133,8 +124,6 @@ typedef struct TfmxHeader {
     uint16_t sample_count;
 } TfmxHeader;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static TfmxHeader read_header(Raw* r, uint64_t at) {
     return (TfmxHeader) { .magic = raw_long(r, at),
                           .fseq_last = raw_word(r, at + 4),
@@ -146,7 +135,6 @@ static TfmxHeader read_header(Raw* r, uint64_t at) {
                           .sample_count = raw_word(r, at + 0x12) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The rest of the module check: the arithmetic over the header's counts has to land on the first sample record, whose
 // start is 0 and whose length is not 0, and the second sample has to start where the first ends.
 
@@ -171,7 +159,6 @@ static bool check_header(Raw* r, uint64_t header) {
     return !r->bad && raw_long(r, first + 4 + 0x1a) == length * 2;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Both ways to the header have to agree, and the header has to pass the check.
 
 static bool find_checked_header(Raw* r, uint64_t* header) {
@@ -186,14 +173,11 @@ static bool find_checked_header(Raw* r, uint64_t* header) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A table's end from its start and a size the replayer computes in 16 bits and adds sign-extended (adda.w).
 
 static uint32_t add_word(uint32_t base, uint32_t value) {
     return base + (uint32_t)(int32_t)(int16_t)(uint16_t)value;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The layout of an accepted module (the offsets of its tables; `data` is not set). Probe and open both go through here.
 
@@ -227,14 +211,10 @@ static bool module_layout(const uint8_t* data, size_t size, H7vModule* module) {
     return module->subsong_count != 0 && module->sample_count != 0 && module->sample_data <= size;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool h7v_probe(const uint8_t* data, size_t size) {
     H7vModule layout;
     return module_layout(data, size, &layout);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool h7v_module_open(H7vModule* module, const uint8_t* data, size_t size) {
     if (!module_layout(data, size, module)) {
@@ -249,32 +229,22 @@ bool h7v_module_open(H7vModule* module, const uint8_t* data, size_t size) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void h7v_module_close(H7vModule* module) {
     free(module->data);
     *module = (H7vModule) { 0 };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t h7v_byte(const H7vModule* module, uint32_t offset) {
     return offset < module->size ? module->data[offset] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t h7v_word(const H7vModule* module, uint32_t offset) {
     return (uint16_t)(h7v_byte(module, offset) << 8 | h7v_byte(module, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t h7v_long(const H7vModule* module, uint32_t offset) {
     return (uint32_t)h7v_word(module, offset) << 16 | h7v_word(module, offset + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 H7vTrackEntry h7v_track_entry(const H7vModule* module, uint32_t offset) {
     const uint8_t effect = h7v_byte(module, offset + 3);
@@ -286,14 +256,11 @@ H7vTrackEntry h7v_track_entry(const H7vModule* module, uint32_t offset) {
                              .tempo = (int8_t)effect };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 H7vMixerSettings h7v_mixer_settings(const H7vModule* module) {
     return (H7vMixerSettings) { .hard_clip = h7v_byte(module, module->tracks + 3) != 0,
                                 .tempo_offset = (int8_t)h7v_byte(module, module->tracks + 2) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Subsong `number` is 1-based, the way the replayer numbers them.
 
 H7vSubsong h7v_subsong(const H7vModule* module, uint32_t number) {
@@ -303,8 +270,6 @@ H7vSubsong h7v_subsong(const H7vModule* module, uint32_t number) {
                           .speed = h7v_word(module, at + 6) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 H7vSampleRecord h7v_sample_record(const H7vModule* module, uint8_t number) {
     const uint32_t at = module->samples + (uint32_t)number * SAMPLE_RECORD_SIZE;
     return (H7vSampleRecord) { .start = h7v_long(module, at + 0x12),
@@ -313,14 +278,10 @@ H7vSampleRecord h7v_sample_record(const H7vModule* module, uint8_t number) {
                                .loop_length = h7v_word(module, at + 0x1c) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t h7v_sample_offset(const H7vModule* module, uint64_t start) {
     const uint64_t offset = module->sample_data + start;
     return offset > UINT32_MAX ? UINT32_MAX : (uint32_t)offset;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 H7vSampleRange h7v_sample_range(const H7vModule* module, uint64_t offset, uint16_t len_words) {
     static const _Alignas(2) int8_t silence[2] = { 0, 0 };
@@ -329,8 +290,6 @@ H7vSampleRange h7v_sample_range(const H7vModule* module, uint64_t offset, uint16
     }
     return (H7vSampleRange) { .lc = silence, .len_words = sizeof(silence) / 2 };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void h7v_patch_second_byte(H7vModule* module, uint32_t offset) {
     if (offset < module->size - 1) {

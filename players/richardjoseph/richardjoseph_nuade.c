@@ -7,14 +7,10 @@
 #include <nuade/players/richardjoseph.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe richardjoseph_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return rjp_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult richardjoseph_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -45,20 +41,14 @@ static NuadePlayerOpenResult richardjoseph_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void richardjoseph_close(void* user_data) {
     rjp_destroy((RjpPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool richardjoseph_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return rjp_start((RjpPlayer*)user_data, subsong, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult richardjoseph_tick(void* user_data, NuadeVoices* voices) {
     const RjpTickResult tick = rjp_tick((RjpPlayer*)user_data, voices);
@@ -72,14 +62,10 @@ static NuadeTickResult richardjoseph_tick(void* user_data, NuadeVoices* voices) 
     return (NuadeTickResult) { .length = RJP_TICK_LENGTH, .flags = flags };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void richardjoseph_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Richard Joseph Player");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t richardjoseph_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const RjpPlayer* player = (const RjpPlayer*)user_data;
@@ -91,15 +77,11 @@ static uint32_t richardjoseph_voice_info(void* user_data, NuadeVoiceInfo* out, u
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t richardjoseph_grid_ticks(void* user_data, uint32_t subsong) {
     (void)user_data;
     (void)subsong;
     return rjp_grid_ticks();
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_richardjoseph = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -116,8 +98,6 @@ const NuadePlayer nuade_player_richardjoseph = {
     .voice_info = richardjoseph_voice_info,
     .grid_ticks = richardjoseph_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RjpPlayer* rjp_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_richardjoseph) {

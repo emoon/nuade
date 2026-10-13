@@ -45,8 +45,6 @@
 // Ticks the dry runs of a whole module may take; a module that needs more is left to UADE.
 #define PROOF_TICKS 4000000u
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The one place that sets the dry run's verdict; playing never does.
 static void mark_unmodelled(ScrPlayer* p) {
     if (p->proving) {
@@ -54,7 +52,6 @@ static void mark_unmodelled(ScrPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Module reads
 
 // A read in a dry run is of modelled data when it lies inside the module and outside the replayer's own bytes, which
@@ -66,16 +63,12 @@ static bool is_modelled_data(const ScrModule* m, uint32_t at, uint32_t length) {
     return at >= m->written_to || (uint64_t)at + length <= m->written_from;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t read_u8(ScrPlayer* p, uint32_t at) {
     if (!is_modelled_data(p->module, at, 1)) {
         mark_unmodelled(p);
     }
     return scr_module_u8(p->module, at);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t read_u16(ScrPlayer* p, uint32_t at) {
     if (!is_modelled_data(p->module, at, 2)) {
@@ -84,20 +77,14 @@ static uint16_t read_u16(ScrPlayer* p, uint32_t at) {
     return scr_module_u16(p->module, at);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t read_u32(ScrPlayer* p, uint32_t at) {
     return ((uint32_t)read_u16(p, at) << 16) | read_u16(p, at + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // An offset the replayer forms from a signed word: `movea.w` sign-extends it, the module base is 0.
 static uint32_t read_word_offset(ScrPlayer* p, uint32_t at) {
     return (uint32_t)(int32_t)(int16_t)read_u16(p, at);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // AUDxLC for an offset into the module. An address past the module is memory the original program does not use: it
 // plays zeros, like the end of the padded copy.
@@ -105,8 +92,6 @@ static const int8_t* chip_pointer(const ScrModule* m, uint32_t offset) {
     const uint32_t even = offset & ~1u; // Paula ignores bit 0
     return (const int8_t*)m->data + (even <= m->size ? even : m->size);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A sample start from the sequence data: a dry run requires it to lie behind the replayer's bytes and inside the
 // module.
@@ -118,13 +103,9 @@ static const int8_t* sample_at(ScrPlayer* p, uint32_t offset) {
     return chip_pointer(m, offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t next_byte(ScrPlayer* p, ScrVoice* v) {
     return read_u8(p, v->commands_at++);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A command's offset parameter: a word, sign-extended.
 static uint32_t next_word_offset(ScrPlayer* p, ScrVoice* v) {
@@ -132,8 +113,6 @@ static uint32_t next_word_offset(ScrPlayer* p, ScrVoice* v) {
     v->commands_at += 2;
     return offset;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A command's sample parameter: a skipped byte and a 24 bit offset.
 static uint32_t next_offset24(ScrPlayer* p, ScrVoice* v) {
@@ -143,7 +122,6 @@ static uint32_t next_offset24(ScrPlayer* p, ScrVoice* v) {
     return offset;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Audio interrupts
 //
 // All four interrupts run the same handler, which serves the lowest voice that has its interrupt enabled: it writes
@@ -159,8 +137,6 @@ static void arm_audio_interrupts(ScrPlayer* p) {
         p->voices[i].loop_words = build->handler_loops[i].words;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A block start of voice `index`.
 static void serve_audio_interrupt(ScrPlayer* p, uint32_t index) {
@@ -178,8 +154,6 @@ static void serve_audio_interrupt(ScrPlayer* p, uint32_t index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Block starts the mixer played since the last tick are interrupts that fired in between.
 static void answer_wraps(ScrPlayer* p, uint32_t index, const NuadeVoices* voices) {
     ScrVoice* v = &p->voices[index];
@@ -190,8 +164,6 @@ static void answer_wraps(ScrPlayer* p, uint32_t index, const NuadeVoices* voices
     }
     v->wraps_seen = state.wraps;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // DMACON on. A DMA start is a block start. A voice that was never given a sample plays memory the port does not know.
 static void start_dma(ScrPlayer* p, uint32_t index) {
@@ -206,7 +178,6 @@ static void start_dma(ScrPlayer* p, uint32_t index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Track lists
 
 typedef enum Flow {
@@ -215,8 +186,6 @@ typedef enum Flow {
     Flow_NextVoice, // nothing more for this voice in this tick
     Flow_Stop,      // the replayer has stopped or hangs: the tick ends
 } Flow;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The stop routine: all volumes and DMA off, once.
 static void run_stop_routine(ScrPlayer* p) {
@@ -230,16 +199,12 @@ static void run_stop_routine(ScrPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // What a marker in a track list does, by the byte behind it.
 typedef enum MarkerAction {
     MarkerAction_JumpBack, // jump back by the byte
     MarkerAction_Stop,
     MarkerAction_Hang,
 } MarkerAction;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static MarkerAction marker_action(ScrCommand kind, uint8_t back) {
     switch (kind) {
@@ -257,8 +222,6 @@ static MarkerAction marker_action(ScrCommand kind, uint8_t back) {
             return MarkerAction_JumpBack;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The next stream of the voice's track list. A byte with the sign bit set is a marker: the byte behind it says how far
 // back in the list to jump (or, in some builds, to stop). The first voice's marker is where the eagleplayer calls
@@ -298,14 +261,11 @@ static Flow next_stream(ScrPlayer* p, ScrVoice* v, uint32_t index, ScrCommand ki
     return Flow_Continue;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Starting a subsong
 
 static ScrPitchShift initial_pitch_shift(const ScrBuild* build, uint32_t voice) {
     return (ScrPitchShift) { .count = (uint8_t)(build->pitch_shifts_ascend ? 5 + voice : 8 - voice) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The track list of a voice: from the subsong's record of the song table, or the one list of a build without.
 static uint32_t track_list_start(ScrPlayer* p, uint32_t index, uint32_t subsong) {
@@ -313,8 +273,6 @@ static uint32_t track_list_start(ScrPlayer* p, uint32_t index, uint32_t subsong)
     return build->song_table != 0 ? read_word_offset(p, build->song_table + 8 * subsong + 2 * index)
                                   : build->track_lists[index];
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The init starts each voice with the stream that the first entry of its track list names. The builds that read the
 // list with a loop test that entry for a marker like any other.
@@ -335,8 +293,6 @@ static void start_voice(ScrPlayer* p, uint32_t index, uint32_t subsong) {
     next_stream(p, v, index, build->marker_rechecked ? next : ScrCommand_NextPlain);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void reset_player(ScrPlayer* p) {
     p->master_volume = p->module->build->start_master_volume;
     p->playing = true;
@@ -346,8 +302,6 @@ static void reset_player(ScrPlayer* p) {
     p->unmodelled = false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void start_player(ScrPlayer* p, uint32_t subsong) {
     reset_player(p);
     for (uint32_t i = 0; i < SCR_VOICES; i++) {
@@ -356,8 +310,6 @@ static void start_player(ScrPlayer* p, uint32_t subsong) {
     arm_audio_interrupts(p);
     p->looped = false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool scr_start(ScrPlayer* player, int subsong, NuadeVoices* voices) {
     if (subsong < 0 || (uint32_t)subsong >= player->module->subsong_count) {
@@ -373,7 +325,6 @@ bool scr_start(ScrPlayer* player, int subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Commands
 
 // A note: does the command stream go on with a note? The gate stays open (the DMA is not switched off at the end of
@@ -394,21 +345,15 @@ static void peek_legato(ScrPlayer* p, ScrVoice* v) {
     v->legato = false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void start_rest(ScrPlayer* p, ScrVoice* v) {
     v->length = next_byte(p, v);
     peek_legato(p, v);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void start_note(ScrPlayer* p, ScrVoice* v) {
     v->pitch_bias = next_byte(p, v);
     start_rest(p, v);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The command stores the first byte of the `lsr.w #n,d1` or `lsl.w #n,d1` instruction: the count in bits 1..3 (0 is 8)
 // and the direction in bit 0. Any other byte would turn the instruction into another one.
@@ -420,14 +365,10 @@ static void set_pitch_shift(ScrPlayer* p, ScrVoice* v, uint8_t opcode) {
     v->pitch_shift = (ScrPitchShift) { .count = count == 0 ? 8 : count, .left = (opcode & PITCH_SHIFT_LEFT) != 0 };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void restart_envelopes(ScrVoice* v) {
     v->volumes.restart_pending = true;
     v->pitches.restart_pending = true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A sample and its repeat, as the module holds them: AUDxLC and AUDxLEN of the start, then of the repeat.
 typedef struct SampleRecord {
@@ -436,8 +377,6 @@ typedef struct SampleRecord {
     uint32_t loop_start;
     uint16_t loop_words;
 } SampleRecord;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static SampleRecord read_sample_record(ScrPlayer* p, uint32_t at) {
     if ((at & 1) != 0) {
@@ -448,8 +387,6 @@ static SampleRecord read_sample_record(ScrPlayer* p, uint32_t at) {
                             .loop_start = read_u32(p, at + 6),
                             .loop_words = read_u16(p, at + 10) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A sample start with the repeat chained by the audio interrupt.
 static void start_sample_loop(ScrPlayer* p, ScrVoice* v, uint32_t index, uint32_t record_at) {
@@ -465,8 +402,6 @@ static void start_sample_loop(ScrPlayer* p, ScrVoice* v, uint32_t index, uint32_
     start_dma(p, index);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void set_master_volume(ScrPlayer* p, uint8_t adjust) {
     const uint8_t sum = (uint8_t)(p->master_volume + adjust);
     if ((int8_t)sum < 0) {
@@ -475,8 +410,6 @@ static void set_master_volume(ScrPlayer* p, uint8_t adjust) {
         p->master_volume = (int8_t)sum > MASTER_VOLUME_MAX ? MASTER_VOLUME_MAX : sum;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static Flow run_command(ScrPlayer* p, ScrVoice* v, uint32_t index, ScrCommand command) {
     switch (command) {
@@ -557,8 +490,6 @@ static Flow run_command(ScrPlayer* p, ScrVoice* v, uint32_t index, ScrCommand co
     return Flow_NextVoice;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Reads commands until one ends the voice's work for the tick. The command byte indexes a jump table of 4 byte
 // entries.
 static Flow read_commands(ScrPlayer* p, ScrVoice* v, uint32_t index) {
@@ -577,7 +508,6 @@ static Flow read_commands(ScrPlayer* p, ScrVoice* v, uint32_t index) {
     return Flow_NextVoice;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Sequences
 
 // The sequence's next byte. A marker byte jumps back by the byte behind it, and a restart starts the sequence over.
@@ -594,8 +524,6 @@ static uint8_t next_sequence_byte(ScrPlayer* p, ScrSequence* s) {
     return value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The period table, which the module starts with: a word index, or a byte offset that must be even.
 static uint16_t read_period_table(ScrPlayer* p, uint8_t note) {
     if (p->module->build->pitch_index_bytes) {
@@ -606,8 +534,6 @@ static uint16_t read_period_table(ScrPlayer* p, uint8_t note) {
     }
     return read_u16(p, 2u * note);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void run_envelopes(ScrPlayer* p, ScrVoice* v) {
     const ScrBuild* build = p->module->build;
@@ -630,7 +556,6 @@ static void run_envelopes(ScrPlayer* p, ScrVoice* v) {
         = v->pitch_shift.left ? (uint16_t)(base << v->pitch_shift.count) : (uint16_t)(base >> v->pitch_shift.count);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tick
 
 static Flow run_voice(ScrPlayer* p, uint32_t index) {
@@ -656,8 +581,6 @@ static Flow run_voice(ScrPlayer* p, uint32_t index) {
     return flow == Flow_Stop ? Flow_Stop : Flow_NextVoice;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The volume of each voice: its index moved down by the master volume, through the volume table.
 static void write_volumes(ScrPlayer* p) {
     const ScrModule* m = p->module;
@@ -668,8 +591,6 @@ static void write_volumes(ScrPlayer* p) {
         p->voices[i].paula.volume = silent ? 0 : (uint8_t)scr_module_u16(m, m->build->volume_table + 2u * index);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ScrTickResult scr_tick(ScrPlayer* p, NuadeVoices* voices) {
     p->looped = false;
@@ -696,7 +617,6 @@ ScrTickResult scr_tick(ScrPlayer* p, NuadeVoices* voices) {
     return (ScrTickResult) { .looped = p->looped, .ended = !p->playing };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The dry run
 //
 // What a voice does depends on its own state and on the module, apart from the master volume, which only lowers the
@@ -713,13 +633,9 @@ typedef struct DryRun {
     uint32_t order; // when: 4 * tick + voice, the order the replayer does its work in (the init is tick 0)
 } DryRun;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool same_sequence(const ScrSequence* a, const ScrSequence* b) {
     return a->at == b->at && a->restart == b->restart && a->restart_pending == b->restart_pending;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool same_voice_state(const ScrVoice* a, const ScrVoice* b) {
     return a->commands_at == b->commands_at && a->track_at == b->track_at && a->length == b->length
@@ -731,13 +647,9 @@ static bool same_voice_state(const ScrVoice* a, const ScrVoice* b) {
            && a->sample_set == b->sample_set;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool voice_cannot_go_on(const ScrPlayer* p, uint32_t index) {
     return p->unmodelled || p->hung || p->voices[index].halted;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Runs voice `index` of `subsong` alone. `ticks_left` is the budget of the whole module; false when it ran out.
 static bool run_dry(ScrPlayer* p, uint32_t index, uint32_t subsong, uint32_t* ticks_left, DryRun* result) {
@@ -776,8 +688,6 @@ static bool run_dry(ScrPlayer* p, uint32_t index, uint32_t subsong, uint32_t* ti
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Whether the voices of `subsong` read only modelled data until the replayer stops, if it ever does.
 static bool subsong_is_modelled(ScrPlayer* p, uint32_t subsong, uint32_t* ticks_left) {
     DryRun runs[SCR_VOICES];
@@ -800,8 +710,6 @@ static bool subsong_is_modelled(ScrPlayer* p, uint32_t subsong, uint32_t* ticks_
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The track lists and streams of every subsong are of the kinds the port models.
 static bool streams_are_modelled(ScrModule* module) {
     ScrPlayer* proof = (ScrPlayer*)calloc(1, sizeof(ScrPlayer));
@@ -819,7 +727,6 @@ static bool streams_are_modelled(ScrModule* module) {
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Opening
 
 ScrPlayer* scr_create(const uint8_t* data, size_t size) {
@@ -838,8 +745,6 @@ ScrPlayer* scr_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool scr_probe(const uint8_t* data, size_t size) {
     ScrPlayer* player = scr_create(data, size);
     const bool supported = player != nullptr;
@@ -847,16 +752,12 @@ bool scr_probe(const uint8_t* data, size_t size) {
     return supported;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void scr_destroy(ScrPlayer* player) {
     if (player != nullptr) {
         scr_module_close(player->module);
     }
     free(player);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int scr_subsong_count(const ScrPlayer* player) {
     return (int)player->module->subsong_count;

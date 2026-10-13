@@ -9,8 +9,6 @@
 
 #define MASTER_VOLUME 64 // DeliTracker's volume, which the eagleplayer's Volume routine writes after the start
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool mon_sequence_next(MonPlayer* p, int voice, bool repeating) {
     const MonModule* m = &p->module;
     MonVoice* v = &p->voices[voice];
@@ -65,14 +63,10 @@ bool mon_sequence_next(MonPlayer* p, int voice, bool repeating) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool mon_probe(const uint8_t* data, size_t size) {
     MonModule module;
     return mon_locate(data, size, &module);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MonPlayer* mon_create(const uint8_t* data, size_t size) {
     MonPlayer* player = calloc(1, sizeof(*player));
@@ -88,8 +82,6 @@ MonPlayer* mon_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void mon_destroy(MonPlayer* player) {
     if (player != nullptr) {
         free(player->chip);
@@ -97,13 +89,10 @@ void mon_destroy(MonPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int mon_subsong_count(const MonPlayer* player) {
     return (int)player->module.subsong_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The init routine leaves several fields of the voice records as the image has them: the high byte of the voice volume,
 // the fixed period, the swing and the slide that a note-on does not reset. (The instrument pointer is an address of the
 // run that made the image; the songs select an instrument before their first note.)
@@ -121,8 +110,6 @@ static void load_voice_record(const MonModule* m, int voice, MonVoice* v) {
         v->swing = mon_u8(m, record + layout->record_swing);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool mon_start(MonPlayer* player, int subsong, NuadeVoices* voices) {
     const MonModule* m = &player->module;
@@ -156,7 +143,6 @@ bool mon_start(MonPlayer* player, int subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The fade of the song volume, one step every `reload` ticks. A fade-out that reaches 0 switches the voices off.
 
 static bool run_fade(MonPlayer* p) {
@@ -186,7 +172,6 @@ static bool run_fade(MonPlayer* p) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The interrupt: the voices from the last to the first, then the fade. True when the fade ended the song.
 
 static bool run_interrupt(MonPlayer* p) {
@@ -198,8 +183,6 @@ static bool run_interrupt(MonPlayer* p) {
     return run_fade(p);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 MonTickResult mon_tick(MonPlayer* player, NuadeVoices* voices) {
     bool ended = false;
     if (player->playing) {
@@ -210,8 +193,6 @@ MonTickResult mon_tick(MonPlayer* player, NuadeVoices* voices) {
     }
     return (MonTickResult) { .ended = ended };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MonVoiceState mon_voice_state(const MonPlayer* player, int voice) {
     if (voice < 0 || voice >= MON_VOICES) {

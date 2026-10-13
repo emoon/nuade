@@ -21,7 +21,6 @@
 // The largest file the readers address (offsets are 32 bit and signed in the original).
 #define DB_MAX_FILE_BYTES 0x7FFFFFFFu
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Commands
 
 // A pattern event is three bytes: the command byte and two arguments. The command byte selects the command through
@@ -82,7 +81,6 @@ typedef enum DbProgramOp {
 DbPatternCommand db_pattern_command(uint8_t code);
 DbProgramOp db_program_op(uint8_t code);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The files
 
 // Check2 and the chunk search of InitPlayer, on the song file alone. Fills the offsets of `m` that point into the song.
@@ -92,7 +90,6 @@ bool db_module_locate(DbModule* m);
 DbStatus db_module_open(DbModule* m, const uint8_t* data, size_t size, const char* path, const NuadeIo* io);
 void db_module_close(DbModule* m);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Records
 
 typedef struct DbSequenceStep {
@@ -133,7 +130,6 @@ DbProgramCommand db_program_command(const DbModule* m, uint32_t program, uint16_
 uint8_t db_groove_step(const DbModule* m, uint32_t offset);
 uint8_t db_arpeggio_step(const DbModule* m, uint8_t index);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Samples
 
 // An address in the model of the machine's memory: the sample file starts at DB_SAMPLE_FILE_ADDRESS, anything below is

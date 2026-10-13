@@ -11,9 +11,8 @@
 #include <string.h>
 
 #define MA_VOICES 4
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // Types
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 typedef enum VoiceFlag {
     VoiceFlag_None = 0,
@@ -24,9 +23,7 @@ typedef enum VoiceFlag {
     VoiceFlag_Retrig = 0x80
 } VoiceFlag;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Globals
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static const int s_channel_map[4] = { 0, 2, 3, 1 };
 static const uint16_t s_periods[48]
@@ -36,9 +33,7 @@ static const uint16_t s_periods[48]
 static const int8_t s_empty_sample[4] = { 0, 0, 0, 0 };
 #define MA_EMPTY_SAMPLE_BYTES ((uint32_t)sizeof(s_empty_sample))
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Module loading helpers
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void ma_set_module_error(MaModule* module, const char* message) {
     if (message == nullptr) {
@@ -48,31 +43,21 @@ static void ma_set_module_error(MaModule* module, const char* message) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int ma_read_s16_be(const uint8_t* p) {
     return (int16_t)(((uint16_t)p[0] << 8) | p[1]);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t ma_read_u16_be(const uint8_t* p) {
     return (uint16_t)(((uint16_t)p[0] << 8) | p[1]);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int ma_read_i32_be(const uint8_t* p) {
     return (int32_t)(((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | ((uint32_t)p[2] << 8) | (uint32_t)p[3]);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool ma_check_bounds(size_t offset, size_t need, size_t size) {
     return offset <= size && need <= (size - offset);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool ma_extract_info_from_init_function(MaModule* module, const uint8_t* search_buffer, size_t search_length) {
     int start_of_init = ma_read_s16_be(&search_buffer[2]) + 2;
@@ -120,8 +105,6 @@ static bool ma_extract_info_from_init_function(MaModule* module, const uint8_t* 
     module->sub_song_position_list_offset = (int8_t)search_buffer[index + 3] + (int)index + 2;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool ma_extract_info_from_play_function(MaModule* module, const uint8_t* search_buffer, size_t search_length) {
     size_t index = 0x0c;
@@ -187,8 +170,6 @@ static bool ma_extract_info_from_play_function(MaModule* module, const uint8_t* 
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool ma_test_module(MaModule* module, const uint8_t* data, size_t size) {
     size_t probe_size = size < 0x700 ? size : 0x700;
     if (probe_size < 0x14) {
@@ -211,8 +192,6 @@ static bool ma_test_module(MaModule* module, const uint8_t* data, size_t size) {
     return module->sub_song_count > 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool ma_append_position(MaPositionInfo** items, uint16_t* count, uint16_t* capacity, MaPositionInfo value) {
     if (*count == *capacity) {
         // The count is 16-bit: a list that would outgrow it is damaged
@@ -234,8 +213,6 @@ static bool ma_append_position(MaPositionInfo** items, uint16_t* count, uint16_t
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool ma_append_u8(uint8_t** items, size_t* count, size_t* capacity, uint8_t value) {
     if (*count == *capacity) {
         size_t new_capacity = (*capacity == 0) ? 32 : (*capacity * 2);
@@ -253,8 +230,6 @@ static bool ma_append_u8(uint8_t** items, size_t* count, size_t* capacity, uint8
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool ma_append_song(MaModule* module, MaSongInfo value) {
     size_t new_count = module->song_count + 1;
     MaSongInfo* songs = (MaSongInfo*)realloc(module->songs, new_count * sizeof(MaSongInfo));
@@ -268,8 +243,6 @@ static bool ma_append_song(MaModule* module, MaSongInfo value) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const MaPositionListEntry* ma_find_position_list(const MaModule* module, uint16_t offset) {
     for (size_t i = 0; i < module->position_list_count; i++) {
         if (module->position_lists[i].offset == offset) {
@@ -279,8 +252,6 @@ static const MaPositionListEntry* ma_find_position_list(const MaModule* module, 
 
     return nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool ma_add_position_list(MaModule* module, uint16_t offset, MaPositionInfo* positions, uint16_t length) {
     size_t new_count = module->position_list_count + 1;
@@ -299,8 +270,6 @@ static bool ma_add_position_list(MaModule* module, uint16_t offset, MaPositionIn
     module->position_list_count = new_count;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool ma_load_subsong_info(MaModule* module, const uint8_t* data, size_t size) {
     if (module->sub_song_count <= 0) {
@@ -348,8 +317,6 @@ static bool ma_load_subsong_info(MaModule* module, const uint8_t* data, size_t s
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool ma_load_single_position_list(MaModule* module, MaPositionInfo** out_positions, uint16_t* out_length,
                                          const uint8_t* data, size_t size, size_t offset) {
     MaPositionInfo* list = nullptr;
@@ -390,8 +357,6 @@ static bool ma_load_single_position_list(MaModule* module, MaPositionInfo** out_
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool ma_load_position_lists(MaModule* module, const uint8_t* data, size_t size) {
     for (size_t s = 0; s < module->song_count; s++) {
         for (int c = 0; c < 4; c++) {
@@ -417,8 +382,6 @@ static bool ma_load_position_lists(MaModule* module, const uint8_t* data, size_t
 
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool ma_load_single_track(MaModule* module, uint8_t** out_track, size_t* out_len, const uint8_t* data,
                                  size_t size, size_t offset) {
@@ -527,8 +490,6 @@ static bool ma_load_single_track(MaModule* module, uint8_t** out_track, size_t* 
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool ma_load_tracks(MaModule* module, const uint8_t* data, size_t size) {
     int max_track = -1;
 
@@ -588,8 +549,6 @@ static bool ma_load_tracks(MaModule* module, const uint8_t* data, size_t size) {
 
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool ma_load_instruments(MaModule* module, const uint8_t* data, size_t size) {
     if (!ma_check_bounds((size_t)module->instrument_info_offset_offset, 4, size)
@@ -651,8 +610,6 @@ static bool ma_load_instruments(MaModule* module, const uint8_t* data, size_t si
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void ma_trim_sample_name(char* dst, const uint8_t* src16) {
     for (int i = 0; i < 16; i++) {
         unsigned char ch = src16[i];
@@ -669,8 +626,6 @@ static void ma_trim_sample_name(char* dst, const uint8_t* src16) {
         break;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool ma_load_samples(MaModule* module, const uint8_t* data, size_t size) {
     if (!ma_check_bounds((size_t)module->sample_info_offset_offset, 4, size)) {
@@ -764,8 +719,6 @@ static bool ma_load_samples(MaModule* module, const uint8_t* data, size_t size) 
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool ma_module_parse(MaModule* module, const uint8_t* data, size_t size) {
     if (!ma_test_module(module, data, size)) {
         ma_set_module_error(module, "not a recognized Music Assembler module");
@@ -795,8 +748,6 @@ static bool ma_module_parse(MaModule* module, const uint8_t* data, size_t size) 
     module->error_message[0] = '\0';
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void ma_module_cleanup(MaModule* module) {
     if (module == nullptr) {
@@ -835,9 +786,7 @@ static void ma_module_cleanup(MaModule* module) {
     module->sample_count = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Player
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static const MaPositionInfo* ma_player_get_position_list(const MaModule* module, uint16_t offset, uint16_t* length) {
     const MaPositionListEntry* entry = ma_find_position_list(module, offset);
@@ -849,8 +798,6 @@ static const MaPositionInfo* ma_player_get_position_list(const MaModule* module,
     *length = entry->length;
     return entry->positions;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void ma_initialize_voice(MaVoiceInfo* voice) {
     voice->decrease_volume = false;
@@ -867,15 +814,11 @@ static void ma_initialize_voice(MaVoiceInfo* voice) {
     voice->sustain_counter = instr->hold;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void ma_force_retrigger(MaVoiceInfo* voice) {
     voice->flag &= VoiceFlag_Release;
     voice->flag |= VoiceFlag_Retrig;
     voice->active = false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void ma_do_wave_length_modifying(const MaInstrument* instr, const MaSample* sample, MaVoiceInfo* voice) {
     int8_t wave_length = (int8_t)(instr->wave_level_speed >> 4);
@@ -904,8 +847,6 @@ static void ma_do_wave_length_modifying(const MaInstrument* instr, const MaSampl
     voice->sample_data_bytes = sample->data_bytes;
     voice->sample_start_offset = start_offset;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t ma_do_arpeggio(const MaInstrument* instr, MaVoiceInfo* voice) {
     uint8_t arp = instr->arpeggio;
@@ -954,8 +895,6 @@ static uint16_t ma_do_arpeggio(const MaInstrument* instr, MaVoiceInfo* voice) {
     return s_periods[note];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t ma_do_portamento(uint16_t period, MaVoiceInfo* voice) {
     if (voice->portamento_or_vibrato_value != 0) {
         bool flag_set = (voice->flag & VoiceFlag_Portamento) != 0;
@@ -978,8 +917,6 @@ static uint16_t ma_do_portamento(uint16_t period, MaVoiceInfo* voice) {
 
     return period;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t ma_do_vibrato(uint16_t period, const MaInstrument* instr, MaVoiceInfo* voice) {
     if (voice->vibrato_delay_counter == 0) {
@@ -1009,8 +946,6 @@ static uint16_t ma_do_vibrato(uint16_t period, const MaInstrument* instr, MaVoic
     return period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void ma_do_adsr(const MaInstrument* instr, MaVoiceInfo* voice) {
     if ((voice->flag & VoiceFlag_Release) != 0) {
         if (voice->sustain_counter == 0) {
@@ -1036,8 +971,6 @@ static void ma_do_adsr(const MaInstrument* instr, MaVoiceInfo* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void ma_commit_pending_sample(const MaInstrument* instr, MaVoiceInfo* voice) {
     voice->pending_data = voice->sample_data;
     voice->pending_data_bytes = voice->sample_data_bytes;
@@ -1047,8 +980,6 @@ static void ma_commit_pending_sample(const MaInstrument* instr, MaVoiceInfo* voi
     voice->pending_loops = (voice->sample_data != s_empty_sample) && ((uint32_t)voice->sample_length * 2u > 2u);
     voice->has_pending_sample = true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void ma_setup_sample(const MaModule* module, const MaInstrument* instr, MaVoiceInfo* voice) {
     if (instr->sample_number >= module->sample_count) {
@@ -1118,8 +1049,6 @@ static void ma_setup_sample(const MaModule* module, const MaInstrument* instr, M
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void ma_do_voice(MaPlayer* player, MaVoiceInfo* voice) {
     const MaInstrument* instr = voice->current_instrument;
     ma_setup_sample(player->module, instr, voice);
@@ -1143,8 +1072,6 @@ static void ma_do_voice(MaPlayer* player, MaVoiceInfo* voice) {
     voice->current_volume = volume;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void ma_voice_wrapped(MaPlayer* player, const MaVoiceInfo* voice) {
     player->wrapped_mask |= (uint8_t)(1u << voice->channel_number);
     if (player->wrapped_mask == 0x0f) {
@@ -1152,8 +1079,6 @@ static void ma_voice_wrapped(MaPlayer* player, const MaVoiceInfo* voice) {
         player->loop_count++;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool ma_get_next_row_in_track(MaPlayer* player, MaVoiceInfo* voice) {
     voice->row_delay_counter--;
@@ -1287,8 +1212,6 @@ static bool ma_get_next_row_in_track(MaPlayer* player, MaVoiceInfo* voice) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Hand the registers the tick wrote to the voice.
 static void ma_sync_voice(MaPlayer* player, MaVoiceInfo* voice) {
     const uint32_t index = (uint32_t)voice->channel_number;
@@ -1330,8 +1253,6 @@ static void ma_sync_voice(MaPlayer* player, MaVoiceInfo* voice) {
     nuade_voice_set_volume(voices, index, (float)voice->current_volume / 64.0f);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void ma_player_tick(MaPlayer* player) {
     player->ended = false;
 
@@ -1361,8 +1282,6 @@ static void ma_player_tick(MaPlayer* player) {
         ma_sync_voice(player, &player->voices[i]);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void ma_player_init_state(MaPlayer* player, int subsong) {
     const MaSongInfo* song = &player->module->songs[subsong];
@@ -1403,8 +1322,6 @@ static void ma_player_init_state(MaPlayer* player, int subsong) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static MaPlayer* ma_player_create(const MaModule* module) {
     if (module == nullptr || module->song_count == 0) {
         return nullptr;
@@ -1421,15 +1338,11 @@ static MaPlayer* ma_player_create(const MaModule* module) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void ma_player_destroy(MaPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Public API
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MaModule* ma_create(const uint8_t* data, size_t size) {
     if (data == nullptr || size == 0) {
@@ -1457,8 +1370,6 @@ MaModule* ma_create(const uint8_t* data, size_t size) {
     return module;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool ma_probe(const uint8_t* data, size_t size) {
     if (data == nullptr) {
         return false;
@@ -1466,8 +1377,6 @@ bool ma_probe(const uint8_t* data, size_t size) {
     MaModule scratch = { 0 };
     return ma_test_module(&scratch, data, size);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void ma_destroy(MaModule* module) {
     if (module == nullptr) {
@@ -1479,8 +1388,6 @@ void ma_destroy(MaModule* module) {
     free(module);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int ma_subsong_count(const MaModule* module) {
     if (module == nullptr) {
         return 0;
@@ -1488,8 +1395,6 @@ int ma_subsong_count(const MaModule* module) {
 
     return (int)module->song_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ma_start(MaModule* module, int subsong, NuadeVoices* voices) {
     if (module == nullptr || module->player == nullptr || voices == nullptr) {
@@ -1509,8 +1414,6 @@ bool ma_start(MaModule* module, int subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 MaTickResult ma_tick(MaModule* module) {
     MaTickResult result = { 0 };
     if (module == nullptr || module->player == nullptr || module->player->mixer == nullptr) {
@@ -1525,8 +1428,6 @@ MaTickResult ma_tick(MaModule* module) {
     result.ended = player->ended;
     return result;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int ma_start_speed(const MaModule* module, int subsong) {
     if (module == nullptr || subsong < 0 || subsong >= (int)module->song_count) {
@@ -1544,8 +1445,6 @@ bool ma_voice_started(const MaModule* module, int voice, int* note, int* instrum
     *instrument = v->started_instrument;
     return v->started_note >= 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 size_t ma_track_count(const MaModule* module) {
     if (module == nullptr)
@@ -1571,8 +1470,6 @@ void ma_track_replace_data(MaModule* module, size_t trackIdx, uint8_t* newdata, 
     module->tracks[trackIdx].data = newdata;
     module->tracks[trackIdx].length = newlen;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int ma_instrument_count(const MaModule* module) {
     if (module == nullptr)
@@ -1666,13 +1563,9 @@ void ma_instrument_set_param(MaModule* module, int index, const char* param, flo
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int ma_sample_count(const MaModule* module) {
     return module == nullptr ? 0 : (int)module->sample_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const char* ma_sample_name(const MaModule* module, int index) {
     if (module == nullptr || index < 0 || index >= (int)module->sample_count) {

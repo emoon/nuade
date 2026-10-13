@@ -81,7 +81,6 @@ static const uint16_t k_periods_virocop[PERIOD_TABLE_SIZE]
         0x43,  0x3F,  0x3C,  0x38,  0x35,  0x32,  0x2F,  0x2D,  0x2A,  0x28,  0x25,  0x23,  0x21,  0x1F,
         0x1E,  0x1C,  0x1A,  0x19,  0x17,  0x16,  0x15,  0x14,  0x12,  0x11,  0x10,  0xF,   0xF,   0xE };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The note tables as the replayer reads them: by a 16-bit byte offset, as a signed index. The words behind the table
 // are code of the eagleplayer; the first two are the ones a note capped at 84 reads. Anything further is not modelled.
 
@@ -104,8 +103,6 @@ static bool period_at(const JpPlayer* player, uint16_t byte_offset, uint16_t* pe
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t jp_voice_pattern_period(JpPlayer* player, uint8_t note) {
     // A note from a pattern: Graftgold and Virocop keep the low byte of the doubled index, Realms reads the table at up
     // to 510 bytes.
@@ -117,7 +114,6 @@ uint16_t jp_voice_pattern_period(JpPlayer* player, uint8_t note) {
     return period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The Paula registers of a voice, written as the replayer does (the channel applies the length 0 and period 0 rules). A
 // sample address with bit 0 set (scripts add byte counts to it) plays from the even address below.
 
@@ -129,14 +125,11 @@ static void write_registers(const JpPlayer* player, JpVoice* voice, uint32_t add
     channel->period = period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The registers of a voice that plays nothing: one word of silence at the period it had.
 
 static void write_silence(const JpPlayer* player, JpVoice* voice) {
     write_registers(player, voice, player->empty_buffer, 1, voice->period);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void stop_envelope(JpVoice* voice) {
     voice->attack = (JpEnvelopeRamp) { 0 };
@@ -145,7 +138,6 @@ static void stop_envelope(JpVoice* voice) {
     voice->release = (JpEnvelopePhase) { 0 };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Switch the voice's DMA off and point its registers at the silent word. Graftgold and Virocop also clear the volume,
 // the envelope phases and the loop length.
 
@@ -160,15 +152,12 @@ static void stop_sound(JpPlayer* player, JpVoice* voice) {
     write_silence(player, voice);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sound a queued instrument starts: its script, from the start.
 
 static uint32_t instrument_script(const JpPlayer* player, uint16_t instrument) {
     const JpLayout* layout = &player->layout;
     return jp_table_pointer(player, layout->instrument_table, layout->script_base, instrument);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void start_note(JpPlayer* player, JpVoice* voice) {
     const uint16_t instrument = voice->pending_instrument;
@@ -196,7 +185,6 @@ static void start_note(JpPlayer* player, JpVoice* voice) {
     voice->note = (int)voice->last_note;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An instrument from the pattern waits in the voice until the next tick, if its priority is at least that of the sound
 // that plays.
 
@@ -211,7 +199,6 @@ bool jp_voice_queue(const JpPlayer* player, JpVoice* voice, uint16_t instrument)
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The command a script word names. Graftgold and Virocop use the low byte as a table index; Realms stores the offset
 // into its table of longs. A word outside the table sends the 68000 into the code that follows it.
 
@@ -237,7 +224,6 @@ static bool decode_command(JpFormat format, uint16_t word, JpCommand* command) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A sample's start, by the index a script command gives. The tables hold the samples the module declares.
 
 static bool sample_address(JpPlayer* player, uint32_t index, uint32_t* address) {
@@ -249,7 +235,6 @@ static bool sample_address(JpPlayer* player, uint32_t index, uint32_t* address) 
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample a script word names: the replayer multiplies it by 4 in a 16-bit register and uses the result as a signed
 // offset into its table, so an offset of 0x8000 or more reads before the table (outside the declared samples).
 
@@ -262,7 +247,6 @@ static bool sample_by_word(JpPlayer* player, uint16_t word, uint32_t* address) {
     return sample_address(player, offset / SAMPLE_SCALE, address);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Command 22: 128 bytes of one sample over the start of another.
 
 static void copy_sample(JpPlayer* player, uint32_t source_index, uint32_t target_index) {
@@ -279,7 +263,6 @@ static void copy_sample(JpPlayer* player, uint32_t source_index, uint32_t target
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Command 23: the first 128 bytes of the voice's sample step one unit towards another sample's.
 
 static void morph_sample(JpPlayer* player, const JpVoice* voice, uint16_t target_word) {
@@ -298,8 +281,6 @@ static void morph_sample(JpPlayer* player, const JpVoice* voice, uint16_t target
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void loop_push(JpVoice* voice, uint16_t count, uint32_t return_to) {
     const uint8_t slot = voice->loop_free;
     voice->loop_top = slot;
@@ -308,7 +289,6 @@ static void loop_push(JpVoice* voice, uint16_t count, uint32_t return_to) {
     voice->loop_free = (uint8_t)((slot + 1) % JP_LOOP_DEPTH);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The end of a loop: a count of 0 repeats for ever; otherwise the count runs down and the script goes on when it hits
 // 0.
 
@@ -327,7 +307,6 @@ static void loop_end(JpVoice* voice, uint32_t* script) {
     *script = voice->loop_return[slot];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The script's words for the envelope phases.
 
 static JpEnvelopeRamp load_ramp(uint16_t word) {
@@ -335,13 +314,10 @@ static JpEnvelopeRamp load_ramp(uint16_t word) {
     return (JpEnvelopeRamp) { .rate = (uint8_t)(word >> 8), .ticks = ticks, .running = ticks != ENV_TICKS_DONE };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static JpEnvelopePhase load_phase(uint16_t word) {
     return (JpEnvelopePhase) { .value = word, .running = word != ENV_PHASE_OFF };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Run one script command. Returns true when it ends the voice's script for this tick; `script` is the address of the
 // word after the command's own.
 
@@ -482,8 +458,6 @@ static bool execute(JpPlayer* player, JpVoice* voice, JpCommand command, uint32_
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_script(JpPlayer* player, JpVoice* voice) {
     uint32_t script = voice->script;
     for (int count = 0; count < MAX_COMMANDS_PER_TICK; count++) {
@@ -506,7 +480,6 @@ static void run_script(JpPlayer* player, JpVoice* voice) {
     player->failed = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Vibrato: the period moves by vibrato_step every tick and the step changes sign every vibrato_depth + 1 ticks.
 // Realms runs the counter even when the step is 0.
 
@@ -523,7 +496,6 @@ static void vibrato(const JpPlayer* player, JpVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Virocop's slide stops at the target period.
 
 static void slide_to_target(JpVoice* voice) {
@@ -538,8 +510,6 @@ static void slide_to_target(JpVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void pitch(const JpPlayer* player, JpVoice* voice) {
     vibrato(player, voice);
     if (player->format == JpFormat_Virocop) {
@@ -549,7 +519,6 @@ static void pitch(const JpPlayer* player, JpVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One tick of a ramp: the tick count runs down (through 0 to ENV_TICKS_DONE, which ends the phase). Returns the rate
 // the ramp adds to or takes from the 16-bit level.
 
@@ -559,7 +528,6 @@ static uint32_t ramp_step(JpEnvelopeRamp* ramp) {
     return (uint32_t)ramp->rate << 8;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Volume envelope: attack, decay, hold, release; the first phase that runs is the one that acts.
 
 static void envelope(const JpPlayer* player, JpVoice* voice) {
@@ -598,8 +566,6 @@ static void envelope(const JpPlayer* player, JpVoice* voice) {
     voice->volume = (uint16_t)level;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void jp_voice_tick(JpPlayer* player, JpVoice* voice) {
     if (voice->has_pending) {
         start_note(player, voice);
@@ -611,7 +577,6 @@ void jp_voice_tick(JpPlayer* player, JpVoice* voice) {
     envelope(player, voice);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The registers a voice carries to the end of the tick: the volume, and the sample (or the silent word).
 
 void jp_voice_output(JpPlayer* player, JpVoice* voice) {
@@ -625,7 +590,6 @@ void jp_voice_output(JpPlayer* player, JpVoice* voice) {
     write_registers(player, voice, address, voice->sample_words, voice->period);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the voice holds before the first song starts. The volume of the first three is whatever the replayer's data
 // block had there; the first tick writes it to the volume register of a channel whose DMA is off.
 

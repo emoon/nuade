@@ -11,8 +11,6 @@
 // The song request byte: 0 stops, 1.. starts a song, this value is "nothing to do".
 #define REQUEST_RUNNING 0xffu
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const int8_t* chip(const SbrPlayer* p, uint32_t offset) {
     // AUDxLC ignores bit 0
     offset &= ~1u;
@@ -22,7 +20,6 @@ static const int8_t* chip(const SbrPlayer* p, uint32_t offset) {
     return (const int8_t*)(p->module.image + offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A byte of the voice records, which a note number far past the period table reaches: field `byte & ~3` of voice
 // `byte & 3`.
 
@@ -85,7 +82,6 @@ static uint8_t record_byte(const SbrPlayer* p, unsigned byte) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A word of the period table by note number. The driver does not stop at the table's end; the module check has proven
 // that the songs read only what the module model has.
 
@@ -107,14 +103,11 @@ static uint16_t period_word(SbrPlayer* p, unsigned index) {
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void set_period(SbrPlayer* p, SbrVoice* c) {
     c->base_period = period_word(p, c->note);
     c->period = c->base_period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's hook in the list reader: SongEnd once every voice has read the $ff that ends its list.
 
 static void list_end_seen(SbrPlayer* p) {
@@ -133,7 +126,6 @@ static void list_end_seen(SbrPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The next pattern of the voice's list. Entries below $80 are pattern numbers; $80..$fe set the transposition; $ff
 // restarts the list.
 
@@ -156,7 +148,6 @@ static void next_pattern(SbrPlayer* p, uint32_t voice) {
     p->broken = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The chord buffer of a voice: the chord's note offsets, the notes of the mask in the order of the chord table.
 
 static void build_chord(SbrPlayer* p, const SbrVoice* c, uint8_t mask) {
@@ -174,7 +165,6 @@ static void build_chord(SbrPlayer* p, const SbrVoice* c, uint8_t mask) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample a note plays and its repeat, from the wave record. The first buffer is written to Paula at once; the
 // repeat goes there behind the DMA start.
 
@@ -193,8 +183,6 @@ static void start_wave(SbrPlayer* p, SbrVoice* c) {
     c->shown_instrument = wave.instrument;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void start_env(SbrPlayer* p, SbrVoice* c) {
     SbrEnv env;
     if (!sbr_module_env(&p->module, c->env, &env)) {
@@ -209,7 +197,6 @@ static void start_env(SbrPlayer* p, SbrVoice* c) {
     c->vibrato = env.vibrato;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The bend decides on the low bit of a byte that the driver's register a1 points at. For a note with a chord that
 // register is stale: it still holds what the pattern reader left in it, the pattern pointer of the next voice or, if
 // the pattern list ended in this note, a word of the pattern table. A note without a chord reads the envelope's flags.
@@ -228,7 +215,6 @@ static bool bend_bit(const SbrPlayer* p, uint32_t voice, bool wrapped, uint8_t w
     return (pointer & 1) != 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The next note of a voice. False when the pattern says to stop the song.
 
 static bool start_note(SbrPlayer* p, uint32_t voice) {
@@ -306,7 +292,6 @@ static bool start_note(SbrPlayer* p, uint32_t voice) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Vibrato: the period moves by a step that is the distance to the next note, halved `speed` times; the swing grows by
 // one step per tick up to the tick counter and back down. The loops run on bytes the driver tests for the sign.
 
@@ -348,7 +333,6 @@ static void vibrato(SbrPlayer* p, SbrVoice* c) {
     c->period = period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The chord plays one of its notes per tick; the start byte of the buffer plays the note itself.
 
 static void arpeggio(SbrPlayer* p, SbrVoice* c) {
@@ -364,7 +348,6 @@ static void arpeggio(SbrPlayer* p, SbrVoice* c) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume: it moves to its target; at the end of the note (or, with a sustain shift, at the fraction of it) the
 // release takes over and the voice goes silent when the volume reaches 0.
 
@@ -379,8 +362,6 @@ static void release_volume(SbrPlayer* p, SbrVoice* c) {
         c->volume = volume;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void step_volume(SbrPlayer* p, SbrVoice* c) {
     if (c->duration_left == 0) {
@@ -407,7 +388,6 @@ static void step_volume(SbrPlayer* p, SbrVoice* c) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What a voice does in a tick that does not start a note.
 
 static void keep_note(SbrPlayer* p, SbrVoice* c) {
@@ -421,7 +401,6 @@ static void keep_note(SbrPlayer* p, SbrVoice* c) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One voice of a tick. False when the song stops.
 
 static bool run_voice(SbrPlayer* p, uint32_t voice) {
@@ -450,7 +429,6 @@ static bool run_voice(SbrPlayer* p, uint32_t voice) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The registers of the tick: the periods, the DMA of the voices that are not silent, the volumes, then the repeat of
 // every sample (a DMA start latches the first buffer, the repeat is what the driver writes afterwards).
 
@@ -487,8 +465,6 @@ static void write_registers(SbrPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void stop_audio(SbrPlayer* p) {
     for (uint32_t i = 0; i < SBR_VOICES; i++) {
         p->voices[i].paula.volume = 0;
@@ -500,8 +476,6 @@ static void stop_audio(SbrPlayer* p) {
     }
     p->stop_seen = true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void start_song(SbrPlayer* p, uint32_t song) {
     for (uint32_t i = 0; i < SBR_VOICES; i++) {
@@ -522,14 +496,11 @@ static void start_song(SbrPlayer* p, uint32_t song) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void stop_song(SbrPlayer* p) {
     p->playing = false;
     stop_audio(p);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tick entry: a song number in the request byte starts the song, 0 stops it.
 
 static void run_tick(SbrPlayer* p) {
@@ -562,8 +533,6 @@ static void run_tick(SbrPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 SbrTickResult sbr_tick(SbrPlayer* player, NuadeVoices* voices) {
     player->looped = false;
     player->ended = false;
@@ -575,8 +544,6 @@ SbrTickResult sbr_tick(SbrPlayer* player, NuadeVoices* voices) {
                              .looped = player->looped,
                              .ended = player->ended || player->broken };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sbr_start(SbrPlayer* player, uint32_t song, NuadeVoices* voices) {
     if (song >= player->module.song_count) {
@@ -598,8 +565,6 @@ bool sbr_start(SbrPlayer* player, uint32_t song, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sbr_probe(const uint8_t* data, size_t size) {
     SbrModule module;
     if (sbr_module_open(&module, data, size) != SbrStatus_Ok) {
@@ -608,8 +573,6 @@ bool sbr_probe(const uint8_t* data, size_t size) {
     sbr_module_close(&module);
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SbrCreateResult sbr_create(const uint8_t* data, size_t size) {
     SbrPlayer* player = calloc(1, sizeof(*player));
@@ -624,8 +587,6 @@ SbrCreateResult sbr_create(const uint8_t* data, size_t size) {
     return (SbrCreateResult) { .player = player, .status = SbrStatus_Ok };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void sbr_destroy(SbrPlayer* player) {
     if (player != nullptr) {
         sbr_module_close(&player->module);
@@ -633,19 +594,13 @@ void sbr_destroy(SbrPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t sbr_song_count(const SbrPlayer* player) {
     return player->module.song_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const char* sbr_format_name(const SbrPlayer* player) {
     return player->module.build->name;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SbrVoiceState sbr_voice_state(const SbrPlayer* player, uint32_t voice) {
     const SbrVoice* c = &player->voices[voice];

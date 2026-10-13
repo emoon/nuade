@@ -22,8 +22,6 @@ typedef struct VoiceUse {
     unsigned table_count;
 } VoiceUse;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool use_table(VoiceUse* use, uint32_t table) {
     for (unsigned i = 0; i < use->table_count; i++) {
         if (use->tables[i] == table) {
@@ -36,8 +34,6 @@ static bool use_table(VoiceUse* use, uint32_t table) {
     use->tables[use->table_count++] = table;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // One row. `first_note_seen` is true once the voice has started a note on an earlier row.
 static bool check_row(TronicModule* module, TronicCell row, VoiceUse* use, bool instrument_used[256],
@@ -65,8 +61,6 @@ static bool check_row(TronicModule* module, TronicCell row, VoiceUse* use, bool 
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Every step, pattern and row of a voice's sequence.
 static bool check_voice_sequence(TronicModule* module, int voice, VoiceUse* use, bool instrument_used[256],
@@ -96,8 +90,6 @@ static bool check_voice_sequence(TronicModule* module, int voice, VoiceUse* use,
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The bytes of the wave tables the voice can read: a table is read from its start up to its first 0x80.
 static bool collect_table_bytes(TronicModule* module, VoiceUse* use) {
     for (unsigned t = 0; t < use->table_count; t++) {
@@ -117,8 +109,6 @@ static bool collect_table_bytes(TronicModule* module, VoiceUse* use) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The period table has TRONIC_PERIOD_COUNT entries; note + transpose (+ table byte) must index inside it for every
 // combination the voice can have, as the note of an earlier pattern plays on under the transpose of a later one.
@@ -144,8 +134,6 @@ static bool check_period_indexes(const VoiceUse* use) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Runs the parts of an instrument that read the record with indexes the record itself controls, on a scratch voice.
 static bool check_instrument(TronicModule* module, unsigned number, uint64_t* budget) {
@@ -188,8 +176,6 @@ static bool check_instrument(TronicModule* module, unsigned number, uint64_t* bu
     }
     return !module->overrun;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool tronic_module_prove(TronicModule* module) {
     module->overrun = false;

@@ -17,14 +17,10 @@
 #define VIBRATO_SCALE 7
 #define WORD_BITS 16
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool mxe_probe(const uint8_t* data, size_t size) {
     MxeModule module;
     return mxe_module_parse(&module, data, size) && mxe_module_validate(&module);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MxeCreateResult mxe_create(const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
     MxeCreateResult result = { .status = MxeStatus_InvalidData };
@@ -59,8 +55,6 @@ MxeCreateResult mxe_create(const uint8_t* data, size_t size, const char* path, c
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void mxe_destroy(MxePlayer* player) {
     if (player == nullptr) {
         return;
@@ -70,13 +64,10 @@ void mxe_destroy(MxePlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t mxe_subsong_count(const MxePlayer* player) {
     return player->module.subsong_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitSound: the record's voices take the hardware voices in order. The eagleplayer then marks the hardware voices
 // that run: it shifts one bit per assigned voice into the top of a byte and shifts the byte right by 4, so a record
 // with fewer than four voices runs the last hardware voices, not the first. Hardware voices that run without a list
@@ -110,14 +101,12 @@ bool mxe_start(MxePlayer* player, uint32_t subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample address Paula uses (bit 0 of AUDxLC does not exist); null past the end of the sample file.
 
 static const int8_t* sample_at(const MxePlayer* player, uint32_t offset) {
     return offset <= player->samples.size ? (const int8_t*)(player->samples.bytes + (offset & ~1u)) : nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A voice reached the end of its list and starts again. SongEnd is called when every voice that had a list has done so
 // since the last call.
 
@@ -134,7 +123,6 @@ static void note_list_restart(MxePlayer* player, uint32_t hw, bool* looped) {
     *looped = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The next list entry: a new pattern, or the end mark, which stops a one-shot voice and sends the others back to the
 // entry it names. False when the voice stopped.
 
@@ -156,7 +144,6 @@ static bool next_pattern(MxePlayer* player, uint32_t hw, bool* looped) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume slide that the vibrato, the slide and the portamento end with: the volume stays within 0 to 64.
 
 static void slide_volume(MxeVoice* voice, int8_t step) {
@@ -167,7 +154,6 @@ static void slide_volume(MxeVoice* voice, int8_t step) {
     voice->volume = (uint16_t)(volume < 0 ? 0 : (volume > VOLUME_MAX ? VOLUME_MAX : volume));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sine, shifted left by a register shift count (a word shifted by 16 or more is 0), then scaled down.
 
 static void run_vibrato(MxeVoice* voice) {
@@ -181,8 +167,6 @@ static void run_vibrato(MxeVoice* voice) {
     slide_volume(voice, params->vibrato.volume_slide);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_portamento(MxeVoice* voice) {
     const MxeEffectParams* params = &voice->params;
     const int16_t target = (int16_t)mxe_period(params->portamento.target_offset);
@@ -194,8 +178,6 @@ static void run_portamento(MxeVoice* voice) {
     slide_volume(voice, params->portamento.volume_slide);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_arpeggio(MxeVoice* voice) {
     MxeEffectParams* params = &voice->params;
     uint8_t index = (uint8_t)(params->arpeggio.index + 1);
@@ -205,8 +187,6 @@ static void run_arpeggio(MxeVoice* voice) {
     params->arpeggio.index = index;
     voice->period = mxe_period(params->arpeggio.note_offset[index]);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void run_effect(MxeVoice* voice) {
     switch (voice->effect) {
@@ -227,7 +207,6 @@ static void run_effect(MxeVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note: the volume (unless the note keeps it), the period, and the sample, which restarts the channel. The repeat
 // registers are written after the DMA is back on (write_repeats).
 
@@ -247,7 +226,6 @@ static void start_note(MxePlayer* player, MxeVoice* voice, const MxeItem* note) 
     voice->shown_instrument = note->instrument;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A command. The vibrato, the portamento and the arpeggio keep running in the following ticks of the event; the vibrato
 // and the portamento also act at once.
 
@@ -295,7 +273,6 @@ static void run_command(MxeVoice* voice, const MxeItem* item) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One event of the current pattern: up to the duration, which ends it. False when the pattern cannot be read (the
 // walk at open rules that out).
 
@@ -322,7 +299,6 @@ static bool run_event(MxePlayer* player, MxeVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The registers a voice that ran writes: the period and the volume (the eagleplayer's master volume and balance are
 // the identity at full volume).
 
@@ -331,7 +307,6 @@ static void write_registers(MxeVoice* voice) {
     voice->paula.volume = (uint8_t)voice->volume;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One voice in one tick: while an event lasts only its effect runs; when it is over the next event is read.
 
 static void run_voice(MxePlayer* player, uint32_t hw, bool* looped) {
@@ -355,7 +330,6 @@ static void run_voice(MxePlayer* player, uint32_t hw, bool* looped) {
     write_registers(voice);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The end of the interrupt: DMA on for the voices that started a note (they latch the sample), then every voice gets
 // its repeat.
 
@@ -369,8 +343,6 @@ static void write_repeats(MxePlayer* player) {
         voice->paula.len_words = voice->repeat_words;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MxeTickResult mxe_tick(MxePlayer* player, NuadeVoices* voices) {
     MxeTickResult result = { 0 };
@@ -389,13 +361,9 @@ MxeTickResult mxe_tick(MxePlayer* player, NuadeVoices* voices) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t mxe_grid_ticks(const MxePlayer* player) {
     return player->module.grid_ticks;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MxeVoiceState mxe_voice_state(const MxePlayer* player, int voice) {
     const MxeVoice* v = &player->voices[voice];

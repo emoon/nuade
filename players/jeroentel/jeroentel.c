@@ -50,20 +50,16 @@ typedef enum NoteStart {
     NoteStart_Stop,    // the track list holds the stop mark
 } NoteStart;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t byte_at(const JtModule* m, uint32_t base, uint32_t index) {
     return base != JT_NO_OFFSET ? jt_u8(m, base + index) : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period of a byte offset into the table; offsets beyond the table use its last entry.
 
 static uint16_t period_at(const JtModule* m, unsigned byte_offset) {
     return jt_period(m, (byte_offset >= PERIOD_INDEX_LIMIT ? PERIOD_INDEX_LAST : byte_offset) / 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The stop mark: the replayer switches all channels off and plays nothing more.
 
 static void stop_song(JtPlayer* p) {
@@ -73,7 +69,6 @@ static void stop_song(JtPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's SongEnd call: all four voices go back to their first track entry.
 
 static void end_song(JtPlayer* p) {
@@ -83,7 +78,6 @@ static void end_song(JtPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The next track entry that is a pattern number; the transpositions before it change the voice's transpose. False when
 // the replayer stopped.
 
@@ -109,7 +103,6 @@ static bool next_pattern(JtPlayer* p, JtVoice* v, uint8_t* pattern_number) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The channel starts the new note's sample.
 
 static void restart_channel(JtPlayer* p, int voice) {
@@ -129,7 +122,6 @@ static void restart_channel(JtPlayer* p, int voice) {
     v->gate = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Reads the voice's next note from its pattern and track list.
 
 static NoteStart read_note(JtPlayer* p, int voice) {
@@ -202,7 +194,6 @@ static NoteStart read_note(JtPlayer* p, int voice) {
     return NoteStart_Started;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample start of an instrument with a sweep moves one byte on every second tick (the parity of voice 0's tick
 // counter, which every voice reads).
 
@@ -218,8 +209,6 @@ static void sweep_sample(JtPlayer* p, int voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void apply_vibrato(JtVoice* v) {
     const JtInstrument* ins = &v->instrument;
     v->period = (uint16_t)(v->vibrato_up ? v->period + ins->vibrato_step : v->period - ins->vibrato_step);
@@ -230,7 +219,6 @@ static void apply_vibrato(JtVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period moves towards the period of the target note by the slide speed; it stops there.
 
 static void apply_slide(const JtModule* m, JtVoice* v) {
@@ -251,7 +239,6 @@ static void apply_slide(const JtModule* m, JtVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What a voice does in a tick that starts no note: sweep, the release of the gate, the loop of the sample after the
 // first tick, then the slide or the vibrato.
 
@@ -276,7 +263,6 @@ static void run_note(JtPlayer* p, int voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume envelope: attack to the maximum, decay to the sustain level, or the release after the gate closed. The
 // envelope moves on every second tick.
 
@@ -312,7 +298,6 @@ static void run_envelope(JtVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The arpeggio list gives the period: a note offset (relative to the voice's note, or absolute with bit 7) per tick.
 // 0xFF ends the list (its first byte is the position to loop to), 0xFE holds the period.
 
@@ -337,7 +322,6 @@ static void run_arpeggio(const JtModule* m, JtVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One voice of one tick. False when the replayer stopped.
 
 static bool step_voice(JtPlayer* p, int voice) {
@@ -364,7 +348,6 @@ static bool step_voice(JtPlayer* p, int voice) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The registers: period and volume of every voice, then its DMA on.
 
 static void write_registers(JtPlayer* p) {
@@ -376,8 +359,6 @@ static void write_registers(JtPlayer* p) {
         nuade_paula_channel_dma_on(paula);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool jt_start(JtPlayer* player, int subsong, NuadeVoices* voices) {
     JtSong song;
@@ -403,8 +384,6 @@ bool jt_start(JtPlayer* player, int subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 JtTickResult jt_tick(JtPlayer* player, NuadeVoices* voices) {
     player->looped = false;
     if (player->playing) {
@@ -426,8 +405,6 @@ JtTickResult jt_tick(JtPlayer* player, NuadeVoices* voices) {
     }
     return (JtTickResult) { .looped = player->looped, .ended = !player->playing };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 JtVoiceState jt_voice_state(const JtPlayer* player, int voice) {
     if (voice < 0 || voice >= JT_VOICES) {

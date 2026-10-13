@@ -13,9 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Helpers
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static double read_ieee_extended80_be(const uint8_t* p) {
     uint16_t exp = nuade_read_be16(p);
@@ -32,9 +30,7 @@ static double read_ieee_extended80_be(const uint8_t* p) {
     return sign * ldexp(frac, (int)exp - 16383);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // File reads through NuadeIo
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Read a whole file into a malloc'd buffer (the loaders below free or realloc it). Caller frees *out_data.
 static bool read_file(const NuadeIo* io, const char* path, uint8_t** out_data, uint32_t* out_size) {
@@ -56,18 +52,14 @@ static bool read_file(const NuadeIo* io, const char* path, uint8_t** out_data, u
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AIFF marker struct (C equivalent)
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 typedef struct {
     uint16_t id;
     uint32_t pos;
 } SonixAiffMarker;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // 8SVX multi-octave zone info
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 typedef struct {
     const uint8_t* data; // p ointer into input buffer (NOT owned)
@@ -78,9 +70,7 @@ typedef struct {
     uint8_t high_key;
 } SonixSvxOctaveZone;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AIFF zone info
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 typedef struct {
     int8_t* pcm; // malloc'd, caller frees
@@ -95,7 +85,6 @@ typedef struct {
     uint16_t decay_time;
 } SonixAiffZone;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Format decoders
 // Resolve loop markers from AIFF MARK+INST chunks
 static void resolve_aiff_loop(const SonixAiffMarker* markers, int num_markers, uint16_t sustain_mode,
@@ -140,7 +129,6 @@ static void resolve_aiff_loop(const SonixAiffMarker* markers, int num_markers, u
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Parse MARK chunk, return number of markers parsed
 static int parse_aiff_markers(const uint8_t* data, size_t data_pos, uint32_t len, SonixAiffMarker* markers,
                               int max_markers) {
@@ -161,7 +149,6 @@ static int parse_aiff_markers(const uint8_t* data, size_t data_pos, uint32_t len
     return count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Reads "<attack> <decay>" from an AIFF NAME chunk, as sscanf("%d %d") does for numbers that fit an int (sscanf has
 // undefined behaviour for numbers that do not).
 
@@ -181,8 +168,6 @@ static bool parse_attack_decay(const char* text, int* attack, int* decay) {
     *decay = values[1];
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static int decode_8svx_zones(const uint8_t* data, uint32_t size, SonixSvxOctaveZone* zones, int max_zones,
                              uint16_t* source_rate_hz, uint32_t* vhdr_volume) {
@@ -303,8 +288,6 @@ static int decode_8svx_zones(const uint8_t* data, uint32_t size, SonixSvxOctaveZ
     return num_zones;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool decode_aiff_pcm8(const uint8_t* data, uint32_t size, int8_t** out_pcm, uint32_t* out_pcm_len,
                              uint32_t* out_loop_start, uint32_t* out_loop_len, uint8_t* out_base_note,
                              uint32_t* out_source_rate_hz, uint8_t* out_low_key, uint8_t* out_high_key,
@@ -416,8 +399,6 @@ static bool decode_aiff_pcm8(const uint8_t* data, uint32_t size, int8_t** out_pc
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool decode_aiff_zone(const uint8_t* data, size_t chunk_size, SonixAiffZone* zone) {
     if (chunk_size < 12)
         return false;
@@ -525,8 +506,6 @@ static bool decode_aiff_zone(const uint8_t* data, size_t chunk_size, SonixAiffZo
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 #define SONIX_MAX_AIFF_ZONES 64
 
 static int decode_aiff_zones(const uint8_t* data, uint32_t size, SonixAiffZone* zones, int max_zones) {
@@ -558,8 +537,6 @@ static int decode_aiff_zones(const uint8_t* data, uint32_t size, SonixAiffZone* 
 
     return count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool parse_aiff_name_attack_decay(const uint8_t* data, uint32_t size, uint16_t* attack_time,
                                          uint16_t* decay_time) {
@@ -616,8 +593,6 @@ static bool parse_aiff_name_attack_decay(const uint8_t* data, uint32_t size, uin
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void read_cstr(const uint8_t* data, uint32_t size, size_t off, size_t max_len, char* out, size_t out_size) {
     out[0] = '\0';
     if (off >= size)
@@ -633,8 +608,6 @@ static void read_cstr(const uint8_t* data, uint32_t size, size_t off, size_t max
     }
     out[j] = '\0';
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void parse_sampled_sound_ref(const uint8_t* instr, uint32_t instr_size, const char* fallback_name,
                                     char* out_name, size_t out_name_size) {
@@ -652,8 +625,6 @@ static void parse_sampled_sound_ref(const uint8_t* instr, uint32_t instr_size, c
         snprintf(out_name, out_name_size, "%s", sample_name);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t closest_note_from_period(uint32_t period) {
     static const uint16_t k_note_ratio[12]
@@ -674,8 +645,6 @@ static uint8_t closest_note_from_period(uint32_t period) {
     return (uint8_t)best_note;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t parse_sampled_sound_base_note(const uint8_t* instr, uint32_t instr_size) {
     if (instr_size < 0x24 || memcmp(instr, "SampledSound", 11) != 0)
         return 60;
@@ -686,8 +655,6 @@ static uint8_t parse_sampled_sound_base_note(const uint8_t* instr, uint32_t inst
     return 60;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t parse_sampled_sound_base_period(const uint8_t* instr, uint32_t instr_size) {
     if (instr_size < 0x24 || memcmp(instr, "SampledSound", 11) != 0)
         return 0;
@@ -697,8 +664,6 @@ static uint32_t parse_sampled_sound_base_period(const uint8_t* instr, uint32_t i
         return period;
     return 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool decode_synthesis_wave(const uint8_t* instr, uint32_t instr_size, int8_t** out_pcm, uint32_t* out_pcm_len,
                                   int8_t** out_wave128, uint32_t* out_wave_len, uint16_t* out_c2, uint16_t* out_c4) {
@@ -751,7 +716,6 @@ static bool decode_synthesis_wave(const uint8_t* instr, uint32_t instr_size, int
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // TINY type-1 instruments (asm TinyLoad / INITINSTRUMENT: first long 1 = SYNTHTECH) are a regular 502-byte
 // Synthesis file without its 0x44-byte name header: the 128-byte wave starts at offset 8. Rebuild the regular
 // layout (zero header) so the Synthesis path below reads every field at its usual offset.
@@ -772,8 +736,6 @@ static void expand_tiny_synth_instr(uint8_t** data, uint32_t* size) {
     *data = expanded;
     *size = full;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool decode_ss_pcm8(const uint8_t* data, uint32_t size, int8_t** out_pcm, uint32_t* out_pcm_len,
                            uint32_t* out_loop_start, uint32_t* out_loop_len) {
@@ -852,8 +814,6 @@ static bool decode_ss_pcm8(const uint8_t* data, uint32_t size, int8_t** out_pcm,
     return pcm_len > 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t parse_ss_base_note(const uint8_t* ss_data, uint32_t ss_size) {
     if (ss_size < 2)
         return 60;
@@ -863,9 +823,7 @@ static uint8_t parse_ss_base_note(const uint8_t* ss_data, uint32_t ss_size) {
     return 60;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Instrument directory discovery
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Song dir, then Instruments and instruments at its parent, grandparent and great-grandparent levels (in that
 // order: the first match of a file name wins).
@@ -877,8 +835,6 @@ typedef struct {
     int count;
 } SonixSearchDirs;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Paths that do not fit are skipped instead of truncated.
 static void add_search_subdir(SonixSearchDirs* sd, const char* dir, const char* name) {
     if (nuade_path_join(dir, name, sd->dirs[sd->count], sizeof(sd->dirs[0]))) {
@@ -886,8 +842,6 @@ static void add_search_subdir(SonixSearchDirs* sd, const char* dir, const char* 
         sd->count++;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void collect_search_dirs(const char* song_path, SonixSearchDirs* sd) {
     sd->count = 0;
@@ -910,9 +864,7 @@ static void collect_search_dirs(const char* song_path, SonixSearchDirs* sd) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Orchestrator
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int sonix_song_load_instruments(SonixSong* song, const NuadeIo* io, const char* song_path) {
     const SonixSongMetadata* meta = sonix_song_get_metadata(song);

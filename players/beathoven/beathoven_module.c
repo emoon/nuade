@@ -36,13 +36,9 @@
 // A module is a few hundred KB; the limit keeps the sums of sizes in 32 bits
 #define MAX_FILE_BYTES 0x10000000u
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t file_u32(const uint8_t* data, size_t size, size_t at) {
     return at + 4 <= size ? nuade_read_be32(data + at) : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The eagleplayer's Check2: the file layout, the signature and three nonzero header longwords (play, init and the
 // subsong count)
@@ -59,8 +55,6 @@ static bool check2(const uint8_t* data, size_t size) {
            && nuade_read_be32(code + HEADER_OFFSET) != 0 && nuade_read_be32(code + HEADER_OFFSET + 4) != 0
            && nuade_read_be32(code + HEADER_OFFSET + 8) != 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The relocation table: HUNK_RELOC32 blocks of (count, hunk, offsets...) up to a zero count. Only offsets inside the
 // hunk are kept. Advances *position past the blocks; false if memory ran out.
@@ -94,15 +88,11 @@ static bool read_relocs(BthImage* image, const uint8_t* data, size_t size, size_
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int compare_offsets(const void* a, const void* b) {
     const uint32_t x = *(const uint32_t*)a;
     const uint32_t y = *(const uint32_t*)b;
     return x < y ? -1 : x > y ? 1 : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Where UADE puts the hunk. The loader reads the file to a fixed address, LoadSeg's buffer follows it (aligned, with a
 // gap), and the hunk is allocated behind a second copy of the file. Only the words of relocated pointers that the
@@ -112,14 +102,11 @@ static int compare_offsets(const void* a, const void* b) {
 #define UADE_BUFFER_GAP 0x300u
 #define UADE_HUNK_OFFSET 0x18u
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static uint32_t uade_load_address(uint32_t file_size) {
     const uint32_t buffer = ((UADE_FILE_ADDRESS + file_size + UADE_BUFFER_ALIGNMENT - 1) & ~(UADE_BUFFER_ALIGNMENT - 1))
                             + UADE_BUFFER_GAP;
     return ((buffer + file_size) & ~0xFu) + UADE_HUNK_OFFSET;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BthImage* bthi_load(const uint8_t* data, size_t size) {
     if (size > MAX_FILE_BYTES || !check2(data, size) || file_u32(data, size, HUNK_COUNT_OFFSET) != 1
@@ -159,8 +146,6 @@ BthImage* bthi_load(const uint8_t* data, size_t size) {
     return image;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void bthi_free(BthImage* image) {
     if (image != nullptr) {
         free(image->module.data);
@@ -169,14 +154,10 @@ void bthi_free(BthImage* image) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool bthi_is_pointer(const BthImage* image, uint32_t address) {
     return image->reloc_count != 0
            && bsearch(&address, image->relocs, image->reloc_count, sizeof(uint32_t), compare_offsets) != nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BthHeader bthi_header(const BthImage* image) {
     const BthModule* m = &image->module;

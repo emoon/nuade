@@ -51,7 +51,6 @@
 #define SP_MORPH_POSITIONS 128
 #define SP_MORPH_ALTERNATE 0x100
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Bytes of a file: a read past the end is 0 (the replayer would read whatever follows in memory; the loader refuses
 // songs that do). The allocation is a nuade_paula_padded_copy, so any AUDxLC inside the file can play any length.
 
@@ -66,7 +65,6 @@ int8_t sp_s8(const SpMemory* memory, uint32_t offset);
 uint16_t sp_u16(const SpMemory* memory, uint32_t offset);
 uint32_t sp_u32(const SpMemory* memory, uint32_t offset);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tables and shifts
 
 extern const uint16_t sp_periods[SP_PERIOD_COUNT];
@@ -78,7 +76,6 @@ uint16_t sp_period(unsigned note, int8_t tuning);
 uint16_t sp_lsr16(uint16_t value, unsigned count);
 int16_t sp_asr16(int16_t value, unsigned count);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Paula. A note starts in two ticks: the first writes AUDxLC/AUDxLEN and switches the channel's DMA off, the second
 // switches it on and writes the loop part (the repeat) after it.
 
@@ -97,7 +94,6 @@ void sp_channel_set_sample(SpChannel* channel, const SpMemory* set, uint32_t off
 // AUDxVOL of a volume: the replayer keeps 7 bits (the channel applies Paula's rule to them).
 uint8_t sp_paula_volume(unsigned volume);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Envelope, the same in both layouts
 
 typedef struct SpEnvelope {
@@ -116,7 +112,6 @@ void sp_adsr_release(SpAdsr* adsr);
 // A note starts: the attack from level 0.
 void sp_adsr_start(SpAdsr* adsr);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Instrument parts the layouts share
 
 typedef struct SpLfoSettings {
@@ -164,7 +159,6 @@ typedef struct SpSlide {
     int16_t release_step;
 } SpSlide;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The part of a voice both layouts have
 
 SpVoice sp_voice_new(bool released);
@@ -183,7 +177,6 @@ void sp_voice_slide(SpVoice* voice, const SpSlide* slide);
 // The two ticks of a note start. A voice with a pending restart writes the loop or the first run.
 void sp_voice_restart(SpVoice* voice, const SpWave* wave, SpChannel* channel, const SpMemory* set);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Song records, the same in both layouts
 
 typedef enum SpControl {
@@ -221,7 +214,6 @@ bool sp_sequencer_tick(SpSequencer* sequencer);
 // A row is done: the next one, or the end of the position.
 void sp_sequencer_row_end(SpSequencer* sequencer, SpSongEvents* events);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Open-time proof. The song's reads follow from its positions alone, so a walk over the (position, loop point) states
 // all subsongs can reach, with one work budget, visits everything a layout must check; then the sample set's
 // instruments that the events named are checked once each.
@@ -253,7 +245,6 @@ bool sp_validate(const SpRules* rules, const SpMemory* song, const SpMemory* set
 // The note checks that need no sample set: a note's shift and arpeggio reach alone can put it outside the periods.
 bool sp_check_note_reach(int8_t note_shift, unsigned arpeggio_reach);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Module
 
 // The eagleplayer's check, which tells the generations apart.

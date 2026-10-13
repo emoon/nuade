@@ -40,7 +40,6 @@ static const uint16_t k_periods[128] = {
     0x0580, 0x05c0, 0x0600, 0x0640, 0x0680, 0x06c0, 0x0700, 0x0740, 0x0780, 0x07c0, 0x0800,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The voice record
 
 enum {
@@ -75,8 +74,6 @@ enum {
 #define AUDIO_REGISTERS 0xdff0a0u
 #define AUDIO_REGISTER_STRIDE 0x10u
 #define FIXED_PITCH 0x80
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void unpack_record(Voice* v, const uint8_t* record) {
     const uint8_t base_note = record[Record_BaseNote];
@@ -118,8 +115,6 @@ static void unpack_record(Voice* v, const uint8_t* record) {
     v->new_note = record[Record_NewNote] != 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void pack_record(const Voice* v, uint8_t* record) {
     memset(record, 0, RECORD_SIZE);
     jor_put16(record, Record_Instrument, v->instrument);
@@ -155,8 +150,6 @@ static void pack_record(const Voice* v, uint8_t* record) {
     record[Record_NewNote] = v->new_note ? 0xff : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A song command or a program entry stores a byte into the record at an offset the song gives. Offsets past the
 // record would land in the next record or the module; no song does that.
 static void poke_byte(Voice* v, uint32_t offset, uint8_t value) {
@@ -169,8 +162,6 @@ static void poke_byte(Voice* v, uint32_t offset, uint8_t value) {
     unpack_record(v, record);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The command word (command byte, argument) is stored at the record offset (command byte - 0x80), the 68020 stores
 // it at an odd offset as well
 static void store_command(void* voice, uint16_t command) {
@@ -179,8 +170,6 @@ static void store_command(void* voice, uint16_t command) {
     poke_byte(voice, offset + 1, (uint8_t)command);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void load_record(const JoModule* m, uint32_t offset, Voice* v) {
     uint8_t record[RECORD_SIZE];
     jom_record(m, offset, record, RECORD_SIZE);
@@ -188,7 +177,6 @@ static void load_record(const JoModule* m, uint32_t offset, Voice* v) {
     unpack_record(v, record);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The instrument record
 
 typedef struct Instrument {
@@ -203,8 +191,6 @@ typedef struct Instrument {
     uint32_t loop_start;
     uint16_t loop_length;
 } Instrument;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static Instrument read_instrument(const JoModule* m, uint32_t offset) {
     Instrument i = { 0 };
@@ -227,14 +213,10 @@ static Instrument read_instrument(const JoModule* m, uint32_t offset) {
     return i;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static Instrument voice_instrument(const JoModule* m, const Voice* v) {
     const uint32_t entry = v->instrument_table + 2u * (v->instrument & 0xff);
     return read_instrument(m, jom_u16(m, entry));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The header of an 8SVX file that precedes the sample body: the lengths of the one-shot and the repeat part
 typedef struct SvxHeader {
@@ -242,14 +224,11 @@ typedef struct SvxHeader {
     uint16_t repeat;
 } SvxHeader;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static SvxHeader read_svx_header(const JoModule* m, uint32_t body) {
     const uint32_t header = body - FORM_HEADER_SIZE;
     return (SvxHeader) { .one_shot = jom_u16(m, header + 0x16), .repeat = jom_u16(m, header + 0x1a) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Song start
 
 static Voice* find_record(JoC* c, const JoModule* m, uint32_t offset) {
@@ -267,13 +246,9 @@ static Voice* find_record(JoC* c, const JoModule* m, uint32_t offset) {
     return &c->records[index];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t list_offset(const JoModule* m, int list) {
     return jom_u16(m, 2u * (uint32_t)list);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // An entry of a song list: the voice it starts
 typedef struct ListEntry {
@@ -288,8 +263,6 @@ typedef struct ListEntry {
 
 #define LIST_ENTRY_SIZE 10
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static ListEntry read_list_entry(const JoModule* m, uint32_t offset) {
     return (ListEntry) { .record = jom_offset16(jom_u16(m, offset)),
                          .instrument_table = jom_offset16(jom_u16(m, offset + 2)),
@@ -299,8 +272,6 @@ static ListEntry read_list_entry(const JoModule* m, uint32_t offset) {
                          .priority = jom_u8(m, offset + 8),
                          .volume = jom_u8(m, offset + 9) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Starts the song list `list`: every entry initialises the voice record it names, unless a voice playing a song of
 // higher priority owns it
@@ -342,8 +313,6 @@ static void start_list(JoC* c, const JoModule* m, int list) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool jo_c_detect(const JoModule* m) {
     const uint16_t size = jom_u16(m, 0);
     if (size > 0x200 || size < 4 || (size & 1) != 0) {
@@ -358,8 +327,6 @@ bool jo_c_detect(const JoModule* m) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The eagleplayer's subsong range: the lists after list 0, minus one more when the voice records follow an empty
 // slot or a 0x7f00 marker
 int jo_c_subsong_count(const JoModule* m) {
@@ -370,8 +337,6 @@ int jo_c_subsong_count(const JoModule* m) {
     }
     return count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void jo_c_start(JoC* c, const JoModule* m, int subsong) {
     *c = (JoC) { 0 };
@@ -384,7 +349,6 @@ void jo_c_start(JoC* c, const JoModule* m, int subsong) {
     jo_song_end_start(&c->end, has_track);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tick
 
 // One of the voice's three programs: every time its counter runs out it stores a value into a field of the record
@@ -416,8 +380,6 @@ static void run_program(const JoModule* m, Voice* v, int index) {
     p->counter = (int8_t)p->reload;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Starts the instrument of a note row: loads its programs and stops the channel for the restart
 static void trigger(JoC* c, const JoModule* m, Voice* v) {
     const Instrument instrument = voice_instrument(m, v);
@@ -439,8 +401,6 @@ static void trigger(JoC* c, const JoModule* m, Voice* v) {
         nuade_paula_channel_dma_off(&c->paula[v->channel]);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The row of the pattern the voice plays: field commands, then a note row, a rest row or a hold row
 static void step_pattern(JoC* c, const JoModule* m, Voice* v, uint32_t pattern) {
@@ -471,8 +431,6 @@ static void step_pattern(JoC* c, const JoModule* m, Voice* v, uint32_t pattern) 
     jo_pattern_advance(m, at, &v->pattern_position, &v->repeat, &v->track_position);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The tempo accumulator carried and the row ran out: the track gives the next pattern
 static void step_track(JoC* c, const JoModule* m, Voice* v) {
     uint32_t at;
@@ -491,8 +449,6 @@ static void step_track(JoC* c, const JoModule* m, Voice* v) {
     v->track_position = (uint16_t)(v->track_position + (at - start));
     step_pattern(c, m, v, jom_offset16(jom_u16(m, at)));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The sample pointer and length of a note: the one-shot part when it has just started, the loop part afterwards
 static void write_sample(const JoModule* m, const Voice* v, const Instrument* instrument, NuadePaulaChannel* paula,
@@ -519,14 +475,10 @@ static void write_sample(const JoModule* m, const Voice* v, const Instrument* in
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The replayer's multiplication table: level a (0..63) times level b (0..63) over 63, 64 entries per level
 static uint8_t table_product(uint16_t index) {
     return index < 64 * 64 ? (uint8_t)((index >> 6) * (index & 0x3f) / 63) : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The table offset of the row of a level: 0x40 per level. A level of 64 and above reads the next words of the
 // replayer, which are the table itself.
@@ -538,15 +490,11 @@ static uint16_t level_row(uint8_t level) {
     return (uint16_t)((table_product((uint16_t)(2 * (x - 64))) << 8) | table_product((uint16_t)(2 * (x - 64) + 1)));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The replayer scales a level through the table with a byte add that wraps inside the row group
 static uint8_t scaled(uint8_t a, uint8_t b) {
     const uint16_t row = level_row(a);
     return table_product((uint16_t)((row & 0xff00u) | (uint8_t)(row + b)));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The voice plays on: sample, instrument programs, volume mix and period
 static void run_voice(JoC* c, const JoModule* m, Voice* v) {
@@ -580,8 +528,6 @@ static void run_voice(JoC* c, const JoModule* m, Voice* v) {
     const int pitch_a = v->no_pitch_a ? 0 : v->pitch_a;
     paula->period = (uint16_t)(k_periods[note & 0x7f] - v->pitch_b - pitch_a - v->slide_sum);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 JoTickResult jo_c_tick(JoC* c, const JoModule* m, NuadeVoices* voices) {
     for (int i = 0; i < JO_VOICES; i++) {
@@ -617,8 +563,6 @@ JoTickResult jo_c_tick(JoC* c, const JoModule* m, NuadeVoices* voices) {
     }
     return jo_song_end_result(&c->end, voices_play);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 JoVoiceState jo_c_voice_state(const JoC* c, int voice) {
     const JoCVoice* v = c->slots[voice];

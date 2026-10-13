@@ -18,7 +18,6 @@
 #define ALLOCATION_STEP 2                 // voices that the starting point of the search moves per note
 #define SAMPLE_BASE_IDLE_LONG 0xFFFFFFFFu // what the newer replayers keep in the first long of the samples
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxLC and AUDxLEN of a run of the samples. AUDxLC ignores its lowest bit; a run plays zeros past the file's end. An
 // offset past the file is memory the samples do not own: it plays the zeros behind the file, the only memory with room
 // for any length.
@@ -29,7 +28,6 @@ static void set_run(const DnsSamples* samples, NuadePaulaChannel* paula, uint32_
     paula->len_words = length_words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The first long of the samples is the silent run that idle channels repeat.
 
 static void set_sample_base_long(DnsSamples* samples, uint32_t value) {
@@ -38,7 +36,6 @@ static void set_sample_base_long(DnsSamples* samples, uint32_t value) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The voice that a new note takes: the one with the greatest age. A voice that is silent has the greatest, then the
 // ones that were released, then the ones that have played longest. The search starts at a voice that moves by two per
 // note and goes down; a voice must be older than the best so far to replace it.
@@ -57,21 +54,17 @@ static unsigned allocate_voice(DnsPlayer* player) {
     return best;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxVOL from a level: the eagleplayer keeps 7 bits (the channel applies Paula's rule to them).
 
 static uint8_t paula_volume(int16_t level) {
     return (uint8_t)((uint16_t)level & VOLUME_REGISTER_MASK);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int16_t limited_level(int16_t level, uint8_t volume_offset) {
     const int16_t sum = (int16_t)(level + volume_offset);
     return sum > MAX_LEVEL ? MAX_LEVEL : sum;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period of a note: the table value plus the sample's detune, never below the eagleplayer's minimum.
 
 static uint16_t note_period(const DnsModule* module, uint8_t note, uint16_t detune) {
@@ -79,7 +72,6 @@ static uint16_t note_period(const DnsModule* module, uint8_t note, uint16_t detu
     return period < MIN_PERIOD ? MIN_PERIOD : period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note starts on a voice: DMA stops, the registers get the sample's first run, the envelope starts its attack. The
 // volume register is not written here; the next tick's volume update does it.
 
@@ -103,7 +95,6 @@ static void start_voice(DnsPlayer* player, unsigned index, uint8_t sample, uint8
     voice->display_instrument = sample;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A track plays a note: a voice is chosen and started.
 
 static void note_on(DnsPlayer* player, unsigned track_index, uint16_t word) {
@@ -129,7 +120,6 @@ static void note_on(DnsPlayer* player, unsigned track_index, uint16_t word) {
     player->voices_active = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The release of a voice's note, if its track has let go: the envelope turns to its release phase.
 
 static void begin_release(DnsVoice* voice) {
@@ -146,7 +136,6 @@ static void begin_release(DnsVoice* voice) {
     voice->phase = DnsEnvelopePhase_Release;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A track lets go of its note.
 
 static void note_off(DnsPlayer* player, unsigned track_index) {
@@ -167,7 +156,6 @@ static void note_off(DnsPlayer* player, unsigned track_index) {
     begin_release(voice);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One step of a track's pattern.
 
 static void run_track(DnsPlayer* player, unsigned track_index) {
@@ -197,7 +185,6 @@ static void run_track(DnsPlayer* player, unsigned track_index) {
     note_on(player, track_index, word);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sequencer reaches the end of the song: it loops, and the eagleplayer's SongEnd runs.
 
 static void wrap_position(DnsPlayer* player) {
@@ -205,7 +192,6 @@ static void wrap_position(DnsPlayer* player) {
     player->looped = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tracks get their patterns for the next position of the song.
 
 static void load_position(DnsPlayer* player) {
@@ -229,7 +215,6 @@ static void load_position(DnsPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sequencer part of the tick. True when the tick must not update the voices.
 
 static bool run_sequencer(DnsPlayer* player) {
@@ -258,7 +243,6 @@ static bool run_sequencer(DnsPlayer* player) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A voice's envelope: every `counter_reload` ticks the level steps towards the target; at the target the phase ends.
 
 static void update_envelope(const DnsVersion* version, DnsVoice* voice) {
@@ -299,7 +283,6 @@ static void update_envelope(const DnsVersion* version, DnsVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A voice's DMA sequence after a note: DMA starts one tick later (two with the delay state), the tick after that the
 // repeat registers get the sample's loop.
 
@@ -328,7 +311,6 @@ static void step_dma(DnsPlayer* player, DnsVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The voice part of the tick, once a note has played: the volume registers get the levels, then the envelopes and the
 // DMA sequences step.
 
@@ -347,8 +329,6 @@ static void update_voices(DnsPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void dns_replayer_tick(DnsPlayer* player) {
     if (player->module.version.voices_first) {
         update_voices(player);
@@ -358,7 +338,6 @@ void dns_replayer_tick(DnsPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The start of a song: the replayer's variables begin as the module has them (zero), the song's fields are copied,
 // and the first position is loaded.
 

@@ -52,9 +52,7 @@
 #define MAGIC_INST 0x696E7374u
 #define MAGIC_INSF 0x696E7366u
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tables
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Period for a note: indexed by byte offset, so notes are even numbers
 static const uint16_t k_periods[] = {
@@ -69,27 +67,19 @@ static const uint8_t k_waveforms[WAVEFORM_COUNT * WAVEFORM_SIZE] = {
 #include "pumatracker_waves.inc"
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // PumaModule data access: every read outside the module gives zero
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t rd8(const PumaModule* mod, int64_t pos) {
     return (pos >= 0 && (uint64_t)pos < mod->size) ? mod->data[pos] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t rd16(const PumaModule* mod, int64_t pos) {
     return (uint16_t)((rd8(mod, pos) << 8) | rd8(mod, pos + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t rd32(const PumaModule* mod, int64_t pos) {
     return ((uint32_t)rd16(mod, pos) << 16) | rd16(mod, pos + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Word at a byte offset into k_periods; the offset need not be even. Beyond the table it reads zero.
 static uint16_t note_period(uint8_t byte_offset) {
@@ -103,9 +93,7 @@ static uint16_t note_period(uint8_t byte_offset) {
     return (uint16_t)((bytes[0] << 8) | bytes[1]);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Probe
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool puma_probe(const uint8_t* data, size_t size) {
     if (data == nullptr || size < HEADER_SIZE || data[12] != 0) {
@@ -136,9 +124,7 @@ bool puma_probe(const uint8_t* data, size_t size) {
     return rd32(&view, at + 4) == MAGIC_PATT;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // PumaModule loading
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Positions of the track starts: each track follows a 'patt' marker.
 static void find_tracks(PumaModule* mod, int64_t* scan) {
@@ -169,8 +155,6 @@ static void find_tracks(PumaModule* mod, int64_t* scan) {
     *scan = at;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The 'inst' and 'insf' sections that follow the tracks hold each instrument's two sequences.
 static void find_instruments(PumaModule* mod, int64_t at) {
     const uint32_t wanted = rd16(mod, 0x10);
@@ -197,8 +181,6 @@ static void find_instruments(PumaModule* mod, int64_t at) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A module whose samples reach past its end is refused, as the original does.
 static bool samples_fit(const PumaModule* mod) {
     for (int i = 0; i < PUMA_SAMPLE_COUNT; i++) {
@@ -213,8 +195,6 @@ static bool samples_fit(const PumaModule* mod) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PumaPlayer* puma_create(const uint8_t* data, size_t size) {
     if (data == nullptr || !puma_probe(data, size)) {
@@ -249,8 +229,6 @@ PumaPlayer* puma_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void puma_destroy(PumaPlayer* player) {
     if (player == nullptr) {
         return;
@@ -259,15 +237,11 @@ void puma_destroy(PumaPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const char* puma_title(const PumaPlayer* player) {
     return (const char*)player->mod.data;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Sequences
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Select a sample (0..9) or a built-in waveform (10..51) for the voice
 static void select_source(const PumaModule* mod, PumaVoice* v, uint8_t index) {
@@ -287,8 +261,6 @@ static void select_source(const PumaModule* mod, PumaVoice* v, uint8_t index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void start_volume_ramp(const PumaModule* mod, PumaVoice* v, int64_t cmd) {
     const uint8_t from = rd8(mod, cmd + 1);
     const uint8_t to = rd8(mod, cmd + 2);
@@ -302,8 +274,6 @@ static void start_volume_ramp(const PumaModule* mod, PumaVoice* v, int64_t cmd) 
         v->volume_dir = 0xFF;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // One tick of a running ramp: a Bresenham step of `delta` per `duration`
 static void step_volume_ramp(const PumaModule* mod, PumaVoice* v, int64_t cmd) {
@@ -320,8 +290,6 @@ static void step_volume_ramp(const PumaModule* mod, PumaVoice* v, int64_t cmd) {
     }
     v->volume_accum = (uint8_t)(error + duration);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Runs the volume sequence up to the command that holds this tick
 static void run_volume_sequence(const PumaModule* mod, PumaVoice* v) {
@@ -368,8 +336,6 @@ static void run_volume_sequence(const PumaModule* mod, PumaVoice* v) {
     v->volume_pos = pos;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Start of a pitch ramp: period moves from note + `from` to note + `to` over `duration` ticks
 static void start_frequency_ramp(const PumaModule* mod, PumaVoice* v, int64_t cmd) {
     const int16_t from = (int8_t)rd8(mod, cmd + 1);
@@ -393,8 +359,6 @@ static void start_frequency_ramp(const PumaModule* mod, PumaVoice* v, int64_t cm
         v->frequency_step = (int32_t)((uint32_t)(int16_t)(distance / duration) << 16);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Runs the frequency sequence up to the command that holds this tick
 static void run_frequency_sequence(const PumaModule* mod, PumaVoice* v) {
@@ -445,8 +409,6 @@ static void run_frequency_sequence(const PumaModule* mod, PumaVoice* v) {
     v->frequency_pos = pos;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // AUDxLC/AUDxLEN for a sample or waveform. The length goes out as the replayer has it (0 plays 65536 words); a sample
 // that runs past the module plays the zeros of the padded copy. An AUDxLC outside the module or the waveform table
 // (an out-of-range offset, or a waveform step past either end) points at memory the port does not have: none.
@@ -474,8 +436,6 @@ static void latch_source(const PumaModule* mod, NuadePaulaChannel* c, PumaSample
         c->lc = (const int8_t*)(base + ref.offset);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Write the voice's registers: sample (stepped through the waveforms when animated), period and volume
 static void write_registers(const PumaModule* mod, PumaVoice* v) {
@@ -505,9 +465,7 @@ static void write_registers(const PumaModule* mod, PumaVoice* v) {
     c->volume = (level & 0x80) ? 0 : level; // the replayer clears a negative level; the channel applies Paula's rule
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Player
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The entry the voice's track points at: note, instrument and effect, and how many rows it lasts
 static void read_track_entry(const PumaModule* mod, PumaVoice* v) {
@@ -550,8 +508,6 @@ static void read_track_entry(const PumaModule* mod, PumaVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Load the four tracks, transposes and tempo of the song position
 static void load_position(const PumaModule* mod, PumaSong* s) {
     const int64_t record = HEADER_SIZE + (int64_t)s->position * POSITION_SIZE;
@@ -568,8 +524,6 @@ static void load_position(const PumaModule* mod, PumaSong* s) {
         s->speed = speed;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void play(const PumaModule* mod, PumaSong* s) {
     if (s->row == ROWS_PER_POSITION) {
@@ -619,8 +573,6 @@ static void play(const PumaModule* mod, PumaSong* s) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool puma_start(PumaPlayer* player, NuadeVoices* voices) {
     if (player == nullptr || voices == nullptr) {
         return false;
@@ -645,8 +597,6 @@ bool puma_start(PumaPlayer* player, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 PumaTickResult puma_tick(PumaPlayer* player, NuadeVoices* voices) {
     PumaSong* s = &player->song;
     s->looped = false;
@@ -657,20 +607,14 @@ PumaTickResult puma_tick(PumaPlayer* player, NuadeVoices* voices) {
     return (PumaTickResult) { .looped = s->looped };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 PumaPosition puma_position(const PumaPlayer* player) {
     const PumaSong* s = &player->song;
     return (PumaPosition) { .order = s->shown_position, .row = s->shown_row, .speed = s->speed };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int puma_position_count(const PumaPlayer* player) {
     return player->mod.positions;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PumaVoiceState puma_voice_state(const PumaPlayer* player, int voice) {
     const PumaVoice* v = &player->song.voices[voice];
@@ -678,8 +622,6 @@ PumaVoiceState puma_voice_state(const PumaPlayer* player, int voice) {
         = v->shown_instrument != 0 && (uint32_t)v->shown_instrument <= player->mod.instrument_count;
     return (PumaVoiceState) { .note = v->shown_note, .instrument = has_instrument ? v->shown_instrument - 1 : -1 };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PumaCell puma_pattern_cell(const PumaPlayer* player, int position, int voice, int row) {
     const PumaModule* mod = &player->mod;

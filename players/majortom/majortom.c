@@ -71,11 +71,7 @@ typedef enum MtEffect {
 
 static const uint8_t mt_hold_index[MT_SEQUENCES] = { 0x3c, 0x3e, 0x3e, 0x3c };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool mt_run_song(MtPlayer* player);
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MtPlayer* mt_create(const uint8_t* data, size_t size) {
     if (!mt_module_check(data, size)) {
@@ -99,8 +95,6 @@ MtPlayer* mt_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void mt_destroy(MtPlayer* player) {
     if (player != nullptr) {
         free(player->module.bytes);
@@ -109,15 +103,12 @@ void mt_destroy(MtPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool mt_probe(const uint8_t* data, size_t size) {
     MtPlayer* player = mt_create(data, size);
     mt_destroy(player);
     return player != nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitSound: Paula idles on a short silent sample, the voices read the zero block until their first note, and the
 // first row is read in the fourth tick.
 
@@ -140,8 +131,6 @@ static void mt_reset(MtPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool mt_start(MtPlayer* player, NuadeVoices* voices) {
     if (player == nullptr || voices == nullptr) {
         return false;
@@ -153,7 +142,6 @@ bool mt_start(MtPlayer* player, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The step a sequence is on, following a jump to the step the next byte names.
 
 static uint8_t mt_step(MtPlayer* player, MtSequenceState* sequence) {
@@ -166,8 +154,6 @@ static uint8_t mt_step(MtPlayer* player, MtSequenceState* sequence) {
     return step;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void mt_next_step(MtSequenceState* sequence) {
     sequence->index++;
     if (sequence->index == MT_INDEX_END) {
@@ -175,7 +161,6 @@ static void mt_next_step(MtSequenceState* sequence) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // True when the sequence has a step to play in this tick; it reloads the timer.
 
 static bool mt_sequence_due(MtSequenceState* sequence) {
@@ -187,7 +172,6 @@ static bool mt_sequence_due(MtSequenceState* sequence) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The noise table is read from the offset the volume sequence's index gives; the zeros after the table are what the
 // eagleplayer's data holds behind it.
 
@@ -205,7 +189,6 @@ static void mt_start_noise(MtPlayer* player, MtVoice* voice) {
     voice->noise = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The waveform sequence. Its jump does not read the step at the new index: the replayer adds the long at offset 0x18
 // of the block to the block address (a typo for the voice record) and reads the step there.
 
@@ -221,7 +204,6 @@ static uint8_t mt_wave_step(MtPlayer* player, MtSequenceState* sequence, bool* j
     return mt_read_byte(&player->module, (int64_t)address - MT_SONG_BASE, &player->unmapped);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A step of 0 at the block index keeps the waveform; the step a jump lands on selects a waveform even when it is 0.
 
 static void mt_run_wave_sequence(MtPlayer* player, MtVoice* voice) {
@@ -244,8 +226,6 @@ static void mt_run_wave_sequence(MtPlayer* player, MtVoice* voice) {
     mt_next_step(sequence);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void mt_run_note_sequence(MtPlayer* player, MtVoice* voice) {
     MtSequenceState* sequence = &voice->sequence[MtSequence_Note];
     if (mt_sequence_due(sequence)) {
@@ -254,21 +234,18 @@ static void mt_run_note_sequence(MtPlayer* player, MtVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The Amiga address of a sequence block.
 
 static uint32_t mt_block_address(MtBlock block) {
     return block.zeros ? MT_DATA_BASE + MT_ZERO_BLOCK_OFFSET : (uint32_t)(MT_SONG_BASE + block.offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Byte `index` (0 = most significant) of a big-endian value of `size` bytes.
 
 static uint8_t mt_value_byte(uint32_t value, uint32_t size, uint32_t index) {
     return (uint8_t)(value >> (8 * (size - 1 - index)));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A byte of the replayer's voice records (its data hunk). The period table read can run past the table, through the
 // allocation gap behind the code, into the records.
 
@@ -329,7 +306,6 @@ static uint8_t mt_record_byte(const MtPlayer* player, uint32_t address) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The word `entry` words after the start of the period table: the table, the gap of the memory allocation, the data.
 
 static uint16_t mt_table_word(MtPlayer* player, uint32_t entry) {
@@ -355,7 +331,6 @@ static uint16_t mt_table_word(MtPlayer* player, uint32_t entry) {
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period of the note plus the note sequence's offset, read from the table by octave and semitone.
 
 static uint16_t mt_note_period(MtPlayer* player, MtVoice* voice) {
@@ -365,7 +340,6 @@ static uint16_t mt_note_period(MtPlayer* player, MtVoice* voice) {
     return mt_table_word(player, (uint32_t)octaves * MT_NOTES_PER_OCTAVE + semitone);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The portamento effect moves `current` to `target` by `param` per tick; the period it returns is the one reached.
 
 static uint16_t mt_portamento(MtVoice* voice) {
@@ -389,7 +363,6 @@ static uint16_t mt_portamento(MtVoice* voice) {
     return voice->current;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pattern break effect, run by the voice: the next row read is the first of the next position.
 
 static void mt_pattern_break(MtPlayer* player, MtVoice* voice) {
@@ -400,8 +373,6 @@ static void mt_pattern_break(MtPlayer* player, MtVoice* voice) {
         player->position = 0;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void mt_run_period_sequence(MtPlayer* player, MtVoice* voice, uint16_t period) {
     MtSequenceState* sequence = &voice->sequence[MtSequence_Period];
@@ -417,7 +388,6 @@ static void mt_run_period_sequence(MtPlayer* player, MtVoice* voice, uint16_t pe
     mt_next_step(sequence);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume register: the eagleplayer's master volume and balance scaling is the identity at full volume.
 
 static void mt_run_volume_sequence(MtPlayer* player, MtVoice* voice) {
@@ -428,8 +398,6 @@ static void mt_run_volume_sequence(MtPlayer* player, MtVoice* voice) {
         mt_next_step(sequence);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void mt_run_voice(MtPlayer* player, MtVoice* voice) {
     mt_run_wave_sequence(player, voice);
@@ -449,7 +417,6 @@ static void mt_run_voice(MtPlayer* player, MtVoice* voice) {
     mt_run_volume_sequence(player, voice);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note with an instrument restarts the four sequences at their first step.
 
 static void mt_start_instrument(MtPlayer* player, MtVoice* voice, uint8_t number) {
@@ -467,7 +434,6 @@ static void mt_start_instrument(MtPlayer* player, MtVoice* voice, uint8_t number
     voice->shown_instrument = number;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note byte of 0 leaves the voice alone; a note without an instrument changes the pitch of the sounding one. The
 // effect of the cell is taken in every case, the speed effect at once.
 
@@ -492,7 +458,6 @@ static void mt_read_cell(MtPlayer* player, int ch) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Reads the four cells of the row and moves to the next row. Returns true when the song passed its last position.
 
 static bool mt_run_row(MtPlayer* player) {
@@ -512,7 +477,6 @@ static bool mt_run_row(MtPlayer* player) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One tick of the replayer, up to the DMA switch-on at its end. Returns true when the song looped.
 
 static bool mt_run_tick(MtPlayer* player) {
@@ -532,15 +496,12 @@ static bool mt_run_tick(MtPlayer* player) {
     return looped;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Whether the replayer's state is the same: everything the next ticks depend on, not the Paula channels.
 
 static bool mt_same_sequence(const MtSequenceState* a, const MtSequenceState* b) {
     return a->block.zeros == b->block.zeros && a->block.offset == b->block.offset && a->index == b->index
            && a->timer == b->timer && a->rate == b->rate && a->hold == b->hold;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool mt_same_voice(const MtVoice* a, const MtVoice* b) {
     for (int s = 0; s < MT_SEQUENCES; s++) {
@@ -555,8 +516,6 @@ static bool mt_same_voice(const MtVoice* a, const MtVoice* b) {
            && a->sample_address == b->sample_address;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool mt_same_state(const MtPlayer* a, const MtPlayer* b, uint16_t b_speed) {
     if (a->speed_counter != b->speed_counter || a->position != b->position || a->row_offset != b->row_offset
         || mt_speed(&a->module) != b_speed) {
@@ -570,7 +529,6 @@ static bool mt_same_state(const MtPlayer* a, const MtPlayer* b, uint16_t b_speed
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Runs the song without output until its state repeats (Brent's cycle detection): the replayer is deterministic, so
 // every later read has then been made. False when it reads memory the port does not model or the tick budget runs out.
 
@@ -598,7 +556,6 @@ static bool mt_run_song(MtPlayer* player) {
     }
     return false;
 }
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MtTickResult mt_tick(MtPlayer* player, NuadeVoices* voices) {
     MtTickResult result = { 0 };
@@ -619,28 +576,20 @@ MtTickResult mt_tick(MtPlayer* player, NuadeVoices* voices) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 MtPosition mt_position(const MtPlayer* player) {
     return (MtPosition) { .order = player->position,
                           .row = (int)(player->row_offset / MT_ROW_BYTES),
                           .speed = mt_speed(&player->module) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int mt_order_count(const MtPlayer* player) {
     return mt_song_length(&player->module);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MtVoiceState mt_voice_state(const MtPlayer* player, int voice) {
     const MtVoice* v = &player->voices[voice];
     return (MtVoiceState) { .note = v->note, .instrument = v->shown_instrument };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MtCell mt_pattern_cell(const MtPlayer* player, int order, int voice, int row) {
     return mt_row(&player->module, mt_order_pattern(&player->module, (uint8_t)order), (uint32_t)row, voice, nullptr);

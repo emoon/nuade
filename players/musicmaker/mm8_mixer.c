@@ -19,7 +19,6 @@
 #define SUB_BLOCK_GUARD 256
 #define MIN_BLOCK 2 // a block has at least one word, which is all Paula can play
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Row v of the table: v / 64 of a sample (a positive sample s gives s * v / 64, a negative one -((-s - 1) * v / 64)).
 // The samples are 7 bit, so the rows between are never read.
 
@@ -35,7 +34,6 @@ void mm8_build_tables(int8_t* tables) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The row that scales the quieter of two volumes to the louder one.
 
 const int8_t* mm8_volume_row(const Mm8* e, uint16_t va, uint16_t vb) {
@@ -45,7 +43,6 @@ const int8_t* mm8_volume_row(const Mm8* e, uint16_t va, uint16_t vb) {
     return e->tables + v * MM_VOLUME_ROW_SIZE;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The voice's data for a block: a voice that started a sample takes it (and the stepping starts over); one with few
 // bytes left restarts from its loop.
 
@@ -64,7 +61,6 @@ static void load_stream(Mm8Stream* s, Mm8Voice* r, uint16_t* phase) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The length of a block in samples at the channel period. What does not fit is carried to the next blocks: the length
 // is made even, and when the fractions add up to 2 samples the following block is shorter or longer by 2. The
 // accumulated fraction is rescaled when the period of the voice that gives the channel period changes (by that voice's
@@ -97,7 +93,6 @@ static uint16_t block_length(Mm8Channel* ch, uint32_t tempo_block, uint16_t peri
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The samples a voice can give before it runs out, as the replayer counts them (with the ratio rounded up).
 
 static uint32_t samples_until_end(const Mm8Block* b, const Mm8Mixer* mixer, int voice) {
@@ -106,7 +101,6 @@ static uint32_t samples_until_end(const Mm8Block* b, const Mm8Mixer* mixer, int 
     return consumption == MM8_UNIT_RATIO ? remaining : (remaining << 8) / consumption;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A voice takes its loop; returns whether it has one.
 
 static bool load_loop(Mm8Stream* s, const Mm8Voice* r) {
@@ -115,7 +109,6 @@ static bool load_loop(Mm8Stream* s, const Mm8Voice* r) {
     return s->ptr != 0 && r->loop_length != 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Voice x has run out of data. It takes its loop, and the other voice of the pair does too when it has few bytes left.
 // Returns true when the block's routine has to be chosen anew (a voice without a loop is over for this block).
 
@@ -147,7 +140,6 @@ static bool voice_ended(Mm8Block* b, int x) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Mixes the n samples of a block, splitting it where a voice runs out of data.
 
 static void mix_samples(Mm8Block* b, const Mm8Mixer* mixer, uint32_t n) {
@@ -188,7 +180,6 @@ static void mix_samples(Mm8Block* b, const Mm8Mixer* mixer, uint32_t n) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Nothing to play: a block of the tempo's length that is not written.
 
 static void silent_block(Mm8* e, Mm8Channel* ch) {
@@ -203,8 +194,6 @@ static void silent_block(Mm8* e, Mm8Channel* ch) {
     ch->accum = ACCUM_ONE;
     ch->last_period = 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void mm8_mix_channel(Mm8* e, uint32_t c) {
     Mm8Channel* ch = &e->channel[c];

@@ -62,8 +62,6 @@ static const ThmSubsong k_five_subsongs[5] = {
     { 0xc0, 0xc7, 0xbf, 3 }, { 0xd5, 0xd6, 0xcf, 3 },
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static ThmHeader read_header(const uint8_t* data) {
     ThmHeader header = { .loop_position = data[0x20],
                          .last_position = data[0x21],
@@ -80,7 +78,6 @@ static ThmHeader read_header(const uint8_t* data) {
     return header;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2 of the eagleplayer: the size, an even positive relocation base and the 8 table pointers in their place.
 
 static bool check_module(const uint8_t* data, size_t size) {
@@ -101,50 +98,34 @@ static bool check_module(const uint8_t* data, size_t size) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool has_module_prefix(const char* filename) {
     const char* name = filename != nullptr ? nuade_path_basename(filename) : nullptr;
     return name != nullptr && strncasecmp(name, MODULE_PREFIX, PREFIX_LENGTH) == 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t relocated(const ThmModule* module, uint32_t offset) {
     return nuade_read_be32(module->chip + offset) - module->header.base;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint8_t thm_module_instrument_count(const ThmModule* module) {
     return module->header.instrument_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t thm_module_last_row(const ThmModule* module) {
     return module->header.last_row;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint8_t thm_module_row_count(const ThmModule* module) {
     return (uint8_t)(thm_module_last_row(module) + 1);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t thm_module_timer(const ThmModule* module) {
     return module->header.timer;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool thm_module_voice_off(const ThmModule* module, uint32_t voice) {
     return module->header.voice_off[voice % THM_VOICES];
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ThmSubsong thm_module_subsong(const ThmModule* module, uint32_t subsong) {
     if (module->subsong_count == 5) {
@@ -162,7 +143,6 @@ ThmSubsong thm_module_subsong(const ThmModule* module, uint32_t subsong) {
                           .speed = header->speed };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The callers pass numbers up to the instrument count; a larger one reads the empty record.
 
 ThmInstrument thm_module_instrument(const ThmModule* module, uint8_t number) {
@@ -181,7 +161,6 @@ ThmInstrument thm_module_instrument(const ThmModule* module, uint8_t number) {
                              .slide_speed = r[0x2d] };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pattern of a voice at a position, as an offset of its first row, when all the rows lie in the module.
 
 static bool pattern_offset(const ThmModule* module, uint32_t voice, uint8_t position, uint32_t* out) {
@@ -194,7 +173,6 @@ static bool pattern_offset(const ThmModule* module, uint32_t voice, uint8_t posi
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A row the song cannot reach is never asked for (the proof in module_load); a stray request reads as "no note".
 
 ThmRow thm_module_row(const ThmModule* module, uint32_t voice, uint8_t position, uint8_t row) {
@@ -206,19 +184,14 @@ ThmRow thm_module_row(const ThmModule* module, uint32_t voice, uint8_t position,
     return (ThmRow) { .note = r[0], .instrument = r[1], .slide = (r[2] & 0x01) != 0, .no_stop = (r[2] & 0x02) != 0 };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int8_t thm_module_transposition(const ThmModule* module, uint32_t voice, uint8_t position) {
     return (int8_t)module->chip[TRANSPOSE_LIST + voice * TRANSPOSE_LIST_SIZE + position];
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const int8_t* thm_module_chip(const ThmModule* module, uint64_t offset) {
     return offset <= module->chip_size ? (const int8_t*)module->chip + offset : nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The transposition adds to the note index (the high nibble) and carries into the octave class (the low nibble) when
 // the index leaves 0..11, with the replayer's 8-bit arithmetic. Commands pass.
 
@@ -238,7 +211,6 @@ uint8_t thm_transpose_note(uint8_t note, int8_t transposition) {
     return (uint8_t)(((uint8_t)index << 4) | (octave & 0x0f));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A sample that holds the next octave's data after its own is played from the second part with twice the length (the
 // replayer's shifts, in the widths it uses).
 
@@ -250,8 +222,6 @@ static void double_sample(ThmNote* n) {
     n->loop_offset_carry = (uint16_t)(n->loop_offset >> 16);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void quadruple_sample(ThmNote* n) {
     n->sample += (uint64_t)n->length * 3;
     n->length = (uint16_t)(n->length << 2);
@@ -259,8 +229,6 @@ static void quadruple_sample(ThmNote* n) {
     n->loop_bytes = (uint16_t)(n->loop_bytes << 2);
     n->loop_offset_carry = (uint16_t)(n->loop_offset >> 16);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool thm_note_build(uint8_t note, const ThmInstrument* instrument, ThmNote* out) {
     *out = (ThmNote) { .length = instrument->length,
@@ -330,7 +298,6 @@ bool thm_note_build(uint8_t note, const ThmInstrument* instrument, ThmNote* out)
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample file: the module's name with "thm." changed to "smp.", next to it.
 
 static uint8_t* read_samples(const char* path, const NuadeIo* io, size_t* size) {
@@ -364,7 +331,6 @@ static uint8_t* read_samples(const char* path, const NuadeIo* io, size_t* size) 
     return copy;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer's size estimate: the end of the last pattern. The replayer refuses a module smaller than that.
 
 static uint32_t estimated_size(const uint8_t* data, uint32_t base, uint32_t instrument_count) {
@@ -378,7 +344,6 @@ static uint32_t estimated_size(const uint8_t* data, uint32_t base, uint32_t inst
     return (uint32_t)end + 0x40;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pointer tables are where the replayer expects them: the instrument table in the header, and every instrument
 // record where the sample loader walks (it steps 0x30 bytes from the first record, the player reads them through the
 // table).
@@ -395,7 +360,6 @@ static bool pointers_in_place(const ThmModule* module) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample of instrument n starts where the lengths of instruments 1..n-1 end. The length is the long that ends at
 // the record's first word: the record's own length word, and in front of it the last word of the previous record.
 
@@ -409,7 +373,6 @@ static void place_samples(ThmModule* module, uint32_t instrument_count) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The Paula buffers a note plays lie in the module or the sample file, and the lengths are not 0.
 
 static bool note_in_chip(const ThmModule* module, const ThmNote* n) {
@@ -434,13 +397,10 @@ typedef struct ThmIndexLeftover {
     uint8_t middle; // bits 8..15
 } ThmIndexLeftover;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static ThmIndexLeftover leftover_of(uint32_t value) {
     return (ThmIndexLeftover) { .high = (uint16_t)(value >> 16), .middle = (uint8_t)(value >> 8) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The table index of the instrument record for a voice: the shift by 2 acts on the low 16 bits only.
 
 static uint32_t table_index(ThmIndexLeftover leftover, uint8_t instrument) {
@@ -448,14 +408,12 @@ static uint32_t table_index(ThmIndexLeftover leftover, uint8_t instrument) {
     return ((uint32_t)leftover.high << 16) | ((low << 2) & 0xffffu);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The index is the instrument number times 4: the record is the instrument's.
 
 static bool index_is_clean(ThmIndexLeftover leftover, uint8_t instrument) {
     return table_index(leftover, instrument) == (uint32_t)instrument * 4;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A row is modelled when every voice that looks up an instrument finds it through a clean index (a stray index is
 // an address the replayer would read as a pointer), every note it starts has an instrument and a note index inside
 // the tables, and, with the sample file, the sample and loop it plays lie in the module or the sample file.
@@ -494,7 +452,6 @@ static bool voice_is_modelled(const ThmModule* module, ThmRow row, ThmIndexLefto
     return !with_samples || note_in_chip(module, &started);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Every position the song plays: from its start to the last position, then from the loop position on, round and round.
 
 static bool subsong_is_modelled(const ThmModule* module, ThmSubsong subsong, bool with_samples) {
@@ -531,16 +488,12 @@ static bool subsong_is_modelled(const ThmModule* module, ThmSubsong subsong, boo
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void thm_module_free(ThmModule* module) {
     if (module != nullptr) {
         free(module->chip);
         free(module);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool header_is_modelled(const ThmModule* module) {
     const uint32_t instrument_count = module->header.instrument_count;
@@ -557,7 +510,6 @@ static bool header_is_modelled(const ThmModule* module) {
            && estimated_size(module->chip, module->header.base, instrument_count) <= module->module_size;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module and its sample file (none: the probe works on the module alone) in one padded copy.
 
 static ThmModule* build_module(const uint8_t* data, size_t size, const uint8_t* samples, size_t sample_size,
@@ -587,7 +539,6 @@ static ThmModule* build_module(const uint8_t* data, size_t size, const uint8_t* 
     return module;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The header and tables are acceptable; then the subsong count and the sample placement follow from them.
 
 static bool lay_out_module(ThmModule* module) {
@@ -601,7 +552,6 @@ static bool lay_out_module(ThmModule* module) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The rows of every subsong of a laid out module are ones the player models. With the sample file the notes' samples
 // are checked too.
 
@@ -614,7 +564,6 @@ static bool module_is_modelled(const ThmModule* module, bool with_samples) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's check, its file name rule and everything the module alone makes the port refuse; only the
 // sample file is left to the open (a missing "smp." file cannot be seen without io).
 
@@ -628,8 +577,6 @@ bool thm_probe(const uint8_t* data, size_t size, const char* filename) {
     thm_module_free(module);
     return modelled;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ThmModule* thm_module_load(const uint8_t* data, size_t size, const char* path, const NuadeIo* io, ThmStatus* status) {
     *status = ThmStatus_InvalidData;

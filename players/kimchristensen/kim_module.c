@@ -48,8 +48,6 @@ static const uint16_t k_periods[KIM_LAST_NOTE + 1] = {
     0x2D0, 0x30E, 0x328, 0x358, 0x38A, 0x3C0, 0x3F8, 0x434, 0x474, 0x4B8, 0x500, 0x550, 0x5A0,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool kim_period(uint8_t note, uint16_t* out) {
     if (note > KIM_LAST_NOTE) {
         return false;
@@ -58,7 +56,6 @@ bool kim_period(uint8_t note, uint16_t* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // `count` bytes at a 32-bit offset, inside the data.
 
 static const uint8_t* bytes_at(const KimModule* module, uint32_t offset, uint32_t count) {
@@ -68,14 +65,10 @@ static const uint8_t* bytes_at(const KimModule* module, uint32_t offset, uint32_
     return module->data + offset;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool kim_range_valid(const KimModule* module, uint32_t offset, uint32_t words) {
     const uint64_t bytes = words == 0 ? 0x20000u : (uint64_t)words * 2u;
     return (uint64_t)offset + bytes <= module->size;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool kim_order_byte(const KimModule* module, uint32_t index, uint8_t* out) {
     const uint8_t* p = bytes_at(module, module->order_list + index, 1);
@@ -86,7 +79,6 @@ bool kim_order_byte(const KimModule* module, uint32_t index, uint8_t* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A cell is two bytes, 16 rows per voice, four voices per pattern after a four byte header.
 
 bool kim_pattern_cell(const KimModule* module, uint8_t pattern, uint32_t voice, uint32_t row, KimCell* out) {
@@ -99,8 +91,6 @@ bool kim_pattern_cell(const KimModule* module, uint8_t pattern, uint32_t voice, 
     *out = (KimCell) { .note = p[0], .instrument = p[1] };
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool kim_instrument(const KimModule* module, uint8_t number, KimInstrument* out) {
     const uint8_t* p
@@ -130,8 +120,6 @@ bool kim_instrument(const KimModule* module, uint8_t number, KimInstrument* out)
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool kim_sample_offset(const KimModule* module, uint8_t number, uint32_t* out) {
     const uint8_t* p = bytes_at(module, module->sample_table + (uint32_t)number * KIM_SAMPLE_ENTRY_BYTES, 4);
     if (p == nullptr) {
@@ -141,7 +129,6 @@ bool kim_sample_offset(const KimModule* module, uint8_t number, uint32_t* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2: the words of `k_scan_words`, each found by reading on from the one before. The first is searched in the
 // first KIM_FIRST_SCAN_WORDS words, the others share a budget of KIM_CHAIN_MISSES words that are not the one looked
 // for.
@@ -172,7 +159,6 @@ static bool check2_scan(const uint8_t* data, size_t size) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The long at `offset`, false outside the data.
 
 static bool read_long(const uint8_t* data, size_t size, uint32_t offset, uint32_t* out) {
@@ -183,7 +169,6 @@ static bool read_long(const uint8_t* data, size_t size, uint32_t offset, uint32_
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer's scan: the same words, but it searches on behind the operand of the instruction it took an operand from
 // (all but the asl.w and the last), and it has no budget; a search that runs out of the data refuses the song.
 // `at[i]` gets the offset of the word that matched.
@@ -204,7 +189,6 @@ static bool init_scan(const uint8_t* data, size_t size, uint32_t at[KimScan_Coun
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer's sample table check: the table runs up to the first sample, the samples must end inside the data.
 // `table_address` is the table's address in the game.
 
@@ -233,8 +217,6 @@ static bool check_sample_table(const KimModule* module, uint32_t table_address) 
     const uint32_t end_offset = end - first_address + first_offset;
     return !((int32_t)end_offset > (int32_t)module->size);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool kim_module_parse(KimModule* module, const uint8_t* data, size_t size) {
     *module = (KimModule) { .data = data, .size = size };

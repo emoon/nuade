@@ -12,15 +12,11 @@
 #define FACETHEMUSIC_NOTE_BASE 11
 #define FACETHEMUSIC_NOTE_RELEASE 35
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The FTM mark together with a consistent header is specific enough to be sure.
 static NuadeProbe facethemusic_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return ftm_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult facethemusic_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -40,20 +36,14 @@ static NuadePlayerOpenResult facethemusic_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void facethemusic_close(void* user_data) {
     ftm_destroy((FtmModule*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool facethemusic_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return ftm_start((FtmModule*)user_data, (int)subsong, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult facethemusic_tick(void* user_data, NuadeVoices* voices) {
     (void)voices;
@@ -61,8 +51,6 @@ static NuadeTickResult facethemusic_tick(void* user_data, NuadeVoices* voices) {
     const bool looped = ftm_tick(module);
     return (NuadeTickResult) { .length = ftm_tick_length(module), .flags = looped ? NuadeTick_Looped : NuadeTick_None };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void facethemusic_metadata(void* user_data, const NuadeMetadataSink* sink) {
     const FtmModule* module = (const FtmModule*)user_data;
@@ -82,8 +70,6 @@ static void facethemusic_metadata(void* user_data, const NuadeMetadataSink* sink
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadePositionResult facethemusic_position(void* user_data) {
     const FtmModule* module = (const FtmModule*)user_data;
     const FtmPosition p = ftm_position(module);
@@ -94,8 +80,6 @@ static NuadePositionResult facethemusic_position(void* user_data) {
                                                  .tick = (uint32_t)p.tick,
                                                  .speed = (uint32_t)p.speed } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t facethemusic_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const FtmModule* module = (const FtmModule*)user_data;
@@ -112,8 +96,6 @@ static uint32_t facethemusic_voice_info(void* user_data, NuadeVoiceInfo* out, ui
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTrackerInfoResult facethemusic_tracker_info(void* user_data, const NuadePosition* at) {
     const FtmModule* module = (const FtmModule*)user_data;
     if ((int)at->order >= ftm_get_num_measures(module)) {
@@ -127,8 +109,6 @@ static NuadeTrackerInfoResult facethemusic_tracker_info(void* user_data, const N
                                                              { "fx", NuadeColumn_Hex, 1 },
                                                              { "arg", NuadeColumn_Dec, 2 } } } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePatternCell facethemusic_cell(const void* ctx, uint32_t order, uint32_t channel, uint32_t row) {
     const FtmModule* module = (const FtmModule*)ctx;
@@ -153,16 +133,12 @@ static NuadePatternCell facethemusic_cell(const void* ctx, uint32_t order, uint3
     return cell;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t facethemusic_tracker_cells(void* user_data, const NuadePosition* at, uint32_t channel, int32_t row_lo,
                                            int32_t row_hi, NuadePatternCell* out, uint32_t cap) {
     const FtmModule* module = (const FtmModule*)user_data;
     return nuade_tracker_fill(at, (uint32_t)ftm_channel_count(module), (uint32_t)ftm_get_rows_per_measure(module),
                               channel, row_lo, row_hi, out, cap, facethemusic_cell, module);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_facethemusic = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -181,8 +157,6 @@ const NuadePlayer nuade_player_facethemusic = {
     .tracker_info = facethemusic_tracker_info,
     .tracker_cells = facethemusic_tracker_cells,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 FtmModule* ftm_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_facethemusic) {

@@ -23,7 +23,6 @@
 #define OLD_INSTRUMENTS_PACKED ".ip"
 #define MIN_INSTRUMENT_FILE 8
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The chunk lookup of the eagleplayers: chunks follow each other without padding, and the walk stops at the first
 // chunk that starts at or past the end of the FORM. Returns whether the chunk was found (inside the file).
 
@@ -47,7 +46,6 @@ static bool find_chunk(const MmBlock* file, uint32_t id, MmBlock* chunk) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Whether `filename` is called "name.sdata" (without regard to case).
 
 static bool has_old_song_name(const char* filename) {
@@ -60,7 +58,6 @@ static bool has_old_song_name(const char* filename) {
     return length > extension && strcasecmp(base + length - extension, OLD_SONG_EXTENSION) == 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the file is made of: the song, the instrument chunk of a FORM, and whether that is packed.
 
 typedef struct Parts {
@@ -70,7 +67,6 @@ typedef struct Parts {
     bool iff;
 } Parts;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2: a FORM needs an SDAT chunk and an INST or PINS chunk; a bare song has to be called "name.sdata" (its
 // instruments come from a second file).
 
@@ -94,7 +90,6 @@ static bool split_file(const NuadeSongSource* source, Parts* parts) {
     return has_old_song_name(source->path);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The instruments of an old song: the file "name.i" (used as it is), else "name.ip" (packed), next to "name.sdata". The
 // name is searched without regard to case; a bare file name looks in the current directory.
 
@@ -137,8 +132,6 @@ static bool load_old_instruments(const NuadeSongSource* source, MmInstruments* i
     nuade_file_index_destroy(index);
     return ok;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool mm_file_open(const NuadeSongSource* source, bool external, MmSong* song, MmInstruments* instruments,
                   MmVariant* variant) {

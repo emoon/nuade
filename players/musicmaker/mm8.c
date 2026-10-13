@@ -13,15 +13,12 @@
 #define BUFFER_EXTRA 64
 #define MIN_TICK_LENGTH 1
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer sizes its buffers for the song's tempo at the lowest period, a quarter more.
 
 static uint32_t buffer_size_for(uint16_t tempo) {
     const uint32_t samples = (uint32_t)tempo * MM_BLOCK_PER_TEMPO / MM_PERIOD_MIN;
     return (samples + samples / 4 + BUFFER_EXTRA + 1) & ~1u;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool mm8_start(Mm8* e, const MmSong* song, const MmInstruments* inst, NuadeVoices* voices) {
     mm8_stop(e);
@@ -55,8 +52,6 @@ bool mm8_start(Mm8* e, const MmSong* song, const MmInstruments* inst, NuadeVoice
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void mm8_stop(Mm8* e) {
     free(e->memory);
     free(e->tables);
@@ -64,7 +59,6 @@ void mm8_stop(Mm8* e) {
     e->tables = nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What an event wrote into the software registers of a voice.
 
 static void apply_step(Mm8Voice* r, const MmStep* step) {
@@ -89,7 +83,6 @@ static void apply_step(Mm8Voice* r, const MmStep* step) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note of the slot 0x24 continues the sample where the voice's last 0xF1 event left it.
 
 static MmStep resolve_resume(const Mm8Voice* r, MmStep step) {
@@ -100,7 +93,6 @@ static MmStep resolve_resume(const Mm8Voice* r, MmStep step) {
     return step;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One tick of the song: the events and effects of the eight voices, from the last.
 
 static void run_tick(Mm8* e) {
@@ -129,8 +121,6 @@ static void run_tick(Mm8* e) {
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MmTickResult mm8_tick(Mm8* e, NuadeVoices* voices) {
     MmTickResult result = { 0 };

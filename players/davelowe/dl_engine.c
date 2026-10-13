@@ -30,13 +30,9 @@ typedef enum StepResult {
     StepResult_Done,     // the voice is done for this tick
 } StepResult;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void dma_on(const DlVoice* v) {
     nuade_paula_channel_dma_on(v->bus.dma_on);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void dma_off(const DlVoice* v) {
     if (v->bus.dma_off != nullptr) {
@@ -44,15 +40,11 @@ static void dma_off(const DlVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The eagleplayer asks for the effect of the subsong when the song starts and every time it loops; a driver without
 // effect machinery ignores the request.
 static void request_subsong_effect(DlEngine* engine) {
     engine->effect_request = engine->variant.effect_table != 0 ? engine->subsong.effect_request : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A voice reached the end of its pattern list (or a rest with a negative length). Effects do not count. When the song
 // loops, the effect is requested again.
@@ -76,8 +68,6 @@ static void list_ended(DlEngine* engine, const DlVoice* v) {
     request_subsong_effect(engine);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static DlVoice new_voice(const DlEngine* engine, uint32_t channel, bool effect) {
     const DlBuiltin* builtin = &engine->image->builtin;
     return (DlVoice) { .channel = channel,
@@ -89,8 +79,6 @@ static DlVoice new_voice(const DlEngine* engine, uint32_t channel, bool effect) 
                        .list_start = effect ? 0 : engine->subsong.lists[channel],
                        .note = -1 };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The init routine of the driver: every voice gets the idle sequence and its list
 static void reset_voices(DlEngine* engine) {
@@ -104,8 +92,6 @@ static void reset_voices(DlEngine* engine) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The Deli engine starts a song with a fade-in when the subsong asks for one
 static void reset_fade(DlEngine* engine) {
     const uint16_t speed = engine->subsong.fade_speed;
@@ -114,7 +100,6 @@ static void reset_fade(DlEngine* engine) {
     };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Commands
 
 static StepResult command_sample(const DlImage* image, DlVoice* v, DlCursor* cursor) {
@@ -136,8 +121,6 @@ static StepResult command_sample(const DlImage* image, DlVoice* v, DlCursor* cur
     return StepResult_Continue;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static StepResult command_next_pattern(DlEngine* engine, DlVoice* v, DlCursor* cursor) {
     const DlImage* image = engine->image;
     if (dli_u32(image, v->list) == 0) {
@@ -149,8 +132,6 @@ static StepResult command_next_pattern(DlEngine* engine, DlVoice* v, DlCursor* c
     v->list += 4;
     return StepResult_Continue;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static StepResult command_envelope(const DlEngine* engine, DlVoice* v, DlCursor* cursor) {
     DlCursor header = { .image = engine->image, .address = dlc_u32(cursor) };
@@ -164,8 +145,6 @@ static StepResult command_envelope(const DlEngine* engine, DlVoice* v, DlCursor*
     return StepResult_Continue;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static StepResult command_slide(DlVoice* v, DlCursor* cursor) {
     const uint16_t mode = dlc_u16(cursor);
     v->slide.mode = mode == 0 ? DlSlideMode_Off : (mode == 1 ? DlSlideMode_Up : DlSlideMode_Down);
@@ -174,8 +153,6 @@ static StepResult command_slide(DlVoice* v, DlCursor* cursor) {
     v->slide.delay = dlc_u16(cursor);
     return StepResult_Continue;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static StepResult command_vibrato(const DlVariant* variant, DlVoice* v, DlCursor* cursor) {
     DlVibrato* vib = &v->vibrato;
@@ -194,8 +171,6 @@ static StepResult command_vibrato(const DlVariant* variant, DlVoice* v, DlCursor
     return StepResult_Continue;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A rest of `length` ticks (a negative length also tells the loop tracker): silent envelope, volume 0
 static StepResult command_rest(DlEngine* engine, DlVoice* v, DlCursor* cursor) {
     const uint16_t length = dlc_u16(cursor);
@@ -209,8 +184,6 @@ static StepResult command_rest(DlEngine* engine, DlVoice* v, DlCursor* cursor) {
     return StepResult_Tail;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Stop the channel: DMA off, volume 0. A music voice reads the command again on every tick; a sound effect is over, and
 // its channel goes back to the music.
 static StepResult command_stop(DlEngine* engine, DlVoice* v) {
@@ -223,14 +196,10 @@ static StepResult command_stop(DlEngine* engine, DlVoice* v) {
     return StepResult_Done;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static StepResult command_jump(const DlImage* image, DlCursor* cursor) {
     cursor->address = dli_u32(image, cursor->address);
     return StepResult_Continue;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // operands: a counter word, the address to go to while it counts down, the address to go to when it is 0
 static StepResult command_repeat(DlImage* image, DlCursor* cursor) {
@@ -245,22 +214,16 @@ static StepResult command_repeat(DlImage* image, DlCursor* cursor) {
     return StepResult_Continue;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static StepResult command_restart(DlEngine* engine) {
     reset_voices(engine);
     return StepResult_Done;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static StepResult command_song_end(DlEngine* engine) {
     engine->loop.looped = true;
     reset_fade(engine);
     return command_restart(engine);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static StepResult run_command(DlEngine* engine, DlVoice* v, DlCursor* cursor, uint16_t word) {
     const uint32_t index = word >> 2;
@@ -305,7 +268,6 @@ static StepResult run_command(DlEngine* engine, DlVoice* v, DlCursor* cursor, ui
     return StepResult_Done;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Notes
 
 static void start_note(const DlEngine* engine, DlVoice* v, DlCursor* cursor, uint16_t period) {
@@ -330,8 +292,6 @@ static void start_note(const DlEngine* engine, DlVoice* v, DlCursor* cursor, uin
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Read the pattern until a note starts or a command ends the tick
 static StepResult read_pattern(DlEngine* engine, DlVoice* v) {
     DlCursor cursor = { .image = engine->image, .address = v->sequence };
@@ -350,7 +310,6 @@ static StepResult read_pattern(DlEngine* engine, DlVoice* v) {
     return StepResult_Done;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tick of a running note
 
 // The pitch slide: moves the period by `step` per tick towards the target, then stops
@@ -378,8 +337,6 @@ static bool slide_period(DlSlide* slide, uint16_t* period) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The vibrato: after the delay, every `reload` + 1 ticks the period steps down twice, then up twice
 static bool vibrato_period(DlVibrato* vib, uint16_t* period) {
     if (!vib->active) {
@@ -400,8 +357,6 @@ static bool vibrato_period(DlVibrato* vib, uint16_t* period) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The volume scaled by the fade level (the balance of 0x40 leaves it alone); every volume write also steps the fade
 static uint16_t faded_volume(DlFade* fade, uint16_t value) {
     const uint16_t scaled = (uint16_t)((uint16_t)((uint32_t)value * fade->level) >> 6);
@@ -415,8 +370,6 @@ static uint16_t faded_volume(DlFade* fade, uint16_t value) {
     }
     return scaled;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The next envelope value is the volume. The end mark holds the last value (without the volume bonus). `quieter`: a
 // sound effect is playing, and the volume is lowered by the cut of the voice's envelope.
@@ -444,8 +397,6 @@ static void volume_envelope(DlEngine* engine, DlVoice* v, bool quieter) {
     v->bus.registers->volume = (uint8_t)value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void note_tick(DlVoice* v) {
     uint16_t period = v->period;
     const bool slid = slide_period(&v->slide, &period);
@@ -455,8 +406,6 @@ static void note_tick(DlVoice* v) {
         v->bus.registers->period = period;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Returns true when the update switched the DMA off, at the last tick of a note
 static bool voice_update(DlEngine* engine, DlVoice* v, bool quieter) {
@@ -490,8 +439,6 @@ static bool voice_update(DlEngine* engine, DlVoice* v, bool quieter) {
     return stopped;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_voice(DlEngine* engine, DlVoice* v, DlBus bus, bool quieter) {
     v->bus = bus;
     const bool stopped = voice_update(engine, v, quieter);
@@ -500,8 +447,6 @@ static void run_voice(DlEngine* engine, DlVoice* v, DlBus bus, bool quieter) {
         nuade_paula_channel_dma_on(bus.dma_on);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void dl_engine_start(DlEngine* engine, DlImage* image, const DlVariant* variant, const DlSubsong* subsong) {
     memset(engine, 0, sizeof(*engine));
@@ -520,8 +465,6 @@ void dl_engine_start(DlEngine* engine, DlImage* image, const DlVariant* variant,
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The ramp lowers its level by one every `ticks` ticks
 static void ramp_tick(DlRamp* ramp) {
     if (ramp->level != 0 && ++ramp->counter == ramp->ticks) {
@@ -530,13 +473,9 @@ static void ramp_tick(DlRamp* ramp) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool any_effect_active(const DlEngine* engine) {
     return engine->variant.effect_table != 0 && (engine->effects[0].active || engine->effects[1].active);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The request for a sound effect goes to a channel that plays none: channel 3 first. (The eagleplayer asks for one
 // effect, at the start and at every song end; if no channel is free the request waits.)
@@ -553,8 +492,6 @@ static void dispatch_effect_request(DlEngine* engine) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The effect takes the channel: it stops, and the effect voice starts reading its pattern on the next tick
 static void start_effect(DlEngine* engine, uint32_t effect_channel) {
     DlEffectChannel* effect = &engine->effects[effect_channel];
@@ -565,14 +502,10 @@ static void start_effect(DlEngine* engine, uint32_t effect_channel) {
     effect->pending = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static DlBus own_bus(DlEngine* engine, uint32_t channel) {
     NuadePaulaChannel* hardware = &engine->channels[channel];
     return (DlBus) { .registers = hardware, .dma_on = hardware, .dma_off = hardware };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // One channel of the interrupt. A channel that plays an effect runs the effect voice on its registers and the music
 // voice on registers of its own; on the tick the effect starts only the music voice runs, and its DMA stop request
@@ -602,8 +535,6 @@ static void tick_channel(DlEngine* engine, uint32_t channel) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void dl_engine_tick(DlEngine* engine) {
     engine->loop.looped = false;
     bool skip = false;
@@ -623,8 +554,6 @@ void dl_engine_tick(DlEngine* engine) {
         tick_channel(engine, channel);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void dl_engine_sync(DlEngine* engine, NuadeVoices* voices) {
     for (uint32_t i = 0; i < DL_VOICES; i++) {

@@ -27,8 +27,6 @@ typedef enum JbAFlag {
     JbAFlag_Kept = JbAFlag_Vibrato | JbAFlag_VibratoRising, // what a new row keeps
 } JbAFlag;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // An accumulator the driver adds a step to every tick; true on a carry
 static bool accumulate(uint8_t* accumulator, uint8_t step) {
     const unsigned sum = (unsigned)*accumulator + step;
@@ -36,7 +34,6 @@ static bool accumulate(uint8_t* accumulator, uint8_t step) {
     return sum > 0xff;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The PWM step
 
 static void pwm_sweep(JbAGlobals* g, JbModule* m, const JbATables* t) {
@@ -51,8 +48,6 @@ static void pwm_sweep(JbAGlobals* g, JbModule* m, const JbATables* t) {
         g->pwm_phase = (uint8_t)~g->pwm_phase;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The noise form: the index advances by the seed, the seed rotates into the waveform
 static void pwm_noise(JbAGlobals* g, JbModule* m, const JbATables* t) {
@@ -72,7 +67,6 @@ static void pwm_noise(JbAGlobals* g, JbModule* m, const JbATables* t) {
     g->pwm_index = index;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Voice tick
 
 // Starts the volume envelope `number`
@@ -83,15 +77,11 @@ static void envelope_start(const JbModule* m, const JbATables* t, Voice* v, uint
     v->envelope_timer = 1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Restart the sample at the next tick
 static void sample_restart(Voice* v) {
     v->dma_phase = 2;
     nuade_paula_channel_dma_off(&v->paula);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The tick after a note starts the sample (AUDxLC/LEN, DMA on); the one after that points the registers at the loop,
 // or at the silent sample for a one-shot. Returns the period multiplier of the sample.
@@ -118,8 +108,6 @@ static uint16_t sample_setup(const JbModule* m, const JbATables* t, Voice* v, ui
     return sample.multiplier;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The volume envelope: a step list of (delta, duration); the volume gains the current delta each tick
 static void envelope_step(const JbModule* m, const JbATables* t, Voice* v) {
     if (v->envelope_timer == 0) {
@@ -138,8 +126,6 @@ static void envelope_step(const JbModule* m, const JbATables* t, Voice* v) {
     v->envelope_volume = (uint8_t)(v->envelope_volume + jbm_u8(m, t->envelope + position));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The pitch sequence of the old driver: offsets added to the note. A byte with the top bit set loops to the sequence's
 // loop start and gives its low 7 bits as the offset; 0xFF only holds the position and gives 0 (the Rockford form gives
 // 0x7F).
@@ -156,8 +142,6 @@ static uint8_t sequence_old(const JbModule* m, const JbAConfig* c, Voice* v) {
     return value & 0x7f;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The pitch sequence of the new driver: the sequence program gives a start; a positive byte ends the sequence (the
 // next tick starts over), 0xFF holds the position and gives 0
 static uint8_t sequence_new(const JbModule* m, const JbAConfig* c, Voice* v) {
@@ -170,8 +154,6 @@ static uint8_t sequence_new(const JbModule* m, const JbAConfig* c, Voice* v) {
     v->sequence_position = value < 0x80 ? 0 : (uint8_t)(v->sequence_position + 1);
     return value;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The vibrato offsets the period by a triangle that the speed byte walks; on the way back (bit 4 clear) the driver
 // subtracts the speed from the counter but then offsets by the speed, not the counter
@@ -191,8 +173,6 @@ static uint16_t vibrato(Voice* v, uint16_t period) {
     }
     return (uint16_t)(period + swing - (v->vibrato_depth >> 1));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void voice_tick(JbA* a, JbModule* m, Voice* v) {
     const JbAConfig* c = &a->config;
@@ -235,7 +215,6 @@ static void voice_tick(JbA* a, JbModule* m, Voice* v) {
     v->paula.period = period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Sequencer
 
 typedef enum CommandResult {
@@ -243,8 +222,6 @@ typedef enum CommandResult {
     CommandResult_EndRow,   // the row is decoded
     CommandResult_Abort,    // the driver left the step without saving its position
 } CommandResult;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Runs command `command` of voice `index`; `p` is the stream offset after the command byte and moves over its arguments
 static CommandResult run_command(JbA* a, JbModule* m, int index, JbACommand command, uint32_t* p) {
@@ -354,8 +331,6 @@ static CommandResult run_command(JbA* a, JbModule* m, int index, JbACommand comm
     return CommandResult_Continue;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A note byte: start the envelope and the sample
 static void note_start(JbA* a, const JbModule* m, Voice* v, uint8_t note) {
     const JbAConfig* c = &a->config;
@@ -371,8 +346,6 @@ static void note_start(JbA* a, const JbModule* m, Voice* v, uint8_t note) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // What a track byte is: a note ends the row, a command runs, anything else sets a voice parameter
 typedef enum ByteKind {
     ByteKind_Parameter,
@@ -385,8 +358,6 @@ typedef struct DecodedByte {
     uint8_t note;
     JbACommand command;
 } DecodedByte;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The old syntax: notes 0 .. 0x7F, commands 0x80 up to the note limit, then (counting up) the row length, the envelope
 // number, the sample number and the pitch sequence loop start
@@ -409,8 +380,6 @@ static DecodedByte decode_old(const JbModule* m, const JbAConfig* c, Voice* v, u
     return (DecodedByte) { .kind = ByteKind_Parameter };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The new syntax: row lengths up to the limit, commands 0x41 .. 0x5F, envelope numbers 0x60 .. 0x7F, notes 0x80 ..
 // 0xDF, sample numbers 0xE0 and up
 static DecodedByte decode_new(const JbAConfig* c, Voice* v, uint8_t byte) {
@@ -431,8 +400,6 @@ static DecodedByte decode_new(const JbAConfig* c, Voice* v, uint8_t byte) {
     }
     return (DecodedByte) { .kind = ByteKind_Parameter };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // One sequencer step of voice `index`: between rows the note may move; on a row, read bytes until a note or rest
 static void sequence_step(JbA* a, JbModule* m, int index) {
@@ -473,8 +440,6 @@ static void sequence_step(JbA* a, JbModule* m, int index) {
     v->stream = (uint16_t)p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void jb_a_start(JbA* a, const JbModule* m, int subsong) {
     const JbATables* t = &a->config.tables;
     a->globals = jb_a_globals(m, t);
@@ -496,8 +461,6 @@ void jb_a_start(JbA* a, const JbModule* m, int subsong) {
                                  .row_counter = 1 };
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 JbTickResult jb_a_tick(JbA* a, JbModule* m, NuadeVoices* voices) {
     JbAGlobals* g = &a->globals;

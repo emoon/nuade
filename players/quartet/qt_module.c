@@ -42,19 +42,13 @@
 #define SAMPLE_SET_PREFIX "SMP."
 #define SAMPLE_SET_FALLBACK "SMP.set"
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool module_has(const QtModule* module, uint64_t offset, uint32_t bytes) {
     return module->size >= bytes && offset <= module->size - bytes;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint64_t voice_word_offset(uint32_t row, uint32_t voice) {
     return HEADER_BYTES + (uint64_t)QT_ROW_BYTES * row + 2u * voice;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool qt_module_voice_word(const QtModule* module, uint32_t row, uint32_t voice, QtVoiceWord* out) {
     const uint64_t offset = voice_word_offset(row, voice);
@@ -72,7 +66,6 @@ bool qt_module_voice_word(const QtModule* module, uint32_t row, uint32_t voice, 
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer tests the four words in order and stops at the first END_WORD.
 
 bool qt_module_row_ends(const QtModule* module, uint32_t row, bool* ends) {
@@ -90,7 +83,6 @@ bool qt_module_row_ends(const QtModule* module, uint32_t row, bool* ends) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2: the tempo byte, the 0x50 byte, and four END_WORDs at the end of the file (behind at most 15 zero words).
 
 static bool check2(const QtModule* module) {
@@ -119,15 +111,12 @@ static bool check2(const QtModule* module) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer looks for the first long of ones, in steps of four from the first row: a song whose end is far enough
 // in is restarted by the replayer when it reaches its end. Check2 guarantees that the long exists.
 
 static int16_t restart_pages(uint32_t offset) {
     return (int16_t)(uint16_t)(((offset + LOOP_END_BIAS) >> 8) + 1); // the tick compares the low word, signed
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool module_scan_end(QtModule* module) {
     for (uint32_t offset = HEADER_BYTES; module_has(module, offset, LONG_BYTES); offset += LONG_BYTES) {
@@ -139,8 +128,6 @@ static bool module_scan_end(QtModule* module) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool module_ok(QtModule* module) {
     if (!check2(module) || !module_scan_end(module)) {
         return false;
@@ -150,8 +137,6 @@ static bool module_ok(QtModule* module) {
     return qt_song_modeled(module, &none);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool qt_probe(const uint8_t* data, size_t size) {
     if (data == nullptr || size > UINT32_MAX) {
         return false;
@@ -159,8 +144,6 @@ bool qt_probe(const uint8_t* data, size_t size) {
     QtModule module = { .data = data, .size = (uint32_t)size };
     return module_ok(&module);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const int8_t* qt_samples_lc(const QtSamples* samples, uint32_t offset, uint16_t length_words) {
     const uint32_t even = offset & ~1u;
@@ -171,7 +154,6 @@ const int8_t* qt_samples_lc(const QtSamples* samples, uint32_t offset, uint16_t 
     return (const int8_t*)samples->data + even;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer: the set is accepted when its size is exactly what its 16 length words add up to.
 
 bool qt_samples_parse(QtSamples* samples, const uint8_t* file, uint32_t size) {
@@ -206,15 +188,12 @@ bool qt_samples_parse(QtSamples* samples, const uint8_t* file, uint32_t size) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ExtLoad: "SMP.<name>" for a song called "QPA.<name>" (any case), else the song's name without its last character,
 // both in the song's directory; when that file is missing, "SMP.set".
 
 static bool has_song_prefix(const char* name) {
     return strncasecmp(name, SONG_PREFIX, SONG_PREFIX_LENGTH) == 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t* read_url(const NuadeIo* io, NuadeFileIndex* index, const char* name, uint64_t* size) {
     const char* url = nuade_file_index_find(index, name);
@@ -225,8 +204,6 @@ static uint8_t* read_url(const NuadeIo* io, NuadeFileIndex* index, const char* n
     *size = file.size;
     return file.data;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t* read_sample_set(const char* path, const NuadeIo* io, uint64_t* size) {
     char dir[1024] = { 0 };
@@ -256,8 +233,6 @@ static uint8_t* read_sample_set(const char* path, const NuadeIo* io, uint64_t* s
     return data;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static QtStatus load_samples(QtPlayer* player, const char* path, const NuadeIo* io) {
     uint64_t size = 0;
     uint8_t* file = read_sample_set(path, io, &size);
@@ -272,8 +247,6 @@ static QtStatus load_samples(QtPlayer* player, const char* path, const NuadeIo* 
     NuadeIo_free_url_to_memory(io, file);
     return status;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 QtCreateResult qt_create(const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
     QtCreateResult result = { .status = QtStatus_InvalidData };
@@ -308,8 +281,6 @@ QtCreateResult qt_create(const uint8_t* data, size_t size, const char* path, con
     result.player = player;
     return result;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void qt_destroy(QtPlayer* player) {
     if (player == nullptr) {

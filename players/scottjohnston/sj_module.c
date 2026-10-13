@@ -47,13 +47,10 @@ static const SjVariant sj_variants[] = {
     },
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const SjVariant* sj_variant(SjFormat format) {
     return &sj_variants[format];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Does the file name start with "sjs."? The SoundPlayer eagleplayer finds the sample bundle by that prefix only.
 
 static bool has_soundplayer_prefix(const char* path) {
@@ -66,8 +63,6 @@ static bool has_soundplayer_prefix(const char* path) {
     }
     return base[len] == '.';
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sj_format_from_path(const char* path, SjFormat* format) {
     if (path == nullptr) {
@@ -84,7 +79,6 @@ bool sj_format_from_path(const char* path, SjFormat* format) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The ScottJohnston header: 16 file names. The first list entry has no predecessor to repeat; every other name must be
 // in the name table.
 
@@ -99,7 +93,6 @@ static bool parse_file_names(SjModule* module) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The SoundPlayer eagleplayer's Check2 (the module must be parsed): the timer, the mask and the first row.
 
 static bool soundplayer_check(const SjModule* module) {
@@ -129,8 +122,6 @@ static bool soundplayer_check(const SjModule* module) {
     return command != 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 /////
 
 bool sj_module_parse(SjModule* module, SjFormat format, const uint8_t* data, size_t size) {
@@ -154,13 +145,9 @@ bool sj_module_parse(SjModule* module, SjFormat format, const uint8_t* data, siz
     return tune[TUNE_TIMER_LOW] != TIMER_LOW_UNSET && module->timer >= MIN_TIMER && parse_file_names(module);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool sj_module_voice_is_armed(const SjModule* module, uint32_t voice) {
     return (module->voice_mask >> voice & 1u) != 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sj_module_cell(const SjModule* module, int32_t row, uint32_t voice, SjCell* cell) {
     const int64_t cell_offset = (int64_t)module->variant->tune_offset + SJ_TUNE_HEADER_BYTES
@@ -173,8 +160,6 @@ bool sj_module_cell(const SjModule* module, int32_t row, uint32_t voice, SjCell*
     *cell = (SjCell) { .note = p[0], .instrument = p[1], .command = p[2] };
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sj_probe(const uint8_t* data, size_t size, const char* filename) {
     SjFormat format;

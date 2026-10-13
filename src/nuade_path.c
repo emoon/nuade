@@ -6,8 +6,6 @@
 #include <ctype.h>
 #include <string.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool is_separator(char c) {
 #if defined(PLATFORM_WINDOWS)
     return c == '/' || c == '\\';
@@ -15,8 +13,6 @@ static bool is_separator(char c) {
     return c == '/';
 #endif
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool is_absolute(const char* path) {
     if (is_separator(path[0]) || strstr(path, "://") != nullptr) {
@@ -30,8 +26,6 @@ static bool is_absolute(const char* path) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Length of the directory part of `path`, including its last separator; 0 when there is none.
 static size_t dir_length(const char* path) {
     size_t len = 0;
@@ -42,8 +36,6 @@ static size_t dir_length(const char* path) {
     }
     return len;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // out = a[0..a_len) + b, or false with `out` empty when it does not fit.
 static bool concat(const char* a, size_t a_len, const char* b, char* out, size_t out_cap) {
@@ -59,8 +51,6 @@ static bool concat(const char* a, size_t a_len, const char* b, char* out, size_t
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool starts_with_nocase(const char* s, const char* lower_prefix, size_t len) {
     for (size_t i = 0; i < len; i++) {
         if (s[i] == '\0' || tolower((unsigned char)s[i]) != lower_prefix[i]) {
@@ -70,13 +60,9 @@ static bool starts_with_nocase(const char* s, const char* lower_prefix, size_t l
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const char* nuade_path_basename(const char* path) {
     return path + dir_length(path);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool nuade_path_parent(const char* path, char* out, size_t out_cap) {
     if (out == nullptr || out_cap == 0) {
@@ -90,8 +76,6 @@ bool nuade_path_parent(const char* path, char* out, size_t out_cap) {
     // Keep the separator only when it is the root ("/song" -> "/").
     return concat(path, len > 1 ? len - 1 : len, "", out, out_cap);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool nuade_path_join(const char* dir, const char* name, char* out, size_t out_cap) {
     if (name == nullptr || out == nullptr || out_cap == 0) {
@@ -107,8 +91,6 @@ bool nuade_path_join(const char* dir, const char* name, char* out, size_t out_ca
     return concat(out, dir_len + 1, name, out, out_cap);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool nuade_path_resolve(const char* base_url, const char* relative, char* out, size_t out_cap) {
     if (relative == nullptr || out == nullptr || out_cap == 0) {
         return false;
@@ -116,8 +98,6 @@ bool nuade_path_resolve(const char* base_url, const char* relative, char* out, s
     const size_t dir_len = (base_url != nullptr && !is_absolute(relative)) ? dir_length(base_url) : 0;
     return concat(base_url, dir_len, relative, out, out_cap);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool nuade_path_has_ext(const char* path, const char* ext) {
     if (path == nullptr || ext == nullptr) {

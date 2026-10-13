@@ -16,13 +16,9 @@
 #define SP_PREFIX_LENGTH 4
 #define SP_DEFAULT_SET "smp.set"
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const SpRules* sp_layout_rules(SpLayout layout) {
     return layout == SpLayout_Longs ? &sp_long_rules : &sp_word_rules;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sp_probe(const uint8_t* data, size_t size) {
     SpLayout layout;
@@ -38,7 +34,6 @@ bool sp_probe(const uint8_t* data, size_t size) {
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample set is "smp.<name>" for a song "osp.<name>". Any other song name makes the eagleplayer try the name
 // without its last character; and a set that is not found there is "smp.set" in the song's directory.
 
@@ -55,8 +50,6 @@ static bool sp_read_set_file(NuadeFileIndex* index, const NuadeIo* io, const cha
     NuadeIo_free_url_to_memory(io, file.data);
     return ok;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool sp_load_set(const char* path, const NuadeIo* io, SpMemory* set) {
     if (path == nullptr || io == nullptr) {
@@ -87,8 +80,6 @@ static bool sp_load_set(const char* path, const NuadeIo* io, SpMemory* set) {
     nuade_file_index_destroy(index);
     return found;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SpCreateResult sp_create(const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
     SpCreateResult result = { 0 };
@@ -125,8 +116,6 @@ SpCreateResult sp_create(const uint8_t* data, size_t size, const char* path, con
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void sp_destroy(SpPlayer* player) {
     if (player == nullptr) {
         return;
@@ -136,13 +125,9 @@ void sp_destroy(SpPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int sp_subsong_count(const SpPlayer* player) {
     return player->subsong_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sp_start(SpPlayer* player, int subsong, NuadeVoices* voices) {
     if (subsong < 0 || subsong >= player->subsong_count) {
@@ -157,8 +142,6 @@ bool sp_start(SpPlayer* player, int subsong, NuadeVoices* voices) {
     sp_hardware_sync(&player->hardware, voices);
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SpTickResult sp_tick(SpPlayer* player, NuadeVoices* voices) {
     SpSongEvents events;
@@ -177,14 +160,10 @@ SpTickResult sp_tick(SpPlayer* player, NuadeVoices* voices) {
     return (SpTickResult) { .looped = events.song_end && !events.stopped, .ended = player->stopped && silent };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t sp_grid_ticks(const SpPlayer* player) {
     (void)player;
     return SP_DEFAULT_SPEED;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SpVoiceState sp_voice_state(const SpPlayer* player, int voice) {
     if (voice < 0 || voice >= SP_VOICES) {

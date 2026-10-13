@@ -42,13 +42,9 @@
 static const uint8_t s_unused_list_data[4] = { 0x00, 0x00, 0x03, 0xE7 };
 static const MmBlock s_unused_list = { .data = s_unused_list_data, .size = 4 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t event_byte(const MmCore* c, uint32_t offset) {
     return mm_u8(&c->song->block, offset);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void mm_core_start(MmCore* c, MmVariant variant, const MmSong* song, const MmInstruments* inst, uint32_t voice_count) {
     *c = (MmCore) { .variant = variant,
@@ -76,13 +72,9 @@ void mm_core_start(MmCore* c, MmVariant variant, const MmSong* song, const MmIns
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void mm_core_set_tempo(MmCore* c, uint16_t tempo) {
     c->tempo_base = tempo;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool mm_core_poll_song_end(MmCore* c) {
     if (c->song_end_reported) {
@@ -97,8 +89,6 @@ bool mm_core_poll_song_end(MmCore* c) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void mm_core_start_table_loop(MmCore* c, uint32_t voice, uint16_t bytes) {
     MmVoice* t = &c->voice[voice];
     if (t->table_active) {
@@ -107,7 +97,6 @@ void mm_core_start_table_loop(MmCore* c, uint32_t voice, uint16_t bytes) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The next entry of the position list: a 0 entry is a pause of the song's pause_rows, the end marker jumps back to the
 // loop point (the track has looped: the voice is cut at its next event). Returns the new pattern's offset and whether
 // the list did not wrap.
@@ -132,7 +121,6 @@ static bool next_pattern(MmCore* c, MmVoice* t, uint32_t* event) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The voice has passed the end of its list and reaches its next event: everything it plays is cut and the note state
 // is cleared. The track goes on.
 
@@ -157,7 +145,6 @@ static void cut_voice(MmCore* c, MmVoice* t) {
     t->looped = false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A rest: the voice gets nothing to play and volume 0 (the period stays the note's). With 4 voices that is the silent
 // word (and the DMA stops); with 8 a sample of no length.
 
@@ -173,7 +160,6 @@ static MmStep rest_step(const MmCore* c, uint16_t period, bool stop_dma) {
     return step;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A glide: the note's period and volume go to the targets in the event, over the row length of the event after it.
 // With a time (bit 6 of that event's third byte) the target is the note in the low 6 bits of this event's third byte
 // and the volume level of its instrument nibble; otherwise the second byte of the second event holds two signed
@@ -209,7 +195,6 @@ static void start_glide(const MmCore* c, MmVoice* t, uint32_t at, uint16_t perio
     fx->counter = 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample, first part and loop of a note of instrument `slot`.
 
 static void select_sample(const MmCore* c, bool loops, uint8_t slot, MmStep* step) {
@@ -237,7 +222,6 @@ static void select_sample(const MmCore* c, bool loops, uint8_t slot, MmStep* ste
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The note event at `*at`. A glide takes the event after it too (`*at` moves to it).
 
 static MmStep note_step(MmCore* c, MmVoice* t, uint32_t* at, uint8_t prefix) {
@@ -312,7 +296,6 @@ static MmStep note_step(MmCore* c, MmVoice* t, uint32_t* at, uint8_t prefix) {
     return step;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // 0xF9: slide values and the mode that makes them alternate.
 
 static void command_slide(MmVoice* t, uint8_t param, uint8_t flags) {
@@ -345,7 +328,6 @@ static void command_slide(MmVoice* t, uint8_t param, uint8_t flags) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // 0xF6: a pitch bend that runs until the voice's next bend command (with 8 voices, until it reaches its limit).
 
 static void command_bend(MmCore* c, MmVoice* t, uint8_t param) {
@@ -363,7 +345,6 @@ static void command_bend(MmCore* c, MmVoice* t, uint8_t param) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // 0xFA: the high nibble of the parameter (plus the prefix) is an instrument slot, the low one one of the tables after
 // the samples. The table is used when its first word names the slot; otherwise the slot has none.
 
@@ -377,7 +358,6 @@ static void command_table(MmCore* c, uint8_t param, uint8_t prefix) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // 0xFC: the tempo as the song's tempo times the high nibble over the low one. A zero divisor is a divide by zero on
 // the 68000; the command is ignored. With 4 voices the timer changes at once, with 8 the new tempo (never above the
 // song's) takes effect at the start of the next block.
@@ -399,7 +379,6 @@ static void command_tempo(MmCore* c, uint8_t param) {
     c->tempo_requested = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The event at `at`, which can also be a command. Returns what the replayer has to write.
 
 static MmStep run_event(MmCore* c, MmVoice* t, uint32_t* at) {
@@ -443,7 +422,6 @@ static MmStep run_event(MmCore* c, MmVoice* t, uint32_t* at) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // After an event: the next one. A skip event (0xF3) is jumped over, and a pattern's end loads the next pattern of the
 // list; a pattern that starts with a delay event adds it to the row.
 
@@ -465,8 +443,6 @@ static void advance(MmCore* c, MmVoice* t, uint32_t at) {
     }
     t->event = at;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MmStep mm_core_step(MmCore* c, uint32_t voice) {
     MmVoice* t = &c->voice[voice];

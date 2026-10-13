@@ -37,25 +37,17 @@
 #define SONG_MASTER_VOLUME 0x312
 #define FLAG_ST_SLIDES 0x20
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t mmdc_u8(const MmdcImage* image, uint64_t offset) {
     return offset < image->size ? image->data[offset] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t mmdc_u16(const MmdcImage* image, uint64_t offset) {
     return offset <= image->size && image->size - offset >= 2 ? nuade_read_be16(&image->data[offset]) : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t mmdc_u32(const MmdcImage* image, uint64_t offset) {
     return offset <= image->size && image->size - offset >= 4 ? nuade_read_be32(&image->data[offset]) : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MmdcCell mmdc_read_cell(const uint8_t* bytes) {
     const uint8_t first = bytes[0];
@@ -67,16 +59,12 @@ MmdcCell mmdc_read_cell(const uint8_t* bytes) {
                         .param = bytes[2] };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void mmdc_line_reader_start(MmdcLineReader* reader, const MmdcImage* image, const MmdcBlock* block) {
     reader->image = image;
     reader->pos = block->offset + BLOCK_HEADER_SIZE;
     reader->run_left = -1;
     reader->literal = false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void mmdc_line_reader_next(MmdcLineReader* reader, uint8_t tracks, uint8_t line[MMDC_MAX_TRACKS * MMDC_CELL_SIZE]) {
     for (uint32_t i = 0; i < (uint32_t)tracks * MMDC_CELL_SIZE; i++) {
@@ -89,8 +77,6 @@ void mmdc_line_reader_next(MmdcLineReader* reader, uint8_t tracks, uint8_t line[
         line[i] = reader->literal ? mmdc_u8(reader->image, reader->pos++) : 0;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MmdcCell mmdc_block_cell(const MmdcImage* image, const MmdcBlock* block, uint32_t line, uint32_t track) {
     if (line >= block->lines || track >= block->tracks) {
@@ -105,7 +91,6 @@ MmdcCell mmdc_block_cell(const MmdcImage* image, const MmdcBlock* block, uint32_
     return mmdc_read_cell(&cells[track * MMDC_CELL_SIZE]);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2: the id, a zero word at 0x10 and a block array at a positive even offset below 0x8000 whose first entry has a
 // zero high word.
 
@@ -117,7 +102,6 @@ static bool check_header(const MmdcImage* image) {
     return array != 0 && (array & 0x8001) == 0 && mmdc_u16(image, array) == 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The song structure. A tempo word whose low byte is above 10 gives the timer by division; otherwise it indexes the
 // timer table, which only a word below 256 does inside the table.
 
@@ -160,7 +144,6 @@ typedef struct Arrays {
     uint32_t sample_slots;
 } Arrays;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The block offsets (their count is the distance to the sample array, as a word) and the sample offsets (up to the
 // first block). A voice without an instrument yet uses sample slot 0, so it must exist.
 
@@ -181,7 +164,6 @@ static bool find_arrays(const MmdcImage* image, Arrays* arrays) {
     return arrays->sample_slots >= 1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A sample record sits on an even offset with its data inside the module (the data itself may be cut short).
 
 static bool read_samples(const MmdcImage* image, const Arrays* arrays, MmdcModule* module) {
@@ -200,7 +182,6 @@ static bool read_samples(const MmdcImage* image, const Arrays* arrays, MmdcModul
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A block has 1..4 tracks, decodes inside the module and names only instruments that have a sample slot. A tempo
 // command that selects the timer table cannot follow a start tempo of 256 or more (the restart would index past the
 // table).
@@ -229,8 +210,6 @@ static bool block_is_playable(const MmdcImage* image, const MmdcModule* module, 
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool mmdc_parse_module(const MmdcImage* image, MmdcModule* module) {
     *module = (MmdcModule) { 0 };

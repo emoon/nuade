@@ -27,7 +27,6 @@ static const uint16_t note_periods[QT_NOTES] = {
     0x0131, 0x0143, 0x0157, 0x016B, 0x0180, 0x666C, 0x7279, 0x8088,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period of a note started in a row: octaves 2 and 3 halve the table value, octave 0 doubles it.
 
 static uint16_t note_period(const QtVoiceWord* word) {
@@ -41,7 +40,6 @@ static uint16_t note_period(const QtVoiceWord* word) {
     return period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period a slide aims at: the same, except that octave 3 keeps the table value.
 
 static uint16_t slide_target_period(const QtVoiceWord* word) {
@@ -52,7 +50,6 @@ static uint16_t slide_target_period(const QtVoiceWord* word) {
     return (word->octave & OCTAVE_HALVE_BIT) != 0 ? (uint16_t)(period >> 1) : (uint16_t)(period << 1);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note whose next row has the 0xFE marker in the same voice slides to the next note of the voice that has volume
 // bits, the distance in rows times the tempo ticks long. The step is the wrapped 16-bit difference divided by the
 // ticks, its direction comes from the signed comparison of the two periods (the replayer's `bgt` after the subtraction,
@@ -88,8 +85,6 @@ static void slide_start(QtPlayer* player, QtVoice* v, uint32_t index, uint32_t r
                            .length = ticks };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void slide_tick(QtVoice* v) {
     QtSlide* s = &v->slide;
     v->period = (uint16_t)(v->period + (uint16_t)s->quotient);
@@ -102,7 +97,6 @@ static void slide_tick(QtVoice* v) {
     v->paula.period = v->period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Points the channel at a sample range; a range outside the set is something the model does not cover.
 
 static const int8_t* sample_lc(QtPlayer* player, uint32_t offset, uint16_t length_words) {
@@ -113,7 +107,6 @@ static const int8_t* sample_lc(QtPlayer* player, uint32_t offset, uint16_t lengt
     return lc;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Address 0 of the machine, where the replayer points the repeat of a sample that does not loop: zeros, here the
 // padding behind the sample set.
 
@@ -121,7 +114,6 @@ static const int8_t* silent_word(const QtSamples* samples) {
     return samples->data != nullptr ? (const int8_t*)samples->data + samples->size : nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A new note: DMA off, the registers, DMA on, then the repeat. A sample that loops repeats whole; any other one repeats
 // one word of silence.
 
@@ -149,8 +141,6 @@ static void voice_start_note(QtPlayer* player, QtVoice* v, const QtVoiceWord* wo
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void voice_row(QtPlayer* player, uint32_t index) {
     QtVoice* v = &player->voices[index];
     QtVoiceWord word;
@@ -172,8 +162,6 @@ static void voice_row(QtPlayer* player, uint32_t index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void row_play(QtPlayer* player) {
     player->row_counter = player->module.tempo;
     for (uint32_t i = 0; i < QT_VOICES; i++) {
@@ -182,7 +170,6 @@ static void row_play(QtPlayer* player) {
     player->row++;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The row counter ran out. A row with a 0xFFFF word calls SongEnd. A long song then starts over at once; a short one
 // stays on that row, and as the counter is not reloaded it runs 256 ticks to the next SongEnd.
 
@@ -202,8 +189,6 @@ static void row_next(QtPlayer* player) {
     row_play(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void tick_logic(QtPlayer* player) {
     for (uint32_t i = 0; i < QT_VOICES; i++) {
         if (player->voices[i].slide.active) {
@@ -216,8 +201,6 @@ static void tick_logic(QtPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 QtTickResult qt_tick(QtPlayer* player, NuadeVoices* voices) {
     tick_logic(player);
     for (uint32_t i = 0; i < QT_VOICES; i++) {
@@ -228,7 +211,6 @@ QtTickResult qt_tick(QtPlayer* player, NuadeVoices* voices) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitSound: the first row, the tempo as row counter, every period 0x120 and every volume 0.
 
 static void player_reset(QtPlayer* player) {
@@ -242,21 +224,15 @@ static void player_reset(QtPlayer* player) {
     player->looped = false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool qt_start(QtPlayer* player, NuadeVoices* voices) {
     (void)voices;
     player_reset(player);
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t qt_tempo(const QtPlayer* player) {
     return player->module.tempo;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 QtVoiceState qt_voice_state(const QtPlayer* player, uint32_t voice) {
     if (voice >= QT_VOICES || !player->voices[voice].has_note) {
@@ -265,7 +241,6 @@ QtVoiceState qt_voice_state(const QtPlayer* player, uint32_t voice) {
     return (QtVoiceState) { .period = player->voices[voice].period, .instrument = player->voices[voice].sample };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What decides whether the replayer reaches something the model does not cover is song data only (rows, slide
 // searches, sample ranges), never audio. Playing the rows once, from the first to the song end, tells before the song
 // plays.

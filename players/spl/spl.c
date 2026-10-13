@@ -51,25 +51,18 @@
 #define DECAY_STEP 8
 #define SWING_HALF 3
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t read_u8(const SplPlayer* p, uint32_t at) {
     return spl_module_u8(p->module, at);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t read_u16(const SplPlayer* p, uint32_t at) {
     return spl_module_u16(p->module, at);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t read_u32(const SplPlayer* p, uint32_t at) {
     return spl_module_u32(p->module, at);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Instrument records
 
 // The 0xF0 command copies a record from the stream. These are the fields of each family's record.
@@ -87,16 +80,12 @@ static void load_record_full(const SplPlayer* p, SplRecord* r, uint32_t at) {
     r->transpose = read_u16(p, at + 0x20);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void load_record_tiny(const SplPlayer* p, SplRecord* r, uint32_t at) {
     r->sample = read_u32(p, at);
     r->length = read_u16(p, at + 0x04);
     r->octave = read_u8(p, at + 0x08);
     r->volume = read_u8(p, at + 0x0F);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void load_record_table(const SplPlayer* p, SplRecord* r, uint32_t at) {
     r->sample_number = read_u16(p, at);
@@ -112,8 +101,6 @@ static void load_record_table(const SplPlayer* p, SplRecord* r, uint32_t at) {
     r->transpose = read_u16(p, at + 0x18);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Bytes a record takes in the stream.
 static uint32_t record_bytes(SplFamily family) {
     switch (family) {
@@ -125,8 +112,6 @@ static uint32_t record_bytes(SplFamily family) {
             return 0x22;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void load_record(const SplPlayer* p, SplRecord* r, uint32_t at) {
     switch (p->module->build->family) {
@@ -142,7 +127,6 @@ static void load_record(const SplPlayer* p, SplRecord* r, uint32_t at) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Notes
 
 // Moves a note byte (octave in the high nibble, semitone in the low) up by `steps` semitones.
@@ -156,8 +140,6 @@ static uint8_t transpose_note(uint8_t note, uint8_t steps) {
     return note;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The period of a note byte after the record's octave shift: a table entry halved once for each octave.
 static uint16_t note_period(const SplPlayer* p, const SplRecord* r, uint8_t note) {
     const uint8_t shifted = (uint8_t)(note + (uint8_t)(r->octave << 4));
@@ -166,8 +148,6 @@ static uint16_t note_period(const SplPlayer* p, const SplRecord* r, uint8_t note
     return (uint16_t)(entry >> (shifted >> 4));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void push_history(SplRecord* r, uint16_t period, uint32_t depth) {
     for (uint32_t i = depth - 1; i > 0; i--) {
         r->history[i] = r->history[i - 1];
@@ -175,16 +155,12 @@ static void push_history(SplRecord* r, uint16_t period, uint32_t depth) {
     r->history[0] = period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void clear_run_time(SplRecord* r) {
     r->period_timer = 0;
     r->decay_timer = 0;
     r->current_volume = 0;
     r->release_timer = 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A note of the Full, Lite and Tiny families.
 static void start_note_plain(SplPlayer* p, uint32_t index, uint8_t note) {
@@ -217,8 +193,6 @@ static void start_note_plain(SplPlayer* p, uint32_t index, uint8_t note) {
     paula->volume = (uint8_t)r->volume;
     nuade_paula_channel_dma_on(paula);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A note of the Table family: the sample comes from the tables, its first long is cleared, and the loop follows.
 static void start_note_table(SplPlayer* p, uint32_t index, uint8_t note) {
@@ -258,8 +232,6 @@ static void start_note_table(SplPlayer* p, uint32_t index, uint8_t note) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void start_note(SplPlayer* p, uint32_t index, uint8_t note) {
     const SplBuild* build = p->module->build;
     if (build->silent_middle_voices && (index == 1 || index == 2)) {
@@ -272,7 +244,6 @@ static void start_note(SplPlayer* p, uint32_t index, uint8_t note) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Effects, once a tick before the streams
 
 // The period swap or rotation of the effects.
@@ -296,8 +267,6 @@ static void run_period_effect(SplVoice* v, bool rotate) {
     v->paula.period = r->history[1];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_decay_effect(SplVoice* v) {
     SplRecord* r = &v->record;
     if (r->decay_timer != 0) {
@@ -310,8 +279,6 @@ static void run_decay_effect(SplVoice* v) {
         v->paula.volume = (uint8_t)r->current_volume;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The release lowers the volume and restarts the sample at the new volume.
 static void run_release_effect(const SplPlayer* p, SplVoice* v) {
@@ -344,8 +311,6 @@ static void run_release_effect(const SplPlayer* p, SplVoice* v) {
     nuade_paula_channel_dma_on(paula);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void run_effects(SplPlayer* p) {
     const SplFamily family = p->module->build->family;
     if (family == SplFamily_Tiny) {
@@ -369,7 +334,6 @@ static void run_effects(SplPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Command streams
 
 // A voice that jumps back (or to the byte behind its jump command) has finished the song once; the eagleplayer's
@@ -390,8 +354,6 @@ static void note_jump(SplPlayer* p, uint32_t index, uint32_t operand_at, uint32_
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Number of notes that follow the first one of a note command, from the record's flags.
 static uint32_t extra_notes(const SplBuild* build, uint16_t flags) {
     if (build->family == SplFamily_Tiny || (flags & FLAG_EXTRA_NOTES) == 0) {
@@ -403,14 +365,10 @@ static uint32_t extra_notes(const SplBuild* build, uint16_t flags) {
     return (flags & FLAG_MORE_NOTES) != 0 ? 3 : 1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Where entry `depth` of voice `index`'s return stack lies.
 static uint32_t stack_slot(const SplPlayer* p, uint32_t index, uint32_t depth) {
     return spl_module_address(p->module, p->module->build->stacks[index]) + 4 * depth;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Reads commands of voice `index` until a note ends its step. False when the song has stopped.
 static bool step_voice(SplPlayer* p, uint32_t index) {
@@ -478,8 +436,6 @@ static bool step_voice(SplPlayer* p, uint32_t index) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void step_streams(SplPlayer* p) {
     for (uint32_t i = 0; i < p->voice_count; i++) {
         if (!step_voice(p, i)) {
@@ -487,8 +443,6 @@ static void step_streams(SplPlayer* p) {
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Whether the streams advance in this tick.
 static bool divider_fires(SplPlayer* p) {
@@ -529,15 +483,12 @@ static bool divider_fires(SplPlayer* p) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Starting
 
 static void start_voice(SplPlayer* p, uint32_t index) {
     SplVoice* v = &p->voices[index];
     *v = (SplVoice) { .stream_at = spl_module_address(p->module, p->song->streams[index]), .alive = true };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The init routine's hardware part: DMA on for some voices, and a startup sample on voice 0.
 static void start_hardware(SplPlayer* p) {
@@ -566,8 +517,6 @@ static void start_hardware(SplPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool spl_start(SplPlayer* p, int subsong, NuadeVoices* voices) {
     const SplBuild* build = p->module->build;
     if (subsong < 0 || (uint32_t)subsong >= build->song_count) {
@@ -593,8 +542,6 @@ bool spl_start(SplPlayer* p, int subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 SplTickResult spl_tick(SplPlayer* p, NuadeVoices* voices) {
     p->looped = false;
     if (p->playing) {
@@ -609,7 +556,6 @@ SplTickResult spl_tick(SplPlayer* p, NuadeVoices* voices) {
     return (SplTickResult) { .looped = p->looped };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Opening
 
 SplPlayer* spl_create(const uint8_t* data, size_t size) {
@@ -626,16 +572,12 @@ SplPlayer* spl_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool spl_probe(const uint8_t* data, size_t size) {
     SplModule* module = spl_module_open(data, size);
     const bool supported = module != nullptr;
     spl_module_close(module);
     return supported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void spl_destroy(SplPlayer* player) {
     if (player != nullptr) {
@@ -644,13 +586,9 @@ void spl_destroy(SplPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int spl_subsong_count(const SplPlayer* player) {
     return (int)player->module->subsong_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t spl_tick_length(const SplPlayer* player) {
     return player->module->timer;

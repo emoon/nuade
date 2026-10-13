@@ -11,14 +11,10 @@
 // grid is a display choice only.
 #define APS_GRID_TICKS 6
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe aprosys_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return aps_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult aprosys_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -35,20 +31,14 @@ static NuadePlayerOpenResult aprosys_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void aprosys_close(void* user_data) {
     aps_destroy((ApsPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool aprosys_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return aps_start((ApsPlayer*)user_data, (int)subsong, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult aprosys_tick(void* user_data, NuadeVoices* voices) {
     const ApsTickResult tick = aps_tick((ApsPlayer*)user_data, voices);
@@ -62,14 +52,10 @@ static NuadeTickResult aprosys_tick(void* user_data, NuadeVoices* voices) {
     return (NuadeTickResult) { .length = APS_TICK_LENGTH, .flags = flags };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void aprosys_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "AProSys");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t aprosys_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const ApsPlayer* player = (const ApsPlayer*)user_data;
@@ -81,15 +67,11 @@ static uint32_t aprosys_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_
     return count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t aprosys_grid_ticks(void* user_data, uint32_t subsong) {
     (void)user_data;
     (void)subsong;
     return APS_GRID_TICKS;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_aprosys = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -106,8 +88,6 @@ const NuadePlayer nuade_player_aprosys = {
     .voice_info = aprosys_voice_info,
     .grid_ticks = aprosys_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ApsPlayer* aps_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_aprosys) {

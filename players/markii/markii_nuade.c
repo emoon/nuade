@@ -9,7 +9,6 @@
 #include <nuade/players/markii.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer is found by the "mii", "mk2" or "mkii" prefix or suffix; the code check alone would claim files of
 // other formats.
 
@@ -18,8 +17,6 @@ static bool markii_has_name(const char* filename) {
            && (nuade_path_has_ext(filename, "mii") || nuade_path_has_ext(filename, "mk2")
                || nuade_path_has_ext(filename, "mkii"));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeProbe markii_probe(const uint8_t* data, size_t size, const char* filename) {
     if (!markii_has_name(filename)) {
@@ -32,8 +29,6 @@ static NuadeProbe markii_probe(const uint8_t* data, size_t size, const char* fil
     mk2_destroy(player);
     return NuadeProbe_Supported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult markii_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -50,13 +45,9 @@ static NuadePlayerOpenResult markii_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void markii_close(void* user_data) {
     mk2_destroy((Mk2Player*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool markii_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)subsong;
@@ -64,21 +55,15 @@ static bool markii_start(void* user_data, uint32_t subsong, uint32_t sample_rate
     return mk2_start((Mk2Player*)user_data, voices);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult markii_tick(void* user_data, NuadeVoices* voices) {
     const Mk2TickResult tick = mk2_tick((Mk2Player*)user_data, voices);
     return (NuadeTickResult) { .length = MK2_TICK_LENGTH, .flags = tick.looped ? NuadeTick_Looped : NuadeTick_None };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void markii_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Mark II");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t markii_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const Mk2Player* player = (const Mk2Player*)user_data;
@@ -90,14 +75,10 @@ static uint32_t markii_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t markii_grid_ticks(void* user_data, uint32_t subsong) {
     (void)subsong;
     return mk2_grid_ticks((const Mk2Player*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_markii = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -114,8 +95,6 @@ const NuadePlayer nuade_player_markii = {
     .voice_info = markii_voice_info,
     .grid_ticks = markii_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Mk2Player* mk2_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_markii) {

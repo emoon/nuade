@@ -12,15 +12,11 @@
 #define DSS_NUADE_INSTRUMENTS 31
 #define DSS_NUADE_ROWS 64
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The module mark is specific enough to be sure.
 static NuadeProbe dss_nuade_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return dss_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult dss_nuade_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -37,20 +33,14 @@ static NuadePlayerOpenResult dss_nuade_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void dss_nuade_close(void* user_data) {
     dss_destroy((DssModule*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool dss_nuade_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return dss_start((DssModule*)user_data, (int)subsong, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult dss_nuade_tick(void* user_data, NuadeVoices* voices) {
     (void)voices;
@@ -58,8 +48,6 @@ static NuadeTickResult dss_nuade_tick(void* user_data, NuadeVoices* voices) {
     const bool looped = dss_tick((DssModule*)user_data, &length);
     return (NuadeTickResult) { .length = length, .flags = looped ? NuadeTick_Looped : NuadeTick_None };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void dss_nuade_metadata(void* user_data, const NuadeMetadataSink* sink) {
     const DssModule* module = (const DssModule*)user_data;
@@ -72,8 +60,6 @@ static void dss_nuade_metadata(void* user_data, const NuadeMetadataSink* sink) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadePositionResult dss_nuade_position(void* user_data) {
     const DssPosition p = dss_position((const DssModule*)user_data);
     return (NuadePositionResult) { .valid = true,
@@ -83,8 +69,6 @@ static NuadePositionResult dss_nuade_position(void* user_data) {
                                                  .speed = (uint32_t)p.speed,
                                                  .tempo = (uint32_t)p.tempo } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t dss_nuade_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const DssModule* module = (const DssModule*)user_data;
@@ -100,8 +84,6 @@ static uint32_t dss_nuade_voice_info(void* user_data, NuadeVoiceInfo* out, uint3
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTrackerInfoResult dss_nuade_tracker_info(void* user_data, const NuadePosition* at) {
     if ((int)at->order >= dss_get_num_positions((const DssModule*)user_data)) {
         return (NuadeTrackerInfoResult) { 0 };
@@ -115,8 +97,6 @@ static NuadeTrackerInfoResult dss_nuade_tracker_info(void* user_data, const Nuad
                                                              { "fx", NuadeColumn_Hex, 2 },
                                                              { "arg", NuadeColumn_Hex, 2 } } } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePatternCell dss_nuade_cell(const void* ctx, uint32_t order, uint32_t channel, uint32_t row) {
     NuadePatternCell cell = nuade_cell_empty();
@@ -132,8 +112,6 @@ static NuadePatternCell dss_nuade_cell(const void* ctx, uint32_t order, uint32_t
     return cell;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t dss_nuade_tracker_cells(void* user_data, const NuadePosition* at, uint32_t channel, int32_t row_lo,
                                         int32_t row_hi, NuadePatternCell* out, uint32_t cap) {
     if ((int)at->order >= dss_get_num_positions((const DssModule*)user_data)) {
@@ -142,8 +120,6 @@ static uint32_t dss_nuade_tracker_cells(void* user_data, const NuadePosition* at
     return nuade_tracker_fill(at, DSS_NUADE_VOICES, DSS_NUADE_ROWS, channel, row_lo, row_hi, out, cap, dss_nuade_cell,
                               user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_dss = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -162,8 +138,6 @@ const NuadePlayer nuade_player_dss = {
     .tracker_info = dss_nuade_tracker_info,
     .tracker_cells = dss_nuade_tracker_cells,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DssModule* dss_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_dss) {

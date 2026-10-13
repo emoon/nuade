@@ -25,8 +25,6 @@ struct NuadeViz {
     u32 scope_count;
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 NuadeViz* nuade_viz_create(u32 voice_count, u32 display_voices) {
     NuadeViz* viz = (NuadeViz*)calloc(1, sizeof(NuadeViz));
     if (viz == nullptr) {
@@ -49,8 +47,6 @@ NuadeViz* nuade_viz_create(u32 voice_count, u32 display_voices) {
     return viz;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void nuade_viz_destroy(NuadeViz* viz) {
     if (viz == nullptr) {
         return;
@@ -62,15 +58,11 @@ void nuade_viz_destroy(NuadeViz* viz) {
     free(viz);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void nuade_viz_reset(NuadeViz* viz) {
     viz->head = 0;
     viz->count = 0;
     nuade_viz_clear_meters(viz);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void nuade_viz_record(NuadeViz* viz, u64 frame, const NuadePlayer* player, void* user_data, const NuadeVoices* voices,
                       NuadeGridClock clock) {
@@ -126,8 +118,6 @@ void nuade_viz_record(NuadeViz* viz, u64 frame, const NuadePlayer* player, void*
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 NuadeSnapshotResult nuade_viz_find(const NuadeViz* viz, u64 frame, NuadeVoiceView* voices, u32 cap) {
     // Newest first: frames never decrease along the ring.
     for (u32 i = 1; i <= viz->count; i++) {
@@ -147,13 +137,9 @@ NuadeSnapshotResult nuade_viz_find(const NuadeViz* viz, u64 frame, NuadeVoiceVie
     return (NuadeSnapshotResult) { 0 };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool nuade_viz_meters_on(const NuadeViz* viz) {
     return viz->meters;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void nuade_viz_enable_meters(NuadeViz* viz) {
     if (viz->meters) {
@@ -172,8 +158,6 @@ void nuade_viz_enable_meters(NuadeViz* viz) {
     viz->meters = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void nuade_viz_clear_meters(NuadeViz* viz) {
     viz->scope_head = 0;
     viz->scope_count = 0;
@@ -181,8 +165,6 @@ void nuade_viz_clear_meters(NuadeViz* viz) {
         memset(viz->peak, 0, viz->voice_count * sizeof(f32));
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void nuade_viz_feed(NuadeViz* viz, float* const* voices, u32 frames) {
     for (u32 v = 0; v < viz->voice_count; v++) {
@@ -202,8 +184,6 @@ void nuade_viz_feed(NuadeViz* viz, float* const* voices, u32 frames) {
     viz->scope_head = (u32)(((u64)viz->scope_head + frames) % NUADE_SCOPE_FRAMES);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 u32 nuade_viz_vu(NuadeViz* viz, float* out, u32 cap) {
     const u32 n = cap < viz->voice_count ? cap : viz->voice_count;
     for (u32 v = 0; v < n; v++) {
@@ -212,8 +192,6 @@ u32 nuade_viz_vu(NuadeViz* viz, float* out, u32 cap) {
     }
     return n;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 u32 nuade_viz_scope(const NuadeViz* viz, u32 voice, float* out, u32 cap) {
     if (voice >= viz->voice_count) {

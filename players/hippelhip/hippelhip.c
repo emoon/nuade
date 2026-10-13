@@ -21,7 +21,6 @@
 #define OPCODE_PUSH_D0 0x2f00 // move.l d0,-(a7)
 #define MAX_MODULE_SIZE 0x1000000
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer versions: 12 layouts of the replayers in the corpus (23 distinct ones in 62 of the 63 modules; Astaroth
 // has a replayer of its own design and is not played). A replayer is told by a hash of the module bytes in front of the
 // header; replayers with the same layout differ in the song state the module file holds, or in code the port does not
@@ -167,8 +166,6 @@ static const HhVersion k_versions[] = {
       .c_start_delay = 1 },
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // FNV-1a of the module bytes in front of the header
 static uint32_t code_hash(const uint8_t* data, uint32_t length) {
     uint32_t hash = 0x811c9dc5u;
@@ -177,8 +174,6 @@ static uint32_t code_hash(const uint8_t* data, uint32_t length) {
     }
     return hash;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static const HhVersion* find_version(const uint8_t* data, uint32_t header) {
     const uint32_t hash = code_hash(data, header);
@@ -192,7 +187,6 @@ static const HhVersion* find_version(const uint8_t* data, uint32_t header) {
     return nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's module check (with a bsr.b accepted where it wants a bsr.w), on the raw bytes. A read past the end
 // fails the check.
 
@@ -202,7 +196,6 @@ typedef struct Bytes {
     bool ok;
 } Bytes;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static uint8_t bytes_u8(Bytes* b, int64_t at) {
     if (at < 0 || (uint64_t)at >= b->size) {
         b->ok = false;
@@ -211,23 +204,18 @@ static uint8_t bytes_u8(Bytes* b, int64_t at) {
     return b->data[at];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static uint16_t bytes_u16(Bytes* b, int64_t at) {
     return (uint16_t)((bytes_u8(b, at) << 8) | bytes_u8(b, at + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static uint32_t bytes_u32(Bytes* b, int64_t at) {
     return ((uint32_t)bytes_u16(b, at) << 16) | bytes_u16(b, at + 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A word that the replayer adds to an address with adda.w
 static int64_t bytes_s16(Bytes* b, int64_t at) {
     return (int16_t)bytes_u16(b, at);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Follows the bsr at *at to the routine it calls. The eagleplayer's check wants bsr.w; the replayer runs bsr.b just as
 // well (Prince calls through two of them; the check refuses it, the user decided the port plays it). An odd bsr.b
@@ -247,8 +235,6 @@ static bool follow_bsr(Bytes* b, int64_t* at) {
     *at += 2 + displacement;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // From the first bytes to the "TFMX" header: the entry branch, the init routine's movem, then (when the entry is a
 // short branch) two calls, and the lea of the header.
@@ -301,8 +287,6 @@ static bool find_header(Bytes* b, int64_t* header) {
     return b->ok && bytes_u32(b, *header) == TFMX_MAGIC;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The header behind "TFMX": how many of each record the tables hold
 typedef struct TfmxHeader {
     uint8_t fseq_high;     // the high byte of the first count, which the check wants 0
@@ -315,7 +299,6 @@ typedef struct TfmxHeader {
     uint16_t sample_count;
 } TfmxHeader;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static TfmxHeader read_tfmx_header(Bytes* b, int64_t header) {
     return (TfmxHeader) { .fseq_high = bytes_u8(b, header + 4),
                           .fseq_last = bytes_u16(b, header + 4),
@@ -327,20 +310,15 @@ static TfmxHeader read_tfmx_header(Bytes* b, int64_t header) {
                           .sample_count = bytes_u16(b, header + 0x12) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A sample table entry, as far as the check looks
 typedef struct SampleEntry {
     uint32_t start;  // into the sample data
     uint16_t length; // words
 } SampleEntry;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static SampleEntry read_sample_entry(Bytes* b, int64_t entry) {
     return (SampleEntry) { .start = bytes_u32(b, entry + 0x12), .length = bytes_u16(b, entry + 0x16) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The header's own check: the sample table starts with a sample at 0 that has a length, and the second sample
 // starts where the first ends.
@@ -362,14 +340,10 @@ static bool check_header(Bytes* b, int64_t header, const TfmxHeader* h) {
     return b->ok && second.start == (uint32_t)first.length * 2;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A table follows the one before; the replayer adds the low word of the size, sign extended (adda.w)
 static uint32_t table_end(uint32_t table, uint32_t size) {
     return table + (uint32_t)(int32_t)(int16_t)(uint16_t)size;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The header's table sizes give the offset of every table
 static void layout_tables(const TfmxHeader* h, HhModule* m) {
@@ -383,8 +357,6 @@ static void layout_tables(const TfmxHeader* h, HhModule* m) {
     m->sample_data = table_end(m->samples, (uint32_t)h->sample_count * HH_SAMPLE_RECORD_SIZE);
     m->subsong_count = h->subsong_last;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The module as the replayer is given it, if this player runs its replayer: the module's layout (without its data)
 // and the replayer version.
@@ -421,14 +393,10 @@ static const HhVersion* parse(const uint8_t* data, size_t size, HhModule* module
     return version;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool hh_probe(const uint8_t* data, size_t size) {
     HhModule module;
     return parse(data, size, &module) != nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 HhPlayer* hh_create(const uint8_t* data, size_t size) {
     HhModule module;
@@ -454,8 +422,6 @@ HhPlayer* hh_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void hh_destroy(HhPlayer* player) {
     if (player != nullptr) {
         free(player->original);
@@ -464,19 +430,13 @@ void hh_destroy(HhPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int hh_subsong_count(const HhPlayer* player) {
     return player->module.subsong_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const char* hh_replayer_name(const HhPlayer* player) {
     return player->version->engine->name;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The eagleplayer starts a subsong: a table entry that ends before it starts is cleared, then the replayer's init
 // reads it.
@@ -490,8 +450,6 @@ static void load_subsong(HhPlayer* p) {
     song->subsong
         = (HhSubsong) { .first = hhm_u16(m, entry), .last = hhm_u16(m, entry + 2), .speed = hhm_u16(m, entry + 4) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool hh_start(HhPlayer* player, int subsong, NuadeVoices* voices) {
     if (player == nullptr || voices == nullptr || subsong < 0 || subsong >= player->module.subsong_count) {
@@ -511,8 +469,6 @@ bool hh_start(HhPlayer* player, int subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 HhTickResult hh_tick(HhPlayer* player, NuadeVoices* voices) {
     HhSong* song = &player->song;
     song->looped = false;
@@ -520,13 +476,9 @@ HhTickResult hh_tick(HhPlayer* player, NuadeVoices* voices) {
     return (HhTickResult) { .looped = song->looped };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int hh_speed(const HhPlayer* player) {
     return player->song.reload;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 HhVoiceState hh_voice_state(const HhPlayer* player, int voice) {
     if (voice < 0 || voice >= HH_VOICES) {

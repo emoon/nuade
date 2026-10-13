@@ -63,7 +63,6 @@
 #define BEAM_STEP 27 // colour clocks per noise byte: the stand-in for the beam position the original reads
 #define BEAM_LINE 227
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tables
 
 // The first half of a sine, 32 steps (the vibrato effect; the second half is the same, negated).
@@ -101,7 +100,6 @@ static const int16_t k_am_sine[AM_SINE_SIZE]
         0x49, 0x47, 0x45, 0x43, 0x41, 0x40, 0x3e, 0x3c, 0x3a, 0x38, 0x36, 0x34, 0x32, 0x2f, 0x2d, 0x2b, 0x29, 0x27,
         0x25, 0x23, 0x21, 0x1e, 0x1c, 0x1a, 0x18, 0x16, 0x14, 0x11, 0xf,  0xd,  0xb,  0x8,  0x6,  0x4,  0x2,  0 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Types
 
 typedef enum Effect {
@@ -120,14 +118,11 @@ typedef enum Effect {
     Effect_SetSpeed = 0xF,
 } Effect;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // File access
 
 static uint8_t blob_u8(const AscBlob* blob, size_t offset) {
     return offset < blob->size ? blob->data[offset] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t blob_u16(const AscBlob* blob, size_t offset) {
     if (offset + 2 <= blob->size) {
@@ -136,16 +131,12 @@ static uint16_t blob_u16(const AscBlob* blob, size_t offset) {
     return (uint16_t)((uint16_t)blob_u8(blob, offset) << 8 | blob_u8(blob, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t blob_u32(const AscBlob* blob, size_t offset) {
     if (offset + 4 <= blob->size) {
         return nuade_read_be32(blob->data + offset);
     }
     return (uint32_t)blob_u16(blob, offset) << 16 | blob_u16(blob, offset + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static AscSampleHeader read_sample_header(const AscBlob* module, int index) {
     const size_t start = MOD_SAMPLE_TABLE + (size_t)index * MOD_SAMPLE_HEADER_SIZE;
@@ -160,8 +151,6 @@ static AscSampleHeader read_sample_header(const AscBlob* module, int index) {
     return header;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static AscRawCell read_cell(const AscBlob* module, size_t offset) {
     const uint8_t b0 = blob_u8(module, offset);
     const uint8_t b2 = blob_u8(module, offset + 2);
@@ -170,8 +159,6 @@ static AscRawCell read_cell(const AscBlob* module, size_t offset) {
                           .effect = (uint8_t)(b2 & 0x0F),
                           .param = blob_u8(module, offset + 3) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Fields of the 120 bytes, as byte offsets: 6 start level, 8 + 4 * n and 10 + 4 * n level and rate of stage n, 0x14
 // hold, 0x18 release rate, 0x1A wave form, 0x1C period slide, 0x1E vibrato depth, 0x20 vibrato speed, 0x22 octave
@@ -197,8 +184,6 @@ static AscAmInstrument read_am_instrument(const AscBlob* bank, uint32_t number) 
     return am;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Offset in the module of a cell. The row is addressed with 16 bit arithmetic (a pattern number of 64 or more wraps)
 // and each voice reads 4 bytes after the one before.
 static size_t cell_offset(uint8_t pattern, uint16_t row_offset, int voice) {
@@ -206,15 +191,12 @@ static size_t cell_offset(uint8_t pattern, uint16_t row_offset, int voice) {
     return MOD_PATTERNS + (size_t)row_start + (size_t)voice * MOD_CELL_SIZE;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Paula memory
 
 typedef struct Span {
     const int8_t* data;
     size_t size;
 } Span;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static Span memory_span(const AscPlayer* p, AscMemory memory) {
     switch (memory) {
@@ -228,14 +210,10 @@ static Span memory_span(const AscPlayer* p, AscMemory memory) {
     return (Span) { nullptr, 0 };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const int8_t* address_data(const AscPlayer* p, AscAddress a) {
     const Span span = memory_span(p, a.memory);
     return a.offset < span.size ? span.data + a.offset : nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // AUDxLEN for an AUDxLC at `a`. The module is a padded copy, so any length plays there (zeros past its end), and an
 // address outside its memory has a null AUDxLC. Only the 128 bytes of wave forms need a bound: a wave goes in with its
@@ -249,13 +227,9 @@ static uint16_t readable_words(const AscPlayer* p, AscAddress a, uint16_t words)
     return words != 0 && words <= room ? words : room;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static AscAddress address_add(AscAddress a, uint32_t bytes) {
     return (AscAddress) { .memory = a.memory, .offset = a.offset + bytes };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // AUDxLC and AUDxLEN.
 static void write_lc_len(const AscPlayer* p, NuadePaulaChannel* paula, AscAddress a, uint16_t words) {
@@ -263,15 +237,12 @@ static void write_lc_len(const AscPlayer* p, NuadePaulaChannel* paula, AscAddres
     paula->len_words = readable_words(p, a, words);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // AUDxLC alone: the length stays (cut to the wave forms, see readable_words).
 static void write_lc(const AscPlayer* p, NuadePaulaChannel* paula, AscAddress a) {
     paula->lc = address_data(p, a);
     paula->len_words = readable_words(p, a, paula->len_words);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AscVoice helpers
 
 // `level` scaled by the voice's volume (a 16 bit product; only its low word is shifted).
@@ -279,15 +250,11 @@ static uint16_t scaled_volume(const AscVoice* v, uint16_t level) {
     return (uint16_t)((uint16_t)(level * v->volume) >> 6);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The N flag of the 16 bit subtraction `a - b`. The 68k code clamps with `bpl` / `bmi` after it, which differs from a
 // signed comparison where the subtraction overflows (periods of 0x8000 and above).
 static bool word_difference_negative(uint16_t a, uint16_t b) {
     return (int16_t)(uint16_t)(a - b) < 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The period register and the base the AM vibrato is added to.
 static void set_period(AscVoice* v, uint16_t period) {
@@ -295,13 +262,10 @@ static void set_period(AscVoice* v, uint16_t period) {
     v->base_period = period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool is_tone_portamento(uint8_t effect) {
     return effect == Effect_TonePortamento || effect == Effect_TonePortamentoVolumeSlide;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Effects, one tick after the row
 
 // The arpeggio looks up the period in the table, and a note high in the table plus the semitones reads past its end
@@ -330,8 +294,6 @@ static uint16_t period_table_word(const AscPlayer* p, uint32_t index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void arpeggio(const AscPlayer* p, AscVoice* v) {
     // The original's list of 32 ticks (the counter stays below the speed, 31 at most): none, high nibble, low nibble.
     const unsigned step = p->counter % 3;
@@ -348,8 +310,6 @@ static void arpeggio(const AscPlayer* p, AscVoice* v) {
     set_period(v, v->period);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void slide_up(AscVoice* v) {
     v->period = (uint16_t)(v->period - v->cell.param);
     if (word_difference_negative(v->period, PERIOD_MIN)) {
@@ -358,8 +318,6 @@ static void slide_up(AscVoice* v) {
     set_period(v, v->period);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void slide_down(AscVoice* v) {
     v->period = (uint16_t)(v->period + v->cell.param);
     if (!word_difference_negative(v->period, PERIOD_MAX)) {
@@ -367,8 +325,6 @@ static void slide_down(AscVoice* v) {
     }
     set_period(v, v->period);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A speed in the cell sets the portamento speed and is used up.
 static void tone_portamento(AscVoice* v, bool take_speed) {
@@ -396,8 +352,6 @@ static void tone_portamento(AscVoice* v, bool take_speed) {
     set_period(v, v->period);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void vibrato(AscVoice* v, bool take_param) {
     if (take_param && v->cell.param != 0) {
         v->vibrato_speed = v->cell.param >> 4;
@@ -409,8 +363,6 @@ static void vibrato(AscVoice* v, bool take_param) {
     set_period(v, period);
     v->vibrato_pos = (uint8_t)(v->vibrato_pos + v->vibrato_speed * 4);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void volume_slide(AscVoice* v) {
     const uint8_t up = v->cell.param >> 4;
@@ -429,8 +381,6 @@ static void volume_slide(AscVoice* v) {
         v->paula.volume = v->volume;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The effects of the ticks between two rows.
 static void tick_effect(const AscPlayer* p, AscVoice* v) {
@@ -475,7 +425,6 @@ static void tick_effect(const AscPlayer* p, AscVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The row
 
 // Is this row played for the second time? Marks it. The original calls SongEnd on every row from the first repeat on;
@@ -490,8 +439,6 @@ static bool mark_row_visited(AscPlayer* p) {
     *seen = true;
     return false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A cell with an instrument number loads the instrument into the voice and writes its volume.
 static void assign_instrument(const AscPlayer* p, AscVoice* v, uint8_t number) {
@@ -515,8 +462,6 @@ static void assign_instrument(const AscPlayer* p, AscVoice* v, uint8_t number) {
     v->paula.volume = (uint8_t)scaled_volume(v, start_volume);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A note on a synth instrument: a wave form in a loop at the period shifted by the octave shift; the envelope starts.
 static void start_am_note(AscPlayer* p, AscVoice* v) {
     const AscAmInstrument* am = &p->am[v->instrument];
@@ -533,8 +478,6 @@ static void start_am_note(AscPlayer* p, AscVoice* v) {
     set_period(v, v->period);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A note: DMA stops and Paula is loaded; the DMA starts once all the voices of the row are set.
 static void start_note(AscPlayer* p, AscVoice* v) {
     v->period = v->cell.period;
@@ -549,8 +492,6 @@ static void start_note(AscPlayer* p, AscVoice* v) {
     v->dma_started = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A tone portamento row sets the target; the note itself does not start. The portamento slides towards it unless the
 // period is already there.
 static void start_tone_portamento(AscVoice* v) {
@@ -562,8 +503,6 @@ static void start_tone_portamento(AscVoice* v) {
         v->porta_period_falls = true;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The effects that act on the row itself.
 static void row_effect(AscPlayer* p, AscVoice* v) {
@@ -590,8 +529,6 @@ static void row_effect(AscPlayer* p, AscVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void play_voice_row(AscPlayer* p, AscVoice* v, uint8_t pattern, int index) {
     v->cell = read_cell(&p->module, cell_offset(pattern, p->row_offset, index));
     // An instrument number past the 31 of the module reads the replayer's variables in the original; it is skipped.
@@ -616,8 +553,6 @@ static void play_voice_row(AscPlayer* p, AscVoice* v, uint8_t pattern, int index
     row_effect(p, v);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // After the DMA of the row's notes is on, every voice gets its repeat registers; the volume goes with them for a plain
 // sample, and a synth voice on the last channel keeps its length.
 static void write_repeats(AscPlayer* p) {
@@ -635,8 +570,6 @@ static void write_repeats(AscPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Next order position; the last one restarts at the song's restart position.
 static void advance_order(AscPlayer* p) {
     p->break_pending = false;
@@ -645,8 +578,6 @@ static void advance_order(AscPlayer* p) {
         p->order = p->restart;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Plays the row; true if it was played before (the eagleplayer's SongEnd).
 static bool play_row(AscPlayer* p) {
@@ -675,7 +606,6 @@ static bool play_row(AscPlayer* p) {
     return again;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The synth voices
 
 // One step of an envelope slide towards `stage.level`; true once it is there.
@@ -697,8 +627,6 @@ static bool slide_level(AscVoice* v, AscAmStage stage) {
     v->am_level = stage.level;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The envelope of one tick. A voice whose release ends stops its DMA and is no longer a synth voice.
 static void envelope_step(AscVoice* v, const AscAmInstrument* am) {
@@ -735,8 +663,6 @@ static void envelope_step(AscVoice* v, const AscAmInstrument* am) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The vibrato of a synth voice: the depth times a sine, over a whole wave of the table.
 static int16_t am_vibrato(const AscVoice* v, uint16_t depth) {
     uint16_t phase = v->am_vibrato_pos;
@@ -751,8 +677,6 @@ static int16_t am_vibrato(const AscVoice* v, uint16_t depth) {
     const int16_t value = (int16_t)((int16_t)(sine * (int16_t)depth) >> 7);
     return negative ? (int16_t)-value : value;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void synth_voice_tick(AscVoice* v, const AscAmInstrument* am) {
     envelope_step(v, am);
@@ -774,8 +698,6 @@ static void synth_voice_tick(AscVoice* v, const AscAmInstrument* am) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void synth_voices_tick(AscPlayer* p) {
     for (int i = 0; i < ASC_VOICES; i++) {
         AscVoice* v = &p->voices[i];
@@ -784,8 +706,6 @@ static void synth_voices_tick(AscPlayer* p) {
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The noise wave form is made again each tick from the beam position the original reads at each byte; the beam is
 // stood in for by a counter, so the noise is a different one.
@@ -801,7 +721,6 @@ static void regenerate_noise(AscPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Creation
 
 // Check2.
@@ -823,8 +742,6 @@ bool asc_probe(const uint8_t* data, size_t size) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Does the pattern have a position jump (effect B)? The parameter of the first one is returned in `*param`. The scan
 // addresses the pattern in 32 bit arithmetic, so unlike cell_offset it does not wrap.
 static bool pattern_jump(const AscBlob* module, uint8_t pattern, uint8_t* param) {
@@ -838,8 +755,6 @@ static bool pattern_jump(const AscBlob* module, uint8_t pattern, uint8_t* param)
     }
     return false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The eagleplayer's subsong detection: the order after each position whose pattern has a position jump starts a
 // subsong. A second jump to the same position as the first one means the song is a single loop.
@@ -863,8 +778,6 @@ static void find_subsongs(AscPlayer* p) {
     p->subsong_count = count == 0 ? 1 : count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The sample data follows the highest pattern of the order list (the original compares the order bytes as signed);
 // each sample starts with 4 cleared bytes.
 static void locate_samples(AscPlayer* p) {
@@ -882,8 +795,6 @@ static void locate_samples(AscPlayer* p) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The header of the module, decoded once.
 static void read_header(AscPlayer* p) {
     for (int i = 0; i < MOD_TITLE_SIZE; i++) {
@@ -898,8 +809,6 @@ static void read_header(AscPlayer* p) {
     p->song_length = blob_u8(&p->module, MOD_SONG_LENGTH);
     p->restart = blob_u8(&p->module, MOD_RESTART);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 AscPlayer* asc_create(const uint8_t* module, size_t module_size, const uint8_t* bank, size_t bank_size) {
     if (!asc_probe(module, module_size) || bank == nullptr || bank_size == 0) {
@@ -925,8 +834,6 @@ AscPlayer* asc_create(const uint8_t* module, size_t module_size, const uint8_t* 
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void asc_destroy(AscPlayer* player) {
     if (player == nullptr) {
         return;
@@ -935,13 +842,10 @@ void asc_destroy(AscPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t asc_subsong_count(const AscPlayer* player) {
     return player->subsong_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Playing
 
 // InitSound.
@@ -966,8 +870,6 @@ bool asc_start(AscPlayer* player, uint32_t subsong, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The interrupt: effects between the rows, the row, then the synth voices and the noise.
 AscTickResult asc_tick(AscPlayer* player, NuadeVoices* voices) {
     bool looped = false;
@@ -988,14 +890,11 @@ AscTickResult asc_tick(AscPlayer* player, NuadeVoices* voices) {
     return (AscTickResult) { .looped = looped };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Display
 
 void asc_title(const AscPlayer* player, char out[ASC_TITLE_SIZE]) {
     memcpy(out, player->title, ASC_TITLE_SIZE);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void asc_sample_name(const AscPlayer* player, int index, char out[ASC_NAME_SIZE]) {
     out[0] = '\0';
@@ -1005,26 +904,18 @@ void asc_sample_name(const AscPlayer* player, int index, char out[ASC_NAME_SIZE]
     memcpy(out, player->samples[index].name, ASC_NAME_SIZE);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 AscPosition asc_position(const AscPlayer* player) {
     return player->shown;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t asc_position_count(const AscPlayer* player) {
     return player->song_length < ASC_MOD_ORDER_COUNT ? player->song_length : ASC_MOD_ORDER_COUNT;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 AscVoiceState asc_voice_state(const AscPlayer* player, int voice) {
     const AscVoice* v = &player->voices[voice];
     return (AscVoiceState) { .period = v->started_period, .instrument = v->started_instrument };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 AscCell asc_pattern_cell(const AscPlayer* player, uint32_t order, uint32_t channel, uint32_t row) {
     const uint8_t pattern = player->orders[order & (ASC_ORDER_READ_COUNT - 1)];

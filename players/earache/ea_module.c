@@ -32,27 +32,22 @@ static const uint16_t k_periods[EA_PERIOD_COUNT] = {
     0x0071, 0x0071, 0x0071, 0x0071, 0x0071, 0x0071, 0x0071, 0x0071, 0x0071, 0x0071, 0x0071,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t ea_period_entry(uint32_t index) {
     return index < EA_PERIOD_COUNT ? k_periods[index] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The file bytes at `position`, or null when `count` bytes do not fit.
 
 static const uint8_t* file_at(const uint8_t* bytes, size_t size, uint64_t position, size_t count) {
     return position + count <= size ? bytes + position : nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer's own checks on a branch displacement: positive and even.
 
 static bool is_branch_offset(int16_t displacement) {
     return displacement > 0 && (displacement & 1) == 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A module with its own player starts with two branches; the first leads to a DMACON write and a PC-relative load of
 // the header address.
 
@@ -80,8 +75,6 @@ static bool find_header_behind_branches(const uint8_t* bytes, size_t size, size_
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool find_header(const uint8_t* bytes, size_t size, size_t* base) {
     if (size < 2) {
         return false;
@@ -97,7 +90,6 @@ static bool find_header(const uint8_t* bytes, size_t size, size_t* base) {
     return find_header_behind_branches(bytes, size, base);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2: the first offset is 0x18, the row table is a positive multiple of 8 bytes and the instrument table a positive
 // multiple of 16 bytes below the volume tables. Only the low bits of the differences are checked.
 
@@ -118,34 +110,25 @@ static bool read_header(const uint8_t* bytes, size_t size, size_t base, EaHeader
            && (instrument_bytes & 15) == 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t ea_byte(const EaModule* module, uint64_t offset) {
     const uint64_t position = (uint64_t)module->base + offset;
     return position < module->size ? module->bytes[position] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t module_word(const EaModule* module, uint64_t offset) {
     const uint64_t position = (uint64_t)module->base + offset;
     return position + 2 <= module->size ? nuade_read_be16(module->bytes + position) : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 EaPositionEntry ea_position_entry(const EaModule* module, uint32_t index) {
     const uint64_t offset = (uint64_t)module->header.positions + (uint64_t)index * EA_POSITION_BYTES;
     return (EaPositionEntry) { .first = module_word(module, offset), .second = module_word(module, offset + 2) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t ea_entry_speed(EaPositionEntry entry) {
     return (uint8_t)(entry.second >> EA_SPEED_SHIFT);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A jump mark's second word names an entry; when that is a mark too its second word names the next, up to 16 times,
 // then the sequencer reads on after the last entry it looked at.
 
@@ -181,15 +164,11 @@ bool ea_pattern_at(const EaModule* module, uint32_t index, EaPattern* pattern) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 EaCell ea_cell(const EaModule* module, uint32_t row, uint32_t voice) {
     const uint64_t offset = (uint64_t)module->header.rows + (uint64_t)row * EA_ROW_BYTES + (uint64_t)voice * 2u;
     const uint16_t word = module_word(module, offset);
     return (EaCell) { .note = (uint8_t)(word >> 8), .instrument = (uint8_t)word };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 EaInstrument ea_instrument(const EaModule* module, uint32_t index) {
     const uint64_t start = (uint64_t)module->header.instruments + (uint64_t)index * EA_INSTRUMENT_BYTES;
@@ -211,7 +190,6 @@ EaInstrument ea_instrument(const EaModule* module, uint32_t index) {
                             .fine_tune = (int8_t)field[10] };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A sample table entry: AUDxLC and AUDxLEN as the replayer writes them.
 
 EaSample ea_sample(const EaModule* module, uint32_t index) {
@@ -224,7 +202,6 @@ EaSample ea_sample(const EaModule* module, uint32_t index) {
                         .length_words = module_word(module, entry + 2) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The port plays a sample only when all of it lies inside the file (a length of 0 is 65536 words).
 
 static bool sample_inside_file(const EaModule* module, uint32_t index) {
@@ -233,7 +210,6 @@ static bool sample_inside_file(const EaModule* module, uint32_t index) {
     return sample.data != nullptr && (uint64_t)((const uint8_t*)sample.data - module->bytes) + bytes <= module->size;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period table index the note start reads and the highest one the arpeggio can add to it.
 
 static bool cell_is_modelled(const EaModule* module, EaCell cell) {
@@ -248,7 +224,6 @@ static bool cell_is_modelled(const EaModule* module, EaCell cell) {
     return highest < EA_PERIOD_COUNT && sample_inside_file(module, instrument.sample);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The rows of a pattern lie inside the row table and every note in them is modelled.
 
 static bool pattern_is_modelled(const EaModule* module, const EaPattern* pattern) {
@@ -268,7 +243,6 @@ static bool pattern_is_modelled(const EaModule* module, const EaPattern* pattern
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Follows the sequencer from the first entry through every pattern it can reach (the table may hold unused entries).
 
 static bool reachable_patterns_are_modelled(const EaModule* module) {
@@ -288,8 +262,6 @@ static bool reachable_patterns_are_modelled(const EaModule* module) {
     // The walk must end at an entry it has seen: one past the table would read the instruments as positions.
     return modelled && index < module->position_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ea_module_parse(EaModule* module, const uint8_t* bytes, size_t size) {
     size_t base = 0;

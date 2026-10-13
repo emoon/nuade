@@ -67,8 +67,6 @@
 
 #define SILENCE_WORDS 2
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Periods from note 0x30. A note outside the table makes the original read its own variables and code; no song does,
 // and such a note plays silent here.
 static const uint16_t k_periods[PERIOD_COUNT] = {
@@ -86,8 +84,6 @@ static const int8_t k_vibrato[VIBRATO_STEPS] = {
 // What a sample without a loop repeats: the four zero bytes where the module's magic was (the original clears it).
 static const int8_t k_silence[SILENCE_WORDS * 2] = { 0 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The header tables, each one entry per instrument; a table follows the one before it.
 typedef enum Table {
     Table_Present,
@@ -101,20 +97,14 @@ typedef enum Table {
 
 #define HEADER_SIZE (TABLES_OFFSET + Table_Count * AP_INSTRUMENT_COUNT * TABLE_ENTRY_BYTES)
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // ApModule reads; the original reads whatever memory follows the module, here it is zero.
 static uint8_t module_u8(const ApModule* m, uint32_t offset) {
     return offset < m->size ? m->data[offset] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t module_u32(const ApModule* m, uint32_t offset) {
     return (uint64_t)offset + 4 <= m->size ? nuade_read_be32(m->data + offset) : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ap_probe(const uint8_t* data, size_t size) {
     if (data == nullptr || size < CHECK_SIZE || nuade_read_be32(data) != MAGIC) {
@@ -134,13 +124,9 @@ bool ap_probe(const uint8_t* data, size_t size) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t table_offset(Table table, int instrument) {
     return TABLES_OFFSET + ((uint32_t)table * AP_INSTRUMENT_COUNT + (uint32_t)instrument) * TABLE_ENTRY_BYTES;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // One instrument of the header; its sample data starts at `sample` if it has one.
 static ApInstrument read_instrument(const ApModule* m, int index, uint32_t sample) {
@@ -159,8 +145,6 @@ static ApInstrument read_instrument(const ApModule* m, int index, uint32_t sampl
                                          .depth = module_u8(m, vibrato + 1),
                                          .speed = module_u8(m, vibrato + 2) } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // InitPlayer: the samples must lie inside the module, and the event stream after them ends in 0xFF '/'.
 static bool load_module(ApModule* m, const uint8_t* data, size_t size) {
@@ -196,8 +180,6 @@ static bool load_module(ApModule* m, const uint8_t* data, size_t size) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 ApPlayer* ap_create(const uint8_t* data, size_t size) {
     if (!ap_probe(data, size)) {
         return nullptr;
@@ -213,8 +195,6 @@ ApPlayer* ap_create(const uint8_t* data, size_t size) {
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void ap_destroy(ApPlayer* player) {
     if (player == nullptr) {
         return;
@@ -222,8 +202,6 @@ void ap_destroy(ApPlayer* player) {
     free(player->module.data);
     free(player);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The instrument a program names. Programs past the 20 table entries read the header's other tables in the original
 // (no song sets one); here they are an instrument without a sample.
@@ -233,28 +211,20 @@ static const ApInstrument* instrument_of(const ApModule* m, uint8_t program) {
     return index < AP_INSTRUMENT_COUNT ? &m->instruments[index] : &k_empty;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // AUDxLC for a sample (or its loop) at a module offset, null if it starts past the module. Any AUDxLEN can follow it:
 // what runs past the module plays the zeros behind the padded copy.
 static const int8_t* module_samples(const ApModule* m, uint64_t offset) {
     return offset <= m->size ? (const int8_t*)m->data + offset : nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t period_of_note(uint8_t note) {
     return note >= FIRST_NOTE && note - FIRST_NOTE < PERIOD_COUNT ? k_periods[note - FIRST_NOTE] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A note with velocity 0 (or 1): the voice goes to the release phase.
 static void note_off(ApVoice* v) {
     v->phase = ApPhase_Release;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Starts a note: the voice restarts on the instrument's sample; once DMA has latched it, the loop (or silence) is
 // queued. The original waits 9 raster lines after the DMA start before it writes the loop registers.
@@ -285,8 +255,6 @@ static void note_on(const ApModule* m, ApVoice* v, uint8_t note, uint8_t half_ve
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A note event: the note and the velocity are 7 bit; velocity 0 or 1 releases the voice.
 static void note_event(ApPlayer* p, uint8_t channel, uint8_t note, uint8_t velocity) {
     ApVoice* v = &p->voices[channel % AP_VOICES];
@@ -297,8 +265,6 @@ static void note_event(ApPlayer* p, uint8_t channel, uint8_t note, uint8_t veloc
         note_on(&p->module, v, note & NOTE_MASK, half_velocity, p->sequencer.programs[channel]);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The events up to the next one with a delay. The 0xB0 events are no-ops here: the original steps its data base
 // pointer by one for them and corrupts its own variables; no song uses one. Returns true if the song is over: the end
@@ -345,8 +311,6 @@ static bool run_events(ApPlayer* p) {
     return ended;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Returns true on the tick the song ends.
 static bool sequencer_tick(ApPlayer* p) {
     ApSequencer* s = &p->sequencer;
@@ -357,21 +321,15 @@ static bool sequencer_tick(ApPlayer* p) {
     return s->wait == 0 && run_events(p);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int8_t level_add(int8_t level, uint8_t rate) {
     return (int8_t)(uint8_t)(level + rate);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A level that fell below zero stops at zero.
 static int8_t level_sub(int8_t level, uint8_t rate) {
     const int8_t result = (int8_t)(uint8_t)(level - rate);
     return result < 0 ? 0 : result;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // One tick of the envelope. Returns true if the volume register is written: the sustain and off phases leave it.
 static bool envelope_tick(ApVoice* v) {
@@ -417,8 +375,6 @@ static bool envelope_tick(ApVoice* v) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // After its delay the vibrato writes the period every tick, with or without depth.
 static void vibrato_tick(ApVoice* v) {
     if (v->vibrato.delay != 0) {
@@ -429,16 +385,12 @@ static void vibrato_tick(ApVoice* v) {
     v->vibrato_index = (uint8_t)((v->vibrato_index + v->vibrato.speed) % VIBRATO_STEPS);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void voice_tick(ApVoice* v) {
     vibrato_tick(v);
     if (envelope_tick(v)) {
         v->paula.volume = (uint8_t)(v->level & LEVEL_MAX);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // InitSound
 bool ap_start(ApPlayer* player, NuadeVoices* voices) {
@@ -456,8 +408,6 @@ bool ap_start(ApPlayer* player, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The interrupt: the sequencer, then the voices.
 ApTickResult ap_tick(ApPlayer* player, NuadeVoices* voices) {
     const bool ended = sequencer_tick(player);
@@ -467,8 +417,6 @@ ApTickResult ap_tick(ApPlayer* player, NuadeVoices* voices) {
     }
     return (ApTickResult) { .ended = ended };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ApVoiceState ap_voice_state(const ApPlayer* player, int voice) {
     const ApVoice* v = &player->voices[voice];

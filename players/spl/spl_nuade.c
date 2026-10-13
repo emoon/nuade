@@ -7,14 +7,10 @@
 #include <nuade/players/spl.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe spl_nuade_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return spl_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult spl_nuade_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -32,20 +28,14 @@ static NuadePlayerOpenResult spl_nuade_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void spl_nuade_close(void* user_data) {
     spl_destroy((SplPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool spl_nuade_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return spl_start((SplPlayer*)user_data, (int)subsong, voices);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTickResult spl_nuade_tick(void* user_data, NuadeVoices* voices) {
     SplPlayer* player = (SplPlayer*)user_data;
@@ -54,14 +44,10 @@ static NuadeTickResult spl_nuade_tick(void* user_data, NuadeVoices* voices) {
                                .flags = tick.looped ? NuadeTick_Looped : NuadeTick_None };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void spl_nuade_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "Sound Programming Language");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_spl = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -76,8 +62,6 @@ const NuadePlayer nuade_player_spl = {
     .tick = spl_nuade_tick,
     .metadata = spl_nuade_metadata,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SplPlayer* spl_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_spl) {

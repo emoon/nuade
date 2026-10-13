@@ -27,7 +27,6 @@
 #define SLIDE_SPEED_MASK 0x7F
 #define ENVELOPE_SHIFT 4
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxLC / AUDxLEN
 
 static void write_sample(const SmstPlayer* p, SmstVoice* v, uint32_t address, uint16_t length_words) {
@@ -35,7 +34,6 @@ static void write_sample(const SmstPlayer* p, SmstVoice* v, uint32_t address, ui
     v->paula.len_words = length_words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The voice plays its loop; a voice without one plays the silent word.
 
 void smst_write_loop_registers(const SmstPlayer* p, SmstVoice* v) {
@@ -51,7 +49,6 @@ typedef struct NotePeriod {
     uint8_t note; // the note the original keeps afterwards
 } NotePeriod;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period of a note: the transposes, the instrument's note offset, the table. `transpose` is false for the
 // arpeggio, which adds its own steps.
 
@@ -75,7 +72,6 @@ static NotePeriod note_period(const SmstPlayer* p, const SmstVoice* v, uint8_t n
     return (NotePeriod) { .period = smst_period(&p->module, index), .note = kept };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Vibrato at the start of a note or when its delay ends: an odd period starts a half step lower.
 
 static void vibrato_start(SmstVoice* v) {
@@ -84,7 +80,6 @@ static void vibrato_start(SmstVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A row without a note sets the envelope from the info byte.
 
 static void rest_volume(SmstVoice* v, uint8_t note) {
@@ -94,7 +89,6 @@ static void rest_volume(SmstVoice* v, uint8_t note) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The instrument a note plays: the info byte plus the position's offset; a slide note and an info byte with bit 6 keep
 // the voice's last instrument.
 
@@ -107,7 +101,6 @@ static uint8_t pick_instrument(SmstVoice* v, uint8_t note) {
     return (uint8_t)((number + v->position_instrument) & INSTRUMENT_MASK);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A slide note: the voice moves from its period towards the note's at the info byte's speed. Returns the note the
 // original keeps.
 
@@ -122,7 +115,6 @@ static uint8_t slide_start(const SmstPlayer* p, SmstVoice* v, uint8_t note) {
     return target.note;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample and the envelope of a new note.
 
 static void start_sample(SmstPlayer* p, SmstVoice* v, const SmstInstrument* ins, uint8_t note) {
@@ -177,8 +169,6 @@ static void start_sample(SmstPlayer* p, SmstVoice* v, const SmstInstrument* ins,
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void smst_note_start(SmstPlayer* p, SmstVoice* v) {
     const SmstVersion* ver = p->module.version;
     uint8_t note = v->note;
@@ -221,7 +211,6 @@ void smst_note_start(SmstPlayer* p, SmstVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The arpeggio table steps one entry a tick, the wave table next to it follows: a new value changes the loop (with bit
 // 7 the sample itself, and the DMA starts over next tick). Returns the step.
 
@@ -249,7 +238,6 @@ static uint8_t arpeggio_step(SmstPlayer* p, SmstVoice* v) {
     return step;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One vibrato step: the period moves by the depth, up or down; the direction flips every half period.
 
 static void vibrato_step(const SmstVersion* ver, SmstVoice* v) {
@@ -274,7 +262,6 @@ static void vibrato_step(const SmstVersion* ver, SmstVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Vibrato (after its delay), then the slide towards the target period, then the period register.
 
 static void vibrato_and_slide(const SmstVersion* ver, SmstVoice* v) {
@@ -308,7 +295,6 @@ static void vibrato_and_slide(const SmstVersion* ver, SmstVoice* v) {
     vibrato_start(v);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sweep moves the loop start every few ticks and turns round after a number of steps.
 
 static void sweep(SmstVoice* v) {
@@ -322,7 +308,6 @@ static void sweep(SmstVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The volume envelope: a held note attacks to the peak, a row without a note decays to the sustain.
 
 static void envelope(SmstVoice* v) {
@@ -354,7 +339,6 @@ static void envelope(SmstVoice* v) {
     v->env = level;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The fade factor of a voice, 64 = full. With per-voice fades the voice takes a step on the tick the fade counter
 // reads 1, unless the position's byte exempts it.
 
@@ -376,8 +360,6 @@ static uint8_t fade_factor(SmstPlayer* p, SmstVoice* v) {
     return fade;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void write_volume(SmstPlayer* p, SmstVoice* v) {
     uint16_t volume = (uint16_t)(v->env >> ENVELOPE_SHIFT);
     const uint8_t fade = fade_factor(p, v);
@@ -387,7 +369,6 @@ static void write_volume(SmstPlayer* p, SmstVoice* v) {
     v->paula.volume = (uint8_t)(volume & PAULA_VOLUME_MASK);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Every tick; the sweep stops for the "hold" arpeggio step.
 
 void smst_voice_effects(SmstPlayer* p, SmstVoice* v, uint8_t* step) {

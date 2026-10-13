@@ -54,32 +54,22 @@ static const uint16_t pp_periods[] = {
 // Played by a voice that has nothing to play.
 static int8_t pp_nullwave[2];
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t read_u16(const uint8_t* p) {
     return (uint16_t)((p[0] << 8) | p[1]);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t read_u32(const uint8_t* p) {
     return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | ((uint32_t)p[2] << 8) | p[3];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int16_t period_at(int index) {
     return (int16_t)pp_periods[index < PERIOD_COUNT ? index : PERIOD_COUNT - 1];
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool jc_probe(const uint8_t* data, size_t size) {
     // id, instrument count, pattern count, song length
     return size >= MAGIC_LENGTH + 2 + 2 + 2 && memcmp(data, "BeEp", MAGIC_LENGTH) == 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void module_free(JcModule* m) {
     if (m->instruments != nullptr) {
@@ -92,8 +82,6 @@ static void module_free(JcModule* m) {
     free(m->songtable);
     *m = (JcModule) { 0 };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Bounds-checked sequential reader over the file.
 typedef struct Cursor {
@@ -110,8 +98,6 @@ static const uint8_t* cursor_take(Cursor* c, uint64_t bytes) {
     c->pos += (size_t)bytes;
     return p;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Fixed-size record tables are read before the data they describe, so each parse step needs the previous one.
 static bool module_parse(JcModule* m, const uint8_t* data, size_t size) {
@@ -192,8 +178,6 @@ static bool module_parse(JcModule* m, const uint8_t* data, size_t size) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 JcPlayer* jc_create(const uint8_t* data, size_t size) {
     if (data == nullptr || !jc_probe(data, size)) {
         return nullptr;
@@ -210,8 +194,6 @@ JcPlayer* jc_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void jc_destroy(JcPlayer* player) {
     if (player == nullptr) {
         return;
@@ -220,13 +202,9 @@ void jc_destroy(JcPlayer* player) {
     free(player);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int jc_instrument_count(const JcPlayer* player) {
     return player->module.instrument_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const char* jc_instrument_name(const JcPlayer* player, int instrument) {
     if (instrument < 0 || instrument >= player->module.instrument_count) {
@@ -235,16 +213,12 @@ const char* jc_instrument_name(const JcPlayer* player, int instrument) {
     return player->module.instruments[instrument].name;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Point the row cursor at the first row of the pattern the song position names.
 static void enter_pattern(JcPlayer* p) {
     const JcPattern* pattern = &p->module.patterns[p->module.songtable[p->songpos]];
     p->notecnt = (uint8_t)pattern->rows;
     p->address = pattern->rows_data;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void voice_init(JcVoice* v, int index) {
     *v = (JcVoice) { 0 };
@@ -255,8 +229,6 @@ static void voice_init(JcVoice* v, int index) {
     v->pers[0] = PERIOD_MAX;
     v->vollevel = VOLUME_MAX;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool jc_start(JcPlayer* player, NuadeVoices* voices) {
     if (player == nullptr || voices == nullptr) {
@@ -279,8 +251,6 @@ bool jc_start(JcPlayer* player, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Rotate the arpeggio ring.
 static void pp_rot(JcVoice* v) {
     const int16_t first = v->pers[0];
@@ -289,15 +259,11 @@ static void pp_rot(JcVoice* v) {
     v->pers[2] = first;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void set_all_pers(JcVoice* v, int16_t period) {
     v->pers[0] = period;
     v->pers[1] = period;
     v->pers[2] = period;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Rebuild the voice's output window as the mean of the base wave and the same wave shifted by the phase.
 static void pp_am_wave(JcVoice* v) {
@@ -314,8 +280,6 @@ static void pp_am_wave(JcVoice* v) {
         v->phase = (int16_t)(v->phase - (WAVESIZE << 2));
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Per-tick update of one voice: period (portamento, vibrato, arpeggio), volume slide, AM wave.
 static void pp_uvs(JcVoice* v) {
@@ -375,8 +339,6 @@ static void pp_uvs(JcVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Switch the voice to the instrument a note names; a missing instrument plays the null wave.
 static void select_instrument(JcPlayer* p, JcVoice* v, uint8_t number) {
     const uint16_t index = (uint16_t)(int16_t)(int8_t)number;
@@ -398,8 +360,6 @@ static void select_instrument(JcPlayer* p, JcVoice* v, uint8_t number) {
     v->vol = v->vollevel;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void note_period(JcPlayer* p, JcVoice* v, const uint8_t* note) {
     const int index = note[Note_Period] - 1;
     if ((note[Note_Speed] & NoteSpeed_TonePortamento) != 0) {
@@ -415,8 +375,6 @@ static void note_period(JcPlayer* p, JcVoice* v, const uint8_t* note) {
     select_instrument(p, v, note[Note_Instrument]);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void note_arpeggio(JcVoice* v, uint8_t arpeggio) {
     if (arpeggio == 0) {
         return;
@@ -429,8 +387,6 @@ static void note_arpeggio(JcVoice* v, uint8_t arpeggio) {
     v->pers[1] = period_at(v->peraddress + (arpeggio >> 4));
     v->pers[0] = period_at(v->peraddress);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void note_vibrato(JcVoice* v, uint8_t vibrato) {
     if (vibrato == 0) {
@@ -447,8 +403,6 @@ static void note_vibrato(JcVoice* v, uint8_t vibrato) {
     v->vibcnt = v->vibmax >> 1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void note_phase(JcVoice* v, uint8_t phase) {
     if (phase == 0) {
         return;
@@ -457,8 +411,6 @@ static void note_phase(JcVoice* v, uint8_t phase) {
     // A negative delta stops the wave from changing after one more rebuild
     v->deltaphase = phase == 0xff ? -1 : (int16_t)(phase & 0x0f);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void note_volume(JcVoice* v, uint8_t volume, bool set_volume) {
     if (volume == 0xff) {
@@ -476,8 +428,6 @@ static void note_volume(JcVoice* v, uint8_t volume, bool set_volume) {
     }
     v->deltavol = (volume & 0x80) != 0 ? (int16_t)-(volume & 0x7f) : (int16_t)volume;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void note_porta(JcVoice* v, uint8_t porta, bool tone_portamento) {
     if (porta == 0) {
@@ -502,8 +452,6 @@ static void note_porta(JcVoice* v, uint8_t porta, bool tone_portamento) {
     v->deltapor = delta;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Decode one note into the voice state.
 static void pp_nnt(JcPlayer* p, JcVoice* v, const uint8_t* note) {
     if (note[Note_Period] != 0) {
@@ -519,8 +467,6 @@ static void pp_nnt(JcPlayer* p, JcVoice* v, const uint8_t* note) {
     note_volume(v, note[Note_Volume], (speed & NoteSpeed_SetVolume) != 0);
     note_porta(v, note[Note_Porta], (speed & NoteSpeed_TonePortamento) != 0);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Restart the voice's DMA on its instrument. A wave that does not loop is followed by the null wave.
 static void pp_scr(JcVoice* v, uint32_t index, NuadeVoices* voices) {
@@ -541,8 +487,6 @@ static void pp_scr(JcVoice* v, uint32_t index, NuadeVoices* voices) {
         v->inslen = 1;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // New row: step to the next row (and pattern), decode the four notes and restart the voices that got a new note.
 static void pp_nwnt(JcPlayer* p, NuadeVoices* voices, JcTickResult* result) {
@@ -572,34 +516,24 @@ static void pp_nwnt(JcPlayer* p, NuadeVoices* voices, JcTickResult* result) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 JcPosition jc_position(const JcPlayer* player) {
     return (JcPosition) {
         .order = player->shown_songpos, .row = player->shown_row, .rows = player->shown_rows, .speed = player->wait
     };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int jc_order_count(const JcPlayer* player) {
     return player->module.songlen;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int jc_pattern_rows(const JcPlayer* player, int order) {
     return player->module.patterns[player->module.songtable[order]].rows;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 JcVoiceState jc_voice_state(const JcPlayer* player, int voice) {
     const JcVoice* v = &player->variables[voice];
     return (JcVoiceState) { .note = v->shown_note, .instrument = v->shown_instrument };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 JcCell jc_pattern_cell(const JcPlayer* player, int order, int voice, int row) {
     const JcPattern* pattern = &player->module.patterns[player->module.songtable[order]];
@@ -613,8 +547,6 @@ JcCell jc_pattern_cell(const JcPlayer* player, int order, int voice, int row) {
                       .volume = note[Note_Volume],
                       .porta = note[Note_Porta] };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 JcTickResult jc_tick(JcPlayer* player, NuadeVoices* voices) {
     JcTickResult result = { 0 };

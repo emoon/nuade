@@ -12,14 +12,10 @@
 // Ticks one row of the display grid spans: the voices run their own note lengths, so the grid is a display choice only.
 #define BDS_GRID_TICKS 6
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe bendaglishsid_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return bds_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult bendaglishsid_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -38,26 +34,18 @@ static NuadePlayerOpenResult bendaglishsid_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void bendaglishsid_close(void* user_data) {
     bds_destroy((BdsPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool bendaglishsid_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     return bds_start((BdsPlayer*)user_data, (int)subsong, sample_rate, voices);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult bendaglishsid_tick(void* user_data, NuadeVoices* voices) {
     const BdsTickResult tick = bds_tick((BdsPlayer*)user_data, voices);
     return (NuadeTickResult) { .length = BDS_TICK_LENGTH, .flags = tick.looped ? NuadeTick_Looped : NuadeTick_None };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void bendaglishsid_metadata(void* user_data, const NuadeMetadataSink* sink) {
     const BdsInfo info = bds_info((const BdsPlayer*)user_data);
@@ -73,8 +61,6 @@ static void bendaglishsid_metadata(void* user_data, const NuadeMetadataSink* sin
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t bendaglishsid_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const BdsPlayer* player = (const BdsPlayer*)user_data;
     const uint32_t count = cap < BDS_VOICES ? cap : BDS_VOICES;
@@ -85,15 +71,11 @@ static uint32_t bendaglishsid_voice_info(void* user_data, NuadeVoiceInfo* out, u
     return count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t bendaglishsid_grid_ticks(void* user_data, uint32_t subsong) {
     (void)user_data;
     (void)subsong;
     return BDS_GRID_TICKS;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_bendaglishsid = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -110,8 +92,6 @@ const NuadePlayer nuade_player_bendaglishsid = {
     .voice_info = bendaglishsid_voice_info,
     .grid_ticks = bendaglishsid_grid_ticks,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BdsPlayer* bds_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_bendaglishsid) {

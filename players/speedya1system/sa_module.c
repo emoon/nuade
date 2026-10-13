@@ -31,7 +31,6 @@
 #define MAX_WALKED_POSITIONS 0x8000
 #define DELAY_NIBBLE_MASK 0x0Fu
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer's period table: 16 entries for each of the 5 octaves, 0 for the numbers that are not notes.
 
 static const uint16_t k_periods[SA1_EFFECT_FIRST] = {
@@ -41,30 +40,21 @@ static const uint16_t k_periods[SA1_EFFECT_FIRST] = {
     226,  214,  0,    0,    0,    214,  202,  191,  180,  170,  160,  151,  143,  135,  127, 120, 113, 107,  0,    0,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The attack and release delays, in ticks, indexed by the nibbles of a note cell's second byte.
 static const uint8_t k_delays[16] = { 0, 1, 2, 3, 4, 6, 9, 13, 18, 24, 31, 39, 48, 50, 61, 72 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Sa1Delays sa1_cell_delays(Sa1Cell cell) {
     return (Sa1Delays) { .attack = k_delays[cell.second >> 4], .release = k_delays[cell.second & DELAY_NIBBLE_MASK] };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t sa1_note_period(uint8_t first) {
     return first < nuade_sizeof_array(k_periods) ? k_periods[first] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool in_range(size_t size, int64_t offset, size_t length) {
     return offset >= 0 && (uint64_t)offset <= size && length <= size - (size_t)offset;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // 0 past the end of the file; callers check the range where it matters.
 
 static uint32_t read_u32(const uint8_t* data, size_t size, int64_t offset) {
@@ -74,8 +64,6 @@ static uint32_t read_u32(const uint8_t* data, size_t size, int64_t offset) {
     return nuade_read_be32(data + offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t read_u16(const uint8_t* data, size_t size, int64_t offset) {
     if (!in_range(size, offset, 2)) {
         return 0;
@@ -83,7 +71,6 @@ static uint16_t read_u16(const uint8_t* data, size_t size, int64_t offset) {
     return nuade_read_be16(data + offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The position and the pattern number are used as signed words (muls.w).
 
 Sa1Fetch sa1_fetch_cell(const Sa1Module* m, uint32_t position, unsigned row, unsigned voice, Sa1Cell* cell) {
@@ -107,28 +94,24 @@ Sa1Fetch sa1_fetch_cell(const Sa1Module* m, uint32_t position, unsigned row, uns
     return Sa1Fetch_Cell;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxLEN is the low word of the length (move.w); 0 plays 65536 words.
 
 static uint16_t length_register(int32_t words) {
     return (uint16_t)words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An AUDxLC in the file: the player's padded copy has any AUDxLEN readable behind it.
 
 static bool sample_in_file(const Sa1Module* m, int64_t offset) {
     return offset >= 0 && (uint64_t)offset <= m->size;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One entry of a sample table: `table` is the file offset of the first long.
 
 static uint32_t table_entry(const Sa1Module* m, uint32_t tables, unsigned table, unsigned sample) {
     return read_u32(m->data, m->size, (int64_t)tables + table * TABLE_BYTES + sample * 4);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the note start and the loop update read: the data start and, for a note with an envelope, the one shot and
 // repeat lengths; for a note without one the size minus the IFF header.
 
@@ -160,8 +143,6 @@ typedef struct Header {
     uint32_t tag; // 0x200
 } Header;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static Header read_header(const uint8_t* data, size_t size) {
     return (Header) { .speed = read_u32(data, size, HEADER_SPEED),
                       .start_position = read_u32(data, size, HEADER_START_POSITION),
@@ -169,7 +150,6 @@ static Header read_header(const uint8_t* data, size_t size) {
                       .tag = read_u32(data, size, HEADER_TAG_FIELD) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Every cell the song plays up to its end: each note must start a valid sample.
 
 static bool check_song(const Sa1Module* m) {
@@ -199,7 +179,6 @@ static bool check_song(const Sa1Module* m) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2. Returns the file offset of the first sample table, or -1: the order list is scanned up to its 0xFFFF for the
 // highest pattern number, the zero longs behind the patterns are skipped and 0x280 bytes behind the next long the
 // first sample ("FORM") must start.
@@ -231,8 +210,6 @@ static int64_t find_tables(const uint8_t* data, size_t size, const Header* heade
     }
     return tables;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sa1_module_parse(Sa1Module* module, const uint8_t* data, size_t size) {
     const Header header = read_header(data, size);

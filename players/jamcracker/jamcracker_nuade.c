@@ -8,14 +8,10 @@
 #include <nuade/players/jamcracker.h>
 #include <stdio.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe jamcracker_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return jc_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult jamcracker_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -32,27 +28,19 @@ static NuadePlayerOpenResult jamcracker_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void jamcracker_close(void* user_data) {
     jc_destroy((JcPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool jamcracker_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return subsong == 0 && jc_start((JcPlayer*)user_data, voices);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult jamcracker_tick(void* user_data, NuadeVoices* voices) {
     const JcTickResult tick = jc_tick((JcPlayer*)user_data, voices);
     return (NuadeTickResult) { .length = JC_TICK_LENGTH, .flags = tick.looped ? NuadeTick_Looped : NuadeTick_None };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void jamcracker_metadata(void* user_data, const NuadeMetadataSink* sink) {
     const JcPlayer* player = (const JcPlayer*)user_data;
@@ -65,8 +53,6 @@ static void jamcracker_metadata(void* user_data, const NuadeMetadataSink* sink) 
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadePositionResult jamcracker_position(void* user_data) {
     const JcPosition p = jc_position((const JcPlayer*)user_data);
     return (NuadePositionResult) { .valid = true,
@@ -77,14 +63,10 @@ static NuadePositionResult jamcracker_position(void* user_data) {
                                                  .speed = (uint32_t)p.speed } };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Note byte n is period table entry n - 1; entry 3 (857) is C-1.
 static int32_t jamcracker_note(int note_byte) {
     return note_byte != 0 ? note_byte + 8 : NUADE_CELL_EMPTY;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t jamcracker_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const JcPlayer* player = (const JcPlayer*)user_data;
@@ -100,8 +82,6 @@ static uint32_t jamcracker_voice_info(void* user_data, NuadeVoiceInfo* out, uint
     }
     return n;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTrackerInfoResult jamcracker_tracker_info(void* user_data, const NuadePosition* at) {
     const JcPlayer* player = (const JcPlayer*)user_data;
@@ -122,8 +102,6 @@ static NuadeTrackerInfoResult jamcracker_tracker_info(void* user_data, const Nua
                                                              { "por", NuadeColumn_Hex, 2 } } } };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadePatternCell jamcracker_cell(const void* ctx, uint32_t order, uint32_t channel, uint32_t row) {
     NuadePatternCell cell = nuade_cell_empty();
     const JcCell c = jc_pattern_cell((const JcPlayer*)ctx, (int)order, (int)channel, (int)row);
@@ -140,8 +118,6 @@ static NuadePatternCell jamcracker_cell(const void* ctx, uint32_t order, uint32_
     return cell;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t jamcracker_tracker_cells(void* user_data, const NuadePosition* at, uint32_t channel, int32_t row_lo,
                                          int32_t row_hi, NuadePatternCell* out, uint32_t cap) {
     const JcPlayer* player = (const JcPlayer*)user_data;
@@ -151,8 +127,6 @@ static uint32_t jamcracker_tracker_cells(void* user_data, const NuadePosition* a
     return nuade_tracker_fill(at, JC_VOICES, (uint32_t)jc_pattern_rows(player, (int)at->order), channel, row_lo, row_hi,
                               out, cap, jamcracker_cell, user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_jamcracker = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -171,8 +145,6 @@ const NuadePlayer nuade_player_jamcracker = {
     .tracker_info = jamcracker_tracker_info,
     .tracker_cells = jamcracker_tracker_cells,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 JcPlayer* jc_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_jamcracker) {

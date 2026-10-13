@@ -31,7 +31,6 @@
 #define SJ_ROW_UNSET INT32_MIN
 #define SJ_NO_LOOP 0xFF
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tune
 
 const SjVariant* sj_variant(SjFormat format);
@@ -57,7 +56,6 @@ const char* sj_instrument_name(uint32_t file_index);
 // Does the replayer read only the tables the port has for this cell?
 bool sj_cell_is_modelled(const SjCell* cell);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Commands, and the part of them that moves the track
 
 typedef enum SjCommandKind {
@@ -95,7 +93,6 @@ void sj_track_apply(SjTrack* track, SjCommand command);
 // port does not model, or does not repeat within the module's step budget.
 bool sj_tune_is_closed(const SjModule* module);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Instruments
 
 typedef enum SjLoadStatus {

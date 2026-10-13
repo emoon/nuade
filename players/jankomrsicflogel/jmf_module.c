@@ -99,13 +99,9 @@ static const JmfAction k_mode_actions[JMF_MODE_COUNT] = {
     JmfAction_Note,  JmfAction_Note,  JmfAction_WaveA, JmfAction_Stop,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool fits(const JmfModule* module, uint64_t at, uint64_t bytes) {
     return module->size >= bytes && at <= module->size - bytes;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool is_relocated(const JmfModule* module, uint32_t at) {
     size_t low = 0;
@@ -124,7 +120,6 @@ static bool is_relocated(const JmfModule* module, uint32_t at) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A relocated 32 bit word: the code offset it points at, which must lie inside the hunk.
 
 static bool pointer(const JmfModule* module, uint32_t at, uint32_t* out) {
@@ -139,19 +134,13 @@ static bool pointer(const JmfModule* module, uint32_t at, uint32_t* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool bytes_match(const JmfModule* module, uint32_t at, const uint8_t* expected, size_t length) {
     return fits(module, at, length) && (length == 0 || memcmp(module->bytes + at, expected, length) == 0);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool in_variables(const JmfModule* module, uint64_t at, uint64_t bytes) {
     return at < module->variables_end && at + bytes > module->variables;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool jmf_byte(const JmfModule* module, uint32_t at, uint8_t* out) {
     if (at >= module->size || in_variables(module, at, 1)) {
@@ -161,13 +150,9 @@ bool jmf_byte(const JmfModule* module, uint32_t at, uint8_t* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t jmf_stream_start(const JmfModule* module, uint32_t subsong, uint32_t voice) {
     return module->streams[subsong * JMF_NOTE_VOICES + voice];
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool jmf_mode_action(uint8_t mode, JmfAction* out) {
     if (mode >= JMF_MODE_COUNT) {
@@ -177,13 +162,9 @@ bool jmf_mode_action(uint8_t mode, JmfAction* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool action_has_note(JmfAction action) {
     return action == JmfAction_WaveA || action == JmfAction_WaveB || action == JmfAction_Note;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool jmf_period(const JmfModule* module, uint8_t note, uint16_t* out) {
     const int index = (int)note + module->driver->note_offset;
@@ -194,7 +175,6 @@ bool jmf_period(const JmfModule* module, uint8_t note, uint16_t* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The relocation table: HUNK_RELOC32 groups of (count, hunk, offsets) up to HUNK_END. The file has one hunk, so every
 // group relocates against hunk 0.
 
@@ -244,7 +224,6 @@ static bool read_relocations(JmfModule* module, const uint8_t* file, size_t size
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The executable: HUNK_HEADER with one chip memory hunk, HUNK_CODE, the relocations, HUNK_END. Check2 also wants a
 // memory flag in the size word.
 
@@ -264,7 +243,6 @@ static bool load_hunks(JmfModule* module, const uint8_t* file, size_t size) {
     return read_relocations(module, file, size, JMF_CODE_FILE_OFFSET + module->size);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The header of the code: the prologue, the "J.FLOGEL" mark and the entry points. Check2 requires the first three
 // words after the mark to be set.
 
@@ -290,7 +268,6 @@ static bool read_header(JmfModule* module) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // FNV-1a over the replayer's code, from the play routine to the period table. A relocated word that points into that
 // region or in the variables behind the period table counts as its target counted from the play routine, one that
 // points anywhere else (waveforms, streams) as zero.
@@ -327,8 +304,6 @@ static bool replayer_signature(const JmfModule* module, uint32_t length, uint64_
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const JmfDriver* find_driver(const JmfModule* module) {
     for (size_t i = 0; i < nuade_sizeof_array(k_drivers); i++) {
         uint64_t signature;
@@ -339,7 +314,6 @@ static const JmfDriver* find_driver(const JmfModule* module) {
     return nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Some versions test a pause flag first (tst.w flag). Only the stop routines set it and the eagleplayer never calls
 // them, so the flag has to be clear in the file.
 
@@ -362,7 +336,6 @@ typedef struct Instruction {
     size_t tail_length;
 } Instruction;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Stores the first operand of each place the instruction occurs at in the replayer; more than `cap` places fail.
 
 static bool find_operands(const JmfModule* module, const Instruction* instruction, uint32_t* out, size_t cap,
@@ -394,7 +367,6 @@ static bool find_operands(const JmfModule* module, const Instruction* instructio
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The places that load a register of the voice's channel with an address: move.l #address,$dff0xx.
 
 static bool find_register_loads(const JmfModule* module, uint8_t reg, uint32_t* out, size_t cap, size_t* count) {
@@ -403,7 +375,6 @@ static bool find_register_loads(const JmfModule* module, uint8_t reg, uint32_t* 
                          out, cap, count);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An address from the waveform records of the module: AUDxLC ignores its lowest bit, and the rip leaves a waveform at
 // an odd address.
 
@@ -411,7 +382,6 @@ static uint32_t even(uint32_t offset) {
     return offset & ~1u;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The waveforms: the replayer loads each of the three voices with the first one when it starts over, and with the
 // first or the second one when a note says so. The fourth voice gets a waveform of its own that never plays.
 
@@ -452,7 +422,6 @@ static bool read_waveforms(JmfModule* module) {
            && module->idle_wave < module->size;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The three variables the init routine stores the note streams into, in the order the start-over routine copies them
 // into the voices.
 
@@ -477,7 +446,6 @@ static bool read_stream_variables(JmfModule* module) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period table (the one lookup the notes use) and the variables. The counters are the first of the variables, the
 // table ends where they start.
 
@@ -509,7 +477,6 @@ static bool read_tables(JmfModule* module) {
     return module->period_count <= JMF_MAX_PERIODS && read_stream_variables(module);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The init routine: for each subsong the starts of its three note streams.
 
 static bool read_subsongs(JmfModule* module) {
@@ -561,7 +528,6 @@ static bool read_subsongs(JmfModule* module) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Does a note stream stay inside the data the port models? It is read event by event up to its end mark: a duration,
 // then what the current mode adds (nothing, a skipped byte or a note). The replayer clears the mode when it starts
 // over, so every stream starts in mode 0.
@@ -599,8 +565,6 @@ static bool stream_usable(const JmfModule* module, uint32_t start, uint32_t voic
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool jmf_module_parse(JmfModule* module, const uint8_t* bytes, size_t size) {
     *module = (JmfModule) { 0 };
     if (!load_hunks(module, bytes, size) || !read_header(module)) {
@@ -623,8 +587,6 @@ bool jmf_module_parse(JmfModule* module, const uint8_t* bytes, size_t size) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void jmf_module_free(JmfModule* module) {
     free(module->relocations);

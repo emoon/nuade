@@ -19,7 +19,6 @@
 #define SS_ROWS 16
 #define SS_POSITIONS 256
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Cells
 
 typedef struct SsCell {
@@ -63,7 +62,6 @@ SsNoteStart ss_cell_start(SsCell cell);
 // The period of a note cell: the table entry of the note nibble, moved by the octave.
 uint16_t ss_note_period(SsCell cell);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Samples
 
 // Check2 and the replayer's setup, then a walk through the song. False for a file the eagleplayer rejects or the port

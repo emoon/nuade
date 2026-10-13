@@ -50,13 +50,9 @@ typedef struct Layout {
     uint32_t patch_count;
 } Layout;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool has_word(size_t size, uint32_t at) {
     return at <= size && size - at >= 2;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool check_header(const uint8_t* data, size_t size) {
     if (size < CHECK_RTS_LEA_AT + 4) {
@@ -70,8 +66,6 @@ static bool check_header(const uint8_t* data, size_t size) {
     return nuade_read_be16(data + CHECK_LEA_AT) == OP_LEA_A0_PC
            && nuade_read_be32(data + CHECK_RTS_LEA_AT) == CHECK_RTS_LEA;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The offset of the first word `opcode` among `words` words from `from`; false if there is none.
 static bool find_word(const uint8_t* data, size_t size, uint32_t from, uint32_t words, uint16_t opcode, uint32_t* at) {
@@ -88,22 +82,16 @@ static bool find_word(const uint8_t* data, size_t size, uint32_t from, uint32_t 
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // A sample header: the size of the sample in bytes and the divisor of its base period; the sample follows.
 typedef struct SampleHeader {
     uint32_t bytes;
     uint16_t divisor;
 } SampleHeader;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The caller has checked that SAMPLE_HEADER_SIZE bytes are there.
 static SampleHeader read_sample_header(const uint8_t* data, uint32_t at) {
     return (SampleHeader) { .bytes = nuade_read_be32(data + at), .divisor = nuade_read_be16(data + at + 4) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The sample headers: `count` of them from `first`, each a size, a divisor and that many bytes, then a nop.
 static bool sample_headers_fit(const uint8_t* data, size_t size, uint32_t first, uint32_t count) {
@@ -120,8 +108,6 @@ static bool sample_headers_fit(const uint8_t* data, size_t size, uint32_t first,
     }
     return at <= size && size - at >= 2 && nuade_read_be16(data + at) == OP_NOP;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // InitPlayer. The eagleplayer reads on past the end of the module where a corrupt one has no terminator; such a module
 // is refused.
@@ -173,8 +159,6 @@ static bool read_layout(const uint8_t* data, size_t size, Layout* layout) {
     return (uint64_t)layout->patch_from + layout->patch_count <= size;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The eagleplayer turns every stop command byte of the sequence data (and every such byte in front of the first sample)
 // into the next-track command.
 static void patch_stop_commands(uint8_t* data, const Layout* layout) {
@@ -186,7 +170,6 @@ static void patch_stop_commands(uint8_t* data, const Layout* layout) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The builds of the replayer
 
 #define SILENCE_SHORT_WORDS 0x20
@@ -297,8 +280,6 @@ static const RhVariant s_variants[] = {
     },
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const RhVariant* find_variant(const RhCodeScan* scan) {
     for (size_t i = 0; i < nuade_sizeof_array(s_variants); i++) {
         if (s_variants[i].code_hash == scan->hash && s_variants[i].pc_count == scan->pc_count) {
@@ -307,8 +288,6 @@ static const RhVariant* find_variant(const RhCodeScan* scan) {
     }
     return nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Takes the table offsets from the pc-relative addresses of the code. A table that several of them name must be the
 // same everywhere.
@@ -368,25 +347,17 @@ static bool resolve_tables(RhModule* m, const Layout* layout, const RhCodeScan* 
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t rh_module_u8(const RhModule* module, uint32_t offset) {
     return offset < module->size ? module->data[offset] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t rh_module_u16(const RhModule* module, uint32_t offset) {
     return (uint16_t)((rh_module_u8(module, offset) << 8) | rh_module_u8(module, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t rh_module_u32(const RhModule* module, uint32_t offset) {
     return ((uint32_t)rh_module_u16(module, offset) << 16) | rh_module_u16(module, offset + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void rh_module_store_u8(RhModule* module, uint32_t offset, uint8_t value) {
     if (offset < module->size) {
@@ -394,33 +365,23 @@ void rh_module_store_u8(RhModule* module, uint32_t offset, uint8_t value) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void store_u16(RhModule* module, uint32_t offset, uint16_t value) {
     rh_module_store_u8(module, offset, (uint8_t)(value >> 8));
     rh_module_store_u8(module, offset + 1, (uint8_t)value);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void store_u32(RhModule* module, uint32_t offset, uint32_t value) {
     store_u16(module, offset, (uint16_t)(value >> 16));
     store_u16(module, offset + 2, (uint16_t)value);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t rh_module_instrument(const RhModule* module, uint32_t index) {
     return module->instruments + (index << module->variant->instrument_shift);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t rh_module_played_subsong(const RhModule* module, uint32_t subsong) {
     return module->variant->ignores_subsong ? 0 : subsong & 0xFF;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RhSubsong rh_module_read_subsong(const RhModule* module, uint32_t subsong) {
     const uint32_t record = module->song_table + subsong * RH_SUBSONG_RECORD_SIZE;
@@ -431,8 +392,6 @@ RhSubsong rh_module_read_subsong(const RhModule* module, uint32_t subsong) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t rh_module_track_entries(const RhModule* module, uint32_t list) {
     uint32_t count = 0;
     while (list + 4u * count < module->size && rh_module_u32(module, list + 4u * count) != 0) {
@@ -441,8 +400,6 @@ uint32_t rh_module_track_entries(const RhModule* module, uint32_t list) {
     return count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t rh_module_resolve_instrument(const RhModule* module, uint32_t subsong, uint8_t operand) {
     if (module->variant->default_instrument && (operand & 0x80) != 0) {
         return (uint8_t)rh_module_track_entries(module, rh_module_read_subsong(module, subsong).track_list[3]);
@@ -450,16 +407,12 @@ uint32_t rh_module_resolve_instrument(const RhModule* module, uint32_t subsong, 
     return operand;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Base period of a sample: 0x369E99 / divisor. A quotient that does not fit divu's 16 bits leaves the register as it
 // was, and the replayer stores its low word.
 static uint16_t base_period(uint16_t divisor) {
     const uint32_t quotient = 0x369E99u / divisor;
     return quotient > 0xFFFF ? 0x9E99 : (uint16_t)quotient;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The fields of an instrument record (the extended ones only in the builds with extended_instruments).
 typedef enum InstrumentField {
@@ -473,8 +426,6 @@ typedef enum InstrumentField {
     InstrumentField_FerrisMax = 0x14,
     InstrumentField_FerrisMin = 0x16,
 } InstrumentField;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RhInstrument rh_module_read_instrument(const RhModule* module, uint32_t record) {
     RhInstrument ins = {
@@ -492,8 +443,6 @@ RhInstrument rh_module_read_instrument(const RhModule* module, uint32_t record) 
     }
     return ins;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void rh_module_reset(RhModule* module) {
     memcpy(module->data, module->image, module->size);
@@ -516,7 +465,6 @@ void rh_module_reset(RhModule* module) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the port does not model
 
 // The replayer divides by every sample's divisor, and traps on a zero.
@@ -532,8 +480,6 @@ static bool divisors_are_valid(const RhModule* m) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Whether [start, end) is data of the module that the replayer and the port see alike: inside the module and behind the
 // lowest table, or inside the silence block. In front of the tables lie the replayer's code, which the eagleplayer has
 // patched, and its variables, which the port keeps elsewhere.
@@ -544,8 +490,6 @@ static bool is_module_data(const RhModule* m, uint64_t start, uint64_t end) {
     const uint64_t silence_end = (uint64_t)m->silence + 2ull * m->variant->silence_words;
     return start >= m->tables_start || (start >= m->silence && end <= silence_end);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // An instrument the song selects must be one the init has filled in, and everything the replayer does with it must stay
 // in the module's data: the sample and its repeat, the vibrato wave and the bytes the ferris wheel writes.
@@ -593,8 +537,6 @@ static bool instrument_is_modelled(const RhModule* m, uint32_t index) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Bytes of sequence data the check reads in all, for the whole module.
 #define WALK_BUDGET 0x400000
 
@@ -612,8 +554,6 @@ typedef struct WalkVoice {
     bool progressed;   // a note, a rest or the stop command ended a run of commands
     uint32_t commands; // read since the last note or rest
 } WalkVoice;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // One stream, to its next-track command. A note or a rest before the first instrument would read an instrument the
 // replayer has not got; a run of commands that the port's guard would cut short is refused.
@@ -676,8 +616,6 @@ static bool walk_stream(Walk* w, uint32_t start, WalkVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The streams of one voice of a subsong, in the order the replayer plays them. The track list ends in a 0 and some
 // stream of it reaches a note, a rest or the stop command (else the replayer reads commands for ever).
 static bool walk_voice(Walk* w, uint32_t subsong, uint32_t list) {
@@ -701,8 +639,6 @@ static bool walk_voice(Walk* w, uint32_t subsong, uint32_t list) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The eagleplayer's InitSound counts the entries of every track list of the subsongs up to the one it was asked for,
 // and reads on past the module where a list has no 0.
 static bool track_lists_end(const RhModule* m) {
@@ -718,8 +654,6 @@ static bool track_lists_end(const RhModule* m) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Walks every stream of every subsong once, in the order the replayer reaches them, and checks the instruments they
 // select. The replayer reads memory the module does not hold (low memory, an instrument that was never selected) in
@@ -745,8 +679,6 @@ static bool streams_are_modelled(const RhModule* m) {
     return modelled;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The port starts the voices from nothing; the replayer starts from the variables in the file, which hold nothing in
 // the modules there are. Refuse a module where they do (they are in front of the lowest table, but for the silence).
 static bool variables_are_zero(const RhModule* m, uint32_t code_end) {
@@ -760,8 +692,6 @@ static bool variables_are_zero(const RhModule* m, uint32_t code_end) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void rh_module_close(RhModule* module) {
     if (module != nullptr) {
         free(module->data);
@@ -769,8 +699,6 @@ void rh_module_close(RhModule* module) {
     }
     free(module);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RhModule* rh_module_open(const uint8_t* data, size_t size) {
     Layout layout;

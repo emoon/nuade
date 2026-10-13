@@ -36,26 +36,19 @@
 #define SAMPLE_PREFIX "smp."
 #define SAMPLE_COUNT_BYTES 2
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Bytes of the files: 0 past the end
 
 static uint8_t song_u8(const DbModule* m, uint32_t offset) {
     return offset < m->size ? m->data[offset] : 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t song_u16(const DbModule* m, uint32_t offset) {
     return (uint16_t)((song_u8(m, offset) << 8) | song_u8(m, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t song_u32(const DbModule* m, uint32_t offset) {
     return ((uint32_t)song_u16(m, offset) << 16) | song_u16(m, offset + 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t samples_u32(const DbModule* m, uint32_t offset) {
     if (m->samples == nullptr || offset + 4 > m->samples_size || offset + 4 < offset) {
@@ -64,7 +57,6 @@ static uint32_t samples_u32(const DbModule* m, uint32_t offset) {
     return nuade_read_be32(m->samples + offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Command bytes. The classification the replayer reads from its 256 byte tables.
 
 DbPatternCommand db_pattern_command(uint8_t code) {
@@ -120,8 +112,6 @@ DbPatternCommand db_pattern_command(uint8_t code) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 DbProgramOp db_program_op(uint8_t code) {
     switch (code) {
         case 0x01:
@@ -173,7 +163,6 @@ DbProgramOp db_program_op(uint8_t code) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2: "MSNG", then the MSEQ tag at an even offset up to LAST_SEQUENCE_TAG_OFFSET, every word before it below
 // 0x1000. Returns the offset of the tag, 0 if there is none.
 
@@ -195,7 +184,6 @@ static uint32_t find_sequence_tag(const DbModule* m) {
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tags sit at even offsets. 0 when there is none.
 
 static uint32_t find_tag(const DbModule* m, uint32_t from, uint32_t tag) {
@@ -207,15 +195,12 @@ static uint32_t find_tag(const DbModule* m, uint32_t from, uint32_t tag) {
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The data after the count word and the n + 2 entries of a table of `entry_bytes` bytes. The sum is a word.
 
 static uint32_t table_data_offset(uint32_t table, uint16_t count, uint32_t entry_bytes) {
     const uint16_t bytes = (uint16_t)((count + TABLE_EXTRA_ENTRIES) * entry_bytes);
     return table + bytes;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool db_module_locate(DbModule* m) {
     const uint32_t sequence_tag = find_sequence_tag(m);
@@ -244,8 +229,6 @@ bool db_module_locate(DbModule* m) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool db_probe(const uint8_t* data, size_t size) {
     if (data == nullptr || size > DB_MAX_FILE_BYTES) {
         return false;
@@ -254,7 +237,6 @@ bool db_probe(const uint8_t* data, size_t size) {
     return db_module_locate(&m);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ExtLoad: the sample file is the song's file name with its "tpu." prefix changed to "smp." in the song's directory.
 
 static bool sample_file_name(const char* path, char* name, size_t name_cap) {
@@ -265,8 +247,6 @@ static bool sample_file_name(const char* path, char* name, size_t name_cap) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static DbStatus load_samples(DbModule* m, const char* path, const NuadeIo* io) {
     char dir[1024] = { 0 };
@@ -305,8 +285,6 @@ static DbStatus load_samples(DbModule* m, const char* path, const NuadeIo* io) {
     return status;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 DbStatus db_module_open(DbModule* m, const uint8_t* data, size_t size, const char* path, const NuadeIo* io) {
     *m = (DbModule) { 0 };
     if (data == nullptr || size > DB_MAX_FILE_BYTES) {
@@ -329,15 +307,11 @@ DbStatus db_module_open(DbModule* m, const uint8_t* data, size_t size, const cha
     return status;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void db_module_close(DbModule* m) {
     free((void*)m->data);
     free((void*)m->samples);
     *m = (DbModule) { 0 };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DbSequenceStep db_sequence_step(const DbModule* m, uint16_t position) {
     const uint32_t step = m->sequence + (uint32_t)(uint16_t)(position * STEP_BYTES);
@@ -349,38 +323,26 @@ DbSequenceStep db_sequence_step(const DbModule* m, uint16_t position) {
     return out;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t db_subsong_position(const DbModule* m, uint8_t subsong) {
     return song_u16(m, m->song_table + (uint32_t)subsong * 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t db_pattern_address(const DbModule* m, uint8_t pattern) {
     return m->pattern_data + song_u16(m, m->pattern_table + (uint32_t)pattern * 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t db_program_address(const DbModule* m, uint8_t program) {
     return m->program_data + song_u16(m, m->program_table + (uint32_t)program * 2);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DbPatternEvent db_pattern_event(const DbModule* m, uint32_t pattern, uint16_t position) {
     const uint32_t at = pattern + position;
     return (DbPatternEvent) { .code = song_u8(m, at), .first = song_u8(m, at + 1), .second = song_u8(m, at + 2) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t db_program_priority(const DbModule* m, uint32_t program) {
     return song_u8(m, program);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DbProgramCommand db_program_command(const DbModule* m, uint32_t program, uint16_t position) {
     const uint32_t at = program + PROGRAM_HEADER_BYTES + position;
@@ -389,25 +351,17 @@ DbProgramCommand db_program_command(const DbModule* m, uint32_t program, uint16_
     };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t db_groove_step(const DbModule* m, uint32_t offset) {
     return song_u8(m, m->groove + offset);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint8_t db_arpeggio_step(const DbModule* m, uint8_t index) {
     return song_u8(m, m->arpeggio + index);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t db_sample_address(const DbModule* m, uint8_t index) {
     return DB_SAMPLE_FILE_ADDRESS + m->sample_data + samples_u32(m, m->sample_table + (uint32_t)index * 4);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const int8_t* db_sample_lc(const DbModule* m, uint32_t address) {
     if (address < DB_SAMPLE_FILE_ADDRESS || address - DB_SAMPLE_FILE_ADDRESS >= m->samples_size) {

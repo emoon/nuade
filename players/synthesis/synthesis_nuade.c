@@ -16,15 +16,11 @@
 #define SYNTHESIS_NOTE_STOP 0x7f
 #define SYNTHESIS_OCTAVE_SHIFT (-3)
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The module mark is specific enough to be sure.
 static NuadeProbe synthesis_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return syn_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult synthesis_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -42,28 +38,20 @@ static NuadePlayerOpenResult synthesis_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void synthesis_close(void* user_data) {
     syn_destroy((SynModule*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool synthesis_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return syn_start((SynModule*)user_data, (int)subsong, voices);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult synthesis_tick(void* user_data, NuadeVoices* voices) {
     (void)voices;
     return (NuadeTickResult) { .length = 1,
                                .flags = syn_tick((SynModule*)user_data) ? NuadeTick_Looped : NuadeTick_None };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void synthesis_metadata(void* user_data, const NuadeMetadataSink* sink) {
     const SynModule* module = (const SynModule*)user_data;
@@ -72,8 +60,6 @@ static void synthesis_metadata(void* user_data, const NuadeMetadataSink* sink) {
         sink->set_tag(sink->ctx, NUADE_META_TITLE, syn_title(module));
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePositionResult synthesis_position(void* user_data) {
     const SynPosition p = syn_position((const SynModule*)user_data);
@@ -84,8 +70,6 @@ static NuadePositionResult synthesis_position(void* user_data) {
                                                  .rows = (uint32_t)p.rows,
                                                  .speed = (uint32_t)p.speed } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t synthesis_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const SynModule* module = (const SynModule*)user_data;
@@ -100,8 +84,6 @@ static uint32_t synthesis_voice_info(void* user_data, NuadeVoiceInfo* out, uint3
     }
     return n;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTrackerInfoResult synthesis_tracker_info(void* user_data, const NuadePosition* at) {
     const SynModule* module = (const SynModule*)user_data;
@@ -118,8 +100,6 @@ static NuadeTrackerInfoResult synthesis_tracker_info(void* user_data, const Nuad
                                                              { "fx", NuadeColumn_Hex, 1, 0 },
                                                              { "arg", NuadeColumn_Hex, 2, 0 } } } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // A track line as written in the module.
 typedef struct SynCell {
@@ -156,8 +136,6 @@ static NuadePatternCell synthesis_cell(const void* ctx, uint32_t order, uint32_t
     return cell;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t synthesis_tracker_cells(void* user_data, const NuadePosition* at, uint32_t channel, int32_t row_lo,
                                         int32_t row_hi, NuadePatternCell* out, uint32_t cap) {
     const SynModule* module = (const SynModule*)user_data;
@@ -168,8 +146,6 @@ static uint32_t synthesis_tracker_cells(void* user_data, const NuadePosition* at
     return nuade_tracker_fill(at, SYNTHESIS_NUADE_VOICES, rows, channel, row_lo, row_hi, out, cap, synthesis_cell,
                               user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_synthesis = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -188,8 +164,6 @@ const NuadePlayer nuade_player_synthesis = {
     .tracker_info = synthesis_tracker_info,
     .tracker_cells = synthesis_tracker_cells,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SynModule* syn_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_synthesis) {

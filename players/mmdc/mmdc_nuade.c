@@ -11,14 +11,10 @@
 // Note 1 is the period table entry 856, C-1 = 12.
 #define NOTE_BASE 11
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeProbe mmdc_nuade_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return mmdc_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePlayerOpenResult mmdc_nuade_open(const NuadeSongSource* source) {
     NuadePlayerOpenResult result = { 0 };
@@ -35,34 +31,24 @@ static NuadePlayerOpenResult mmdc_nuade_open(const NuadeSongSource* source) {
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void mmdc_nuade_close(void* user_data) {
     mmdc_destroy((MmdcPlayer*)user_data);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool mmdc_nuade_start(void* user_data, uint32_t subsong, uint32_t sample_rate, NuadeVoices* voices) {
     (void)sample_rate;
     return subsong == 0 && mmdc_start((MmdcPlayer*)user_data, voices);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadeTickResult mmdc_nuade_tick(void* user_data, NuadeVoices* voices) {
     const MmdcTickResult tick = mmdc_tick((MmdcPlayer*)user_data, voices);
     return (NuadeTickResult) { .length = tick.length, .flags = tick.looped ? NuadeTick_Looped : NuadeTick_None };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void mmdc_nuade_metadata(void* user_data, const NuadeMetadataSink* sink) {
     (void)user_data;
     sink->set_tag(sink->ctx, NUADE_META_FORMAT, "OctaMED MMDC");
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint32_t mmdc_nuade_voice_info(void* user_data, NuadeVoiceInfo* out, uint32_t cap) {
     const MmdcPlayer* player = (const MmdcPlayer*)user_data;
@@ -77,8 +63,6 @@ static uint32_t mmdc_nuade_voice_info(void* user_data, NuadeVoiceInfo* out, uint
     return n;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static NuadePositionResult mmdc_nuade_position(void* user_data) {
     const MmdcPosition p = mmdc_position((const MmdcPlayer*)user_data);
     return (NuadePositionResult) { .valid = true,
@@ -90,8 +74,6 @@ static NuadePositionResult mmdc_nuade_position(void* user_data) {
                                                  .tick = p.tick,
                                                  .speed = MMDC_TICKS_PER_LINE } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadeTrackerInfoResult mmdc_nuade_tracker_info(void* user_data, const NuadePosition* at) {
     MmdcBlockShape shape;
@@ -107,8 +89,6 @@ static NuadeTrackerInfoResult mmdc_nuade_tracker_info(void* user_data, const Nua
                                                              { "fx", NuadeColumn_Hex, 1, 0 },
                                                              { "arg", NuadeColumn_Hex, 2, 0 } } } };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static NuadePatternCell mmdc_nuade_cell(const void* ctx, uint32_t order, uint32_t channel, uint32_t row) {
     NuadePatternCell cell = nuade_cell_empty();
@@ -126,8 +106,6 @@ static NuadePatternCell mmdc_nuade_cell(const void* ctx, uint32_t order, uint32_
     return cell;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t mmdc_nuade_tracker_cells(void* user_data, const NuadePosition* at, uint32_t channel, int32_t row_lo,
                                          int32_t row_hi, NuadePatternCell* out, uint32_t cap) {
     const MmdcPlayer* player = (const MmdcPlayer*)user_data;
@@ -137,8 +115,6 @@ static uint32_t mmdc_nuade_tracker_cells(void* user_data, const NuadePosition* a
     }
     return nuade_tracker_fill(at, MMDC_VOICES, shape.lines, channel, row_lo, row_hi, out, cap, mmdc_nuade_cell, player);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const NuadePlayer nuade_player_mmdc = {
     .api_version = NUADE_PLAYER_API_VERSION,
@@ -157,8 +133,6 @@ const NuadePlayer nuade_player_mmdc = {
     .tracker_info = mmdc_nuade_tracker_info,
     .tracker_cells = mmdc_nuade_tracker_cells,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MmdcPlayer* mmdc_from_nuade(NuadeSong* song) {
     if (nuade_player(song) != &nuade_player_mmdc) {

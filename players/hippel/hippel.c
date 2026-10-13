@@ -80,15 +80,11 @@ typedef enum VseqCommand {
 // A voice's pattern position before its first track entry is read (the replayer points it at an end marker)
 #define PATTERN_NONE UINT32_MAX
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // The sequence every voice starts with (volume and frequency): value 1, then hold.
 static const uint8_t k_start_sequence[] = { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xE1 };
 
 // AUDxLC before a voice plays anything: one silent word.
 static const int8_t k_silence[2] = { 0, 0 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static const HipVariant k_uade_variant = { 0 };
 static const HipVariant k_wanted_team_variant = {
@@ -99,38 +95,27 @@ static const HipVariant k_wanted_team_variant = {
     .extended_sequences = true,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint8_t mod_byte(const HipModule* m, uint32_t offset) {
     return offset < m->size ? m->data[offset] : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t mod_word(const HipModule* m, uint32_t offset) {
     return (uint16_t)(mod_byte(m, offset) << 8 | mod_byte(m, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t mod_long(const HipModule* m, uint32_t offset) {
     return (uint32_t)mod_word(m, offset) << 16 | mod_word(m, offset + 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Table entries are words, added to the module base sign-extended (movea.w).
 
 static uint32_t table_entry(const HipModule* m, uint32_t table, uint32_t index) {
     return (uint32_t)(int32_t)(int16_t)mod_word(m, table + index * 2);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static HipSequence module_sequence(const HipModule* m, uint32_t offset) {
     return offset < m->size ? (HipSequence) { m->data + offset, m->size - offset } : (HipSequence) { nullptr, 0 };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t seq_byte(HipSequence s, uint32_t pos) {
     return pos < s.size ? s.data[pos] : 0;
@@ -143,8 +128,6 @@ typedef struct SampleRange {
     uint16_t len_words;
 } SampleRange;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static SampleRange sample_range(const HipModule* m, uint32_t at, uint16_t len_words) {
     if (at <= m->size) {
         return (SampleRange) { .lc = (const int8_t*)m->data + at, .len_words = len_words };
@@ -152,7 +135,6 @@ static SampleRange sample_range(const HipModule* m, uint32_t at, uint16_t len_wo
     return (SampleRange) { .lc = k_silence, .len_words = sizeof(k_silence) / 2 };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Paula
 
 static void dma_off(HipSong* s, HipVoice* v) {
@@ -160,7 +142,6 @@ static void dma_off(HipSong* s, HipVoice* v) {
     s->dma_mask |= v->dma_bit;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Frequency sequence commands
 
 typedef struct SampleEntry {
@@ -170,8 +151,6 @@ typedef struct SampleEntry {
     uint16_t loop_length; // words
 } SampleEntry;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static SampleEntry sample_entry(const HipModule* m, uint8_t number) {
     const uint32_t at = m->samples + (uint32_t)number * SAMPLE_SIZE;
     return (SampleEntry) { .offset = mod_long(m, at),
@@ -180,7 +159,6 @@ static SampleEntry sample_entry(const HipModule* m, uint8_t number) {
                            .loop_length = mod_word(m, at + 8) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Point the channel at a sample (AUDxLC/AUDxLEN) and set up its repeat.
 
 static void load_sample(const HipModule* m, HipVoice* v, uint8_t number) {
@@ -193,14 +171,11 @@ static void load_sample(const HipModule* m, HipVoice* v, uint8_t number) {
     v->loop_length = loop.len_words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void restart_volume(HipVoice* v) {
     v->vseq_pos = 0;
     v->vseq_counter = 1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One sample of a sample pack: a block with a record count, an extra size (longs), records of start/end offsets, then
 // the data. The replayer copies the first byte of the sample over the second.
 
@@ -223,20 +198,16 @@ static void load_packed_sample(HipModule* m, HipVoice* v, uint8_t number, uint8_
     v->loop_length = 1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t seq_word(HipSequence s, uint32_t pos) {
     return (uint16_t)(seq_byte(s, pos) << 8 | seq_byte(s, pos + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A frequency sequence byte is a command from E0 up; the Wanted Team replayer has commands up to EA only.
 
 static bool fseq_is_value(const HipVariant* variant, uint8_t c) {
     return c < SEQ_COMMAND || (variant->extended_sequences && c - SEQ_COMMAND > FseqCommand_RandomVolume);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Read the frequency sequence until it yields a value or holds.
 
 static void run_fseq(HipPlayer* p, HipVoice* v) {
@@ -355,7 +326,6 @@ static void run_fseq(HipPlayer* p, HipVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Move the sample window: AUDxLC/AUDxLEN become the repeat, no restart.
 
 static void run_sweep(const HipModule* m, HipVoice* v) {
@@ -388,8 +358,6 @@ static void run_sweep(const HipModule* m, HipVoice* v) {
     v->paula.lc = window.lc;
     v->paula.len_words = window.len_words;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void run_vseq(const HipVariant* variant, HipSong* s, HipVoice* v) {
     if (v->vseq_wait != 0) {
@@ -441,8 +409,6 @@ static void run_vseq(const HipVariant* variant, HipSong* s, HipVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t note_period(const HipVoice* v) {
     uint8_t note = v->fseq_value;
     if (!(note & 0x80)) {
@@ -452,13 +418,10 @@ static uint16_t note_period(const HipVoice* v) {
     return hip_note_period(note);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t apply_portamento(HipVoice* v, uint16_t period) {
     return (v->info & INFO_PORTAMENTO) ? hip_portamento_apply(&v->porta, v->param, period) : period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The Wanted Team replayer's random number: a 16-bit generator, one step per use.
 
 static uint8_t next_random(HipSong* s) {
@@ -468,7 +431,6 @@ static uint8_t next_random(HipSong* s) {
     return (uint8_t)s->random_seed;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The voice volume in percent: the track's level, less a random share of the depth the last EA set (used up by it).
 
 static uint8_t voice_percent(HipSong* s, HipVoice* v) {
@@ -480,7 +442,6 @@ static uint8_t voice_percent(HipSong* s, HipVoice* v) {
     return (uint8_t)(percent > 0 ? percent : 0);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One voice's tick: sequences and effects. Returns AUDxPER and AUDxVOL.
 
 static void run_voice(HipPlayer* p, HipVoice* v) {
@@ -499,7 +460,6 @@ static void run_voice(HipPlayer* p, HipVoice* v) {
     v->paula.volume = hip_scaled_volume(v->volume, voice_percent(&p->song, v));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Sequencer
 
 static void read_track(HipPlayer* p, HipVoice* v) {
@@ -529,8 +489,6 @@ static void read_track(HipPlayer* p, HipVoice* v) {
     v->track_offset = (uint16_t)(v->track_offset + TRACK_ROW_SIZE);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void start_instrument(HipPlayer* p, HipVoice* v) {
     const HipModule* m = &p->module;
     const uint8_t instrument = (uint8_t)((v->info & INFO_INSTRUMENT) + v->instrument_transpose);
@@ -553,8 +511,6 @@ static void start_instrument(HipPlayer* p, HipVoice* v) {
     v->fseq_pos = 0;
     v->fseq_wait = 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void step_voice(HipPlayer* p, HipVoice* v) {
     const HipModule* m = &p->module;
@@ -605,14 +561,10 @@ static void step_voice(HipPlayer* p, HipVoice* v) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool hip_probe(const uint8_t* data, size_t size) {
     return data != nullptr && size >= HEADER_SIZE + 4 && memcmp(data, "COSO", 4) == 0
            && memcmp(data + HEADER_SIZE, "TFMX", 4) == 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void mod_set_word(HipModule* m, uint32_t offset, uint16_t value) {
     if (m->size >= 2 && offset <= m->size - 2) {
@@ -621,7 +573,6 @@ static void mod_set_word(HipModule* m, uint32_t offset, uint16_t value) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The Wanted Team player's Check2. A module that passes has its samples behind its sample data offset. Any other one
 // (the Atari ST modules) takes the sample set file "SMP.set"; UADE's harness plays those on after the failed check,
 // reading memory the port does not have, so the port does not take them.
@@ -655,7 +606,6 @@ static bool wt_check2(const HipModule* m) {
     return mod_byte(m, first_row + 3) != 0xFF;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitPlayer's size test: the sample data offset plus the end of the last sample (offset + length) must lie within the
 // module. The last sample is the one before the header's sample count (a count of 0 reads the bytes in front of the
 // sample table).
@@ -667,7 +617,6 @@ static bool wt_samples_fit(const HipModule* m) {
     return (int32_t)(m->sample_data + last_end) <= (int32_t)m->size;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The UADE player's checks of a module: its subsong range is the number of entries before the sample table, less one.
 
 static bool uade_module_valid(HipModule* m) {
@@ -675,7 +624,6 @@ static bool uade_module_valid(HipModule* m) {
     return m->subsong_count >= 1 && m->sample_data <= m->size;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The Wanted Team player's checks of a module. Its subsong range is a header field.
 
 static bool wanted_team_module_valid(HipModule* m) {
@@ -690,8 +638,6 @@ static bool wanted_team_module_valid(HipModule* m) {
     }
     return m->subsong_count >= 1 && wt_samples_fit(m);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static HipPlayer* create_player(const HipVariant* variant, const uint8_t* data, size_t size) {
     if (size > INT32_MAX / 2) {
@@ -722,19 +668,13 @@ static HipPlayer* create_player(const HipVariant* variant, const uint8_t* data, 
     return p;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 HipPlayer* hip_create(const uint8_t* data, size_t size) {
     return hip_probe(data, size) ? create_player(&k_uade_variant, data, size) : nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 HipPlayer* hip_create_wanted_team(const uint8_t* data, size_t size) {
     return hip_probe(data, size) ? create_player(&k_wanted_team_variant, data, size) : nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void hip_destroy(HipPlayer* player) {
     if (player != nullptr) {
@@ -743,13 +683,9 @@ void hip_destroy(HipPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int hip_subsong_count(const HipPlayer* player) {
     return player->module.subsong_count;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The Wanted Team InitSound repairs the subsong entry in the module: a speed of 0 becomes 4, and a last position
 // before the first (the 16-bit difference is negative) makes both 0.
@@ -762,8 +698,6 @@ static void fix_subsong_entry(HipModule* m, uint32_t entry) {
         mod_set_word(m, entry + 2, 0);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The replayer's init with subsong n (1-based): subsong entry n - 1 gives the first and last position and the speed.
 bool hip_start(HipPlayer* player, int subsong, NuadeVoices* voices) {
@@ -805,8 +739,6 @@ bool hip_start(HipPlayer* player, int subsong, NuadeVoices* voices) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 HipTickResult hip_tick(HipPlayer* player, NuadeVoices* voices) {
     HipSong* s = &player->song;
@@ -858,13 +790,9 @@ HipTickResult hip_tick(HipPlayer* player, NuadeVoices* voices) {
     return (HipTickResult) { .looped = s->looped };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int hip_speed(const HipPlayer* player) {
     return player->song.speed;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 HipVoiceState hip_voice_state(const HipPlayer* player, int voice) {
     const HipVoice* v = &player->song.voices[voice];

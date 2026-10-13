@@ -145,8 +145,6 @@ static const SbrBuild s_builds[] = {
 
 #define HASH_SEED 0xcbf29ce484222325ull
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint64_t hash_bytes(uint64_t hash, const uint8_t* data, size_t size) {
     for (size_t i = 0; i < size; i++) {
         hash = (hash ^ data[i]) * 0x100000001b3ull;
@@ -154,7 +152,6 @@ static uint64_t hash_bytes(uint64_t hash, const uint8_t* data, size_t size) {
     return hash;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The records of the module. Every read is bounded; the module check has proven the offsets the songs reach.
 
 uint8_t sbr_module_byte(const SbrModule* m, int64_t offset) {
@@ -164,16 +161,12 @@ uint8_t sbr_module_byte(const SbrModule* m, int64_t offset) {
     return m->bytes[offset];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t read_word(const SbrModule* m, uint64_t offset) {
     if (offset > m->size || m->size - offset < 2) {
         return 0;
     }
     return nuade_read_be16(m->bytes + offset);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sbr_module_wave(const SbrModule* m, uint8_t offset, SbrWave* out) {
     const uint64_t at = (uint64_t)m->build->wave + offset;
@@ -190,8 +183,6 @@ bool sbr_module_wave(const SbrModule* m, uint8_t offset, SbrWave* out) {
                        .loop_length = swapped ? word2 : word4 };
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool sbr_module_env(const SbrModule* m, uint8_t offset, SbrEnv* out) {
     const uint64_t at = (uint64_t)m->build->env + offset;
@@ -211,26 +202,19 @@ bool sbr_module_env(const SbrModule* m, uint8_t offset, SbrEnv* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int32_t sbr_module_list(const SbrModule* m, uint32_t song, uint32_t voice) {
     // adda.w: the offset is signed
     return (int16_t)read_word(m, (uint64_t)m->build->songs + (uint64_t)song * SONG_BYTES + 2u * voice);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint16_t sbr_module_pattern(const SbrModule* m, uint8_t index) {
     return read_word(m, (uint64_t)m->build->patterns + 2u * index);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint8_t sbr_module_chord(const SbrModule* m, unsigned bit) {
     return sbr_module_byte(m, (int64_t)m->build->chord + bit);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The fields of the voice record that the port keeps. The slide and glide fields ($24, $28, $2c, $30) stay 0 in the
 // songs the module check lets through. $74, $78 and $7c hold bytes of the wave record that nothing reads.
 
@@ -238,8 +222,6 @@ static bool record_field_modelled(unsigned byte) {
     const unsigned field = byte & ~3u;
     return field <= 0x70;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SbrWordKind sbr_module_period_kind(const SbrModule* m, unsigned index) {
     const SbrBuild* b = m->build;
@@ -265,8 +247,6 @@ SbrWordKind sbr_module_period_kind(const SbrModule* m, unsigned index) {
     }
     return SbrWord_Image;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t sbr_module_period_word(const SbrModule* m, unsigned index) {
     const SbrBuild* b = m->build;
@@ -295,19 +275,13 @@ uint16_t sbr_module_period_word(const SbrModule* m, unsigned index) {
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 unsigned sbr_module_period_voice(const SbrModule* m, unsigned index) {
     return (unsigned)(((uint64_t)m->build->period + 2u * index - m->build->live_periods) / 2u);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 unsigned sbr_module_period_record(const SbrModule* m, unsigned index) {
     return (unsigned)((uint64_t)m->build->period + 2u * index - m->build->record);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool next_byte(const SbrModule* m, int64_t* pos, uint8_t* b) {
     if (*pos < 0 || (uint64_t)*pos >= m->size) {
@@ -317,15 +291,12 @@ static bool next_byte(const SbrModule* m, int64_t* pos, uint8_t* b) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static SbrEvent truncated(SbrEvent e, int64_t consumed) {
     e.kind = SbrEvent_Truncated;
     e.consumed = (uint32_t)consumed;
     return e;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The pattern byte code. The driver reads, in this order and each at most once: a tempo byte ($f0..), a wave byte
 // ($e0..), an envelope byte ($c0..), a length byte ($80..), a command ($7a..$7f), the note. An $ff behind the wave or
 // the envelope byte ends the pattern too.
@@ -424,7 +395,6 @@ SbrEvent sbr_decode_event(const SbrModule* m, int64_t offset) {
     return e;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The init: the chain of 8SVX files behind the driver.
 
 static bool find_instruments(SbrModule* m) {
@@ -463,7 +433,6 @@ static bool find_instruments(SbrModule* m) {
            && (!b->reads_vhdr || (uint64_t)count * SBR_WAVE_BYTES <= (uint64_t)b->env - b->wave);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The proof that the songs stay inside the port: a walk over every note of every voice of every song, with the state
 // of the driver that decides what the note reads: the transposition, the envelope, the chord. A list is walked twice,
 // the second round with the state the first leaves.
@@ -477,14 +446,11 @@ typedef struct Walk {
     uint32_t* work; // the events walked in the whole module
 } Walk;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool check_wave(const SbrModule* m, uint8_t offset) {
     SbrWave wave;
     return sbr_module_wave(m, offset, &wave) && wave.instrument < m->instrument_count;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The driver reads the envelope's bytes 6 and 7 for a chord and a bend that the port does not model.
 
 static bool check_env(const SbrModule* m, uint8_t offset) {
@@ -492,14 +458,11 @@ static bool check_env(const SbrModule* m, uint8_t offset) {
     return sbr_module_env(m, offset, &env) && env.chord == 0 && (env.flags & 1u) == 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A period table word the driver reads must be one the port models.
 
 static bool period_modelled(const SbrModule* m, unsigned index) {
     return sbr_module_period_kind(m, index) != SbrWord_Unmodelled;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t env_vibrato(const SbrModule* m, uint8_t offset) {
     SbrEnv env;
@@ -507,7 +470,6 @@ static uint8_t env_vibrato(const SbrModule* m, uint8_t offset) {
     return env.vibrato;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What a note reads: its period, and then either the chord's notes (the bend may add one to the note first) or, with
 // the envelope's vibrato, the pair of words the vibrato takes from the note doubled in a byte.
 
@@ -535,8 +497,6 @@ static bool check_note(const SbrModule* m, const Walk* walk, uint8_t note) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool walk_pattern(const SbrModule* m, Walk* walk, uint8_t pattern) {
     const int64_t start = sbr_offset(sbr_module_pattern(m, pattern));
@@ -585,7 +545,6 @@ static bool walk_pattern(const SbrModule* m, Walk* walk, uint8_t pattern) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The driver's list reader: a byte position that wraps at 256, $ff restarts the list, $80..$fe set the transposition,
 // the rest is a pattern number.
 
@@ -625,8 +584,6 @@ static bool walk_list(const SbrModule* m, int64_t list, uint32_t* work) {
     return rounds == 2;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool check_songs(const SbrModule* m) {
     uint32_t work = 0;
     for (uint32_t song = 0; song < m->song_count; song++) {
@@ -639,8 +596,6 @@ static bool check_songs(const SbrModule* m) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint64_t vars_hash(const uint8_t* data, const SbrBuild* b) {
     if (b->chord == 0) {
         return hash_bytes(HASH_SEED, data + b->live_periods, b->instruments - b->live_periods);
@@ -649,7 +604,6 @@ static uint64_t vars_hash(const uint8_t* data, const SbrBuild* b) {
     return hash_bytes(before, data + b->chord + 8, b->instruments - b->chord - 8);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The title between the entries and the code. Check2 and InitPlayer take the first $41FA word of the module for the
 // first FORM, so the title holds none. InitPlayer's scan from $10 (player.asm $560) looks for "tt" and writes a $0A
 // behind it, then clears the byte two before the next $FA; the scan stops at an $FA it meets first. No write may reach
@@ -679,7 +633,6 @@ static bool title_ok(const uint8_t* data, const SbrBuild* b) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The eagleplayer's module check: four `bra.w`, the same entries the build has.
 
 static const SbrBuild* identify(const uint8_t* data, size_t size) {
@@ -705,7 +658,6 @@ static const SbrBuild* identify(const uint8_t* data, size_t size) {
     return nullptr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What the init does to the module: it clears the first word of every sample (the repeat of a sample without a loop
 // then plays a silent word) and of every file header, and sets the loop of the sample's wave record from its VHDR.
 
@@ -734,7 +686,6 @@ static void patch_vhdr(SbrModule* m) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module check. The proof is made on the module as the driver's init leaves it: the walk of the songs reads the
 // copy that the init patched.
 
@@ -778,8 +729,6 @@ SbrStatus sbr_module_open(SbrModule* m, const uint8_t* data, size_t size) {
     }
     return SbrStatus_Ok;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void sbr_module_close(SbrModule* m) {
     free(m->image);

@@ -48,7 +48,6 @@ static const uint8_t pv_vibrato_table[PV_VIBRATO_SIZE] = {
     0xFF, 0xFD, 0xFA, 0xF4, 0xEB, 0xE0, 0xD4, 0xC5, 0xB4, 0xA1, 0x8D, 0x78, 0x61, 0x4A, 0x31, 0x18,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The module layout.
 
 typedef struct PvHeader {
@@ -74,13 +73,9 @@ typedef struct PvNote {
     uint8_t param;
 } PvNote;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint16_t raw_u16(const uint8_t* data, size_t size, size_t offset) {
     return offset <= size - 2 ? nuade_read_be16(data + offset) : 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint8_t module_u8(PvPlayer* player, int64_t offset) {
     if (offset < 0 || (uint64_t)offset >= player->size) {
@@ -90,7 +85,6 @@ static uint8_t module_u8(PvPlayer* player, int64_t offset) {
     return player->mem[offset];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A word access of the replayer: an odd address is an address error of the 68000.
 
 static uint16_t module_u16(PvPlayer* player, int64_t offset) {
@@ -100,8 +94,6 @@ static uint16_t module_u16(PvPlayer* player, int64_t offset) {
     return (uint16_t)(((unsigned)module_u8(player, offset) << 8) | module_u8(player, offset + 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static PvSampleHeader sample_header(const uint8_t* data, size_t size, uint32_t index) {
     const size_t at = (size_t)index * PV_SAMPLE_HEADER_BYTES;
     return (PvSampleHeader) { .length_words = raw_u16(data, size, at),
@@ -109,8 +101,6 @@ static PvSampleHeader sample_header(const uint8_t* data, size_t size, uint32_t i
                               .loop_start_words = raw_u16(data, size, at + 4),
                               .loop_words = raw_u16(data, size, at + 6) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static PvNote read_note(PvPlayer* player, int32_t offset) {
     const uint8_t first = module_u8(player, offset);
@@ -124,7 +114,6 @@ static PvNote read_note(PvPlayer* player, int32_t offset) {
                       .param = module_u8(player, offset + 3) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The four words behind the sample headers.
 
 static PvHeader read_header(const uint8_t* data, size_t size) {
@@ -135,7 +124,6 @@ static PvHeader read_header(const uint8_t* data, size_t size) {
                         .pattern_bytes = raw_u16(data, size, at + 6) };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2 of the eagleplayer: the sample headers, the counts and the pattern offset table are sane. A word the check
 // reads outside the file fails it.
 
@@ -170,7 +158,6 @@ static bool check_header(const uint8_t* data, size_t size, const PvHeader* heade
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The offsets of the parts of the module, and the InitPlayer test that the samples fit in the file. The counts that
 // wrap the replayer's 16-bit address steps are refused, and a pattern size that is odd (every sample would start at an
 // odd address, where InitSound's long write is an address error).
@@ -202,13 +189,10 @@ static bool parse_layout(const uint8_t* data, size_t size, PvLayout* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static const int8_t* sample_pointer(const PvPlayer* player, int32_t offset) {
     return (const int8_t*)player->mem + offset;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The buffer a Paula block plays must lie inside the module (AUDxLEN 0 plays 65536 words), and be one the module
 // defines: a voice that never loaded a sample would play the memory at address 0.
 
@@ -218,8 +202,6 @@ static void check_block(PvPlayer* player, const PvVoice* voice, int32_t start, u
         player->fault = true;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool pv_start(PvPlayer* player, NuadeVoices* voices) {
     if (player == nullptr) {
@@ -239,21 +221,18 @@ bool pv_start(PvPlayer* player, NuadeVoices* voices) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // AUDxVOL: the volume goes through the eagleplayer's volume filter, the identity at the default master volume.
 
 static void write_volume(PvVoice* voice, uint16_t volume) {
     voice->paula.volume = (uint8_t)(volume & 0x7F);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The replayer's SongEnd call.
 
 static void song_end(PvPlayer* player) {
     player->looped = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The sample of a note: start, length, volume and what repeats.
 
 static void load_sample(const PvPlayer* player, PvVoice* voice, uint8_t number) {
@@ -273,7 +252,6 @@ static void load_sample(const PvPlayer* player, PvVoice* voice, uint8_t number) 
     voice->loop_words = header.loop_words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A note starts: DMA off, the sample as the first block; the row's DMA routine starts it.
 
 static void retrigger(PvPlayer* player, PvVoice* voice, uint16_t period) {
@@ -289,7 +267,6 @@ static void retrigger(PvPlayer* player, PvVoice* voice, uint16_t period) {
     voice->paula.len_words = voice->length_words;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The effects that act once, when the row starts.
 
 static void row_effect(PvPlayer* player, PvVoice* voice) {
@@ -325,7 +302,6 @@ static void row_effect(PvPlayer* player, PvVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A new note, read when the repeat count of the last one has run out.
 
 static void new_note(PvPlayer* player, PvVoice* voice) {
@@ -357,7 +333,6 @@ static void new_note(PvPlayer* player, PvVoice* voice) {
     row_effect(player, voice);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // One row of one voice.
 
 static void voice_row(PvPlayer* player, PvVoice* voice) {
@@ -384,7 +359,6 @@ static void voice_row(PvPlayer* player, PvVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // A word of the arpeggio's period table, which is read past its end (up to 15 words behind the 36 periods): the table
 // is followed by two zero words and a word of the eagleplayer's code, then by the 8 bytes between the player's two
 // hunks and the player's variables, which are modelled by their current values.
@@ -401,8 +375,6 @@ enum {
     PvArpeggio_DmaMask,
     PvArpeggio_SampleHigh,
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint16_t arpeggio_word(const PvPlayer* player, uint32_t index) {
     switch (index) {
@@ -434,7 +406,6 @@ static uint16_t arpeggio_word(const PvPlayer* player, uint32_t index) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The period the arpeggio plays: the first table entry not above the voice's period, `steps` semitones further.
 
 static uint16_t arpeggio_period(const PvPlayer* player, int16_t period, uint8_t steps) {
@@ -444,8 +415,6 @@ static uint16_t arpeggio_period(const PvPlayer* player, int16_t period, uint8_t 
     }
     return arpeggio_word(player, index + steps);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void arpeggio(const PvPlayer* player, PvVoice* voice) {
     if (voice->param == 0) {
@@ -459,8 +428,6 @@ static void arpeggio(const PvPlayer* player, PvVoice* voice) {
     }
     voice->paula.period = period;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void volume_slide(PvVoice* voice) {
     int volume = voice->volume;
@@ -478,8 +445,6 @@ static void volume_slide(PvVoice* voice) {
     voice->volume = (uint16_t)volume;
     write_volume(voice, voice->volume);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void tone_portamento(PvVoice* voice) {
     if (voice->param != 0) {
@@ -505,8 +470,6 @@ static void tone_portamento(PvVoice* voice) {
     voice->paula.period = (uint16_t)period;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void vibrato(PvVoice* voice) {
     if (voice->param != 0) {
         voice->vibrato_speed = voice->param >> 4;
@@ -517,7 +480,6 @@ static void vibrato(PvVoice* voice) {
     voice->vibrato_pos = (uint8_t)(voice->vibrato_pos + voice->vibrato_speed * 4);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The effect of a voice on a tick that does not step a row.
 
 static void voice_effect(PvPlayer* player, PvVoice* voice) {
@@ -551,7 +513,6 @@ static void voice_effect(PvPlayer* player, PvVoice* voice) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Every 16 rows: the sequence entry names the pattern of each voice.
 
 static void load_patterns(PvPlayer* player) {
@@ -570,7 +531,6 @@ static void load_patterns(PvPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The DMA of the voices that started a note or a tone portamento, then the repeat registers, period and volume.
 
 static void start_dma(PvPlayer* player) {
@@ -593,7 +553,6 @@ static void start_dma(PvPlayer* player) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The tick that reaches the end of the speed count: every 16 rows the patterns load, then each voice steps a row and
 // the DMA of the new notes starts.
 
@@ -611,8 +570,6 @@ static void step_row(PvPlayer* player) {
     }
     start_dma(player);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PvTickResult pv_tick(PvPlayer* player, NuadeVoices* voices) {
     player->looped = false;
@@ -632,7 +589,6 @@ PvTickResult pv_tick(PvPlayer* player, NuadeVoices* voices) {
     return (PvTickResult) { .looped = player->looped };
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // What decides which notes the sequencer reads: the position, the row count and, per voice, the note being played.
 
 typedef struct PvFlow {
@@ -649,8 +605,6 @@ typedef struct PvFlow {
     } voices[PV_VOICES];
 } PvFlow;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static PvFlow flow_of(const PvPlayer* player) {
     PvFlow flow = { .position = player->position, .row_counter = player->row_counter };
     for (uint32_t i = 0; i < PV_VOICES; i++) {
@@ -665,8 +619,6 @@ static PvFlow flow_of(const PvPlayer* player) {
     }
     return flow;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool same_flow(const PvFlow* a, const PvFlow* b) {
     if (a->position != b->position || a->row_counter != b->row_counter) {
@@ -683,7 +635,6 @@ static bool same_flow(const PvFlow* a, const PvFlow* b) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Plays the song row by row without sound until the sequencer state repeats (Brent's cycle search). Every module read,
 // word access and sample buffer of the song's whole run goes through the checks that set `fault`. A song that has not
 // repeated within PV_DRY_RUN_ROWS rows is refused.
@@ -711,7 +662,6 @@ static bool dry_run_is_clean(PvPlayer* player) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InitSound's module part: the sample addresses (the replayer adds them with 16-bit steps), and the first four bytes
 // of every sample are cleared (the repeat of a sample that plays once is then silent).
 
@@ -750,16 +700,12 @@ PvPlayer* pv_create(const uint8_t* data, size_t size) {
     return player;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void pv_destroy(PvPlayer* player) {
     if (player != nullptr) {
         free(player->mem);
         free(player);
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool pv_probe(const uint8_t* data, size_t size) {
     PvPlayer* player = pv_create(data, size);
@@ -768,13 +714,9 @@ bool pv_probe(const uint8_t* data, size_t size) {
     return playable;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t pv_grid_ticks(const PvPlayer* player) {
     return player->speed != 0 ? player->speed : 1;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PvVoiceState pv_voice_state(const PvPlayer* player, uint32_t voice) {
     const PvVoice* v = &player->voices[voice];

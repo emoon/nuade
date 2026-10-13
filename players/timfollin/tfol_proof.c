@@ -47,13 +47,9 @@ typedef struct TfolProof {
     bool failed;
 } TfolProof;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static bool tfol_proof_in_file(const TfolProof* proof, uint64_t offset, uint64_t length) {
     return offset <= proof->module->size && length <= proof->module->size - offset;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Sets the bits of a range already known to be inside the file.
 static void tfol_bits_set(uint8_t* bits, uint32_t offset, uint32_t length) {
@@ -61,8 +57,6 @@ static void tfol_bits_set(uint8_t* bits, uint32_t offset, uint32_t length) {
         bits[(offset + i) >> 3] |= (uint8_t)(1u << ((offset + i) & 7));
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool tfol_bits_overlap(const TfolProof* proof, const uint8_t* a, const uint8_t* b) {
     const size_t bytes = (proof->module->size + 7) / 8;
@@ -73,8 +67,6 @@ static bool tfol_bits_overlap(const TfolProof* proof, const uint8_t* a, const ui
     }
     return false;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Checks an entry of the song's instrument table: the entry, the record's length word and the sample are inside the
 // file; remembers what they cover.
@@ -97,8 +89,6 @@ static bool tfol_proof_instrument(TfolProof* proof, uint8_t index) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static uint32_t tfol_state_hash(const TfolWalkState* s) {
     const uint8_t* p = (const uint8_t*)s;
     uint32_t h = 2166136261u;
@@ -107,8 +97,6 @@ static uint32_t tfol_state_hash(const TfolWalkState* s) {
     }
     return h;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Adds a state to the walk unless it is known. False when the state budget is spent.
 static bool tfol_proof_add_state(TfolProof* proof, const TfolWalkState* state) {
@@ -127,8 +115,6 @@ static bool tfol_proof_add_state(TfolProof* proof, const TfolWalkState* state) {
     proof->index[slot] = (int32_t)proof->state_count++;
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // One command. Sets *ended when the stream stops.
 static bool tfol_proof_command(TfolProof* proof, TfolWalkState* s, const TfolEvent* ev, bool* ended) {
@@ -198,8 +184,6 @@ static bool tfol_proof_command(TfolProof* proof, TfolWalkState* s, const TfolEve
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Runs the stream from `s` up to the next note, with the same event limit as the replayer's fetch; the state after the
 // note is added to the walk.
 static bool tfol_proof_segment(TfolProof* proof, TfolWalkState s) {
@@ -230,8 +214,6 @@ static bool tfol_proof_segment(TfolProof* proof, TfolWalkState s) {
     return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Walks one voice of the current song to a fixed point.
 static bool tfol_proof_voice(TfolProof* proof, uint32_t stream) {
     TfolWalkState start;
@@ -248,8 +230,6 @@ static bool tfol_proof_voice(TfolProof* proof, uint32_t stream) {
     }
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The sweeps of the instruments below 4 write into the record's header and the first bytes of the sample.
 static bool tfol_proof_mark_sweeps(TfolProof* proof) {
@@ -270,8 +250,6 @@ static bool tfol_proof_mark_sweeps(TfolProof* proof) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Walks every voice of one playable song.
 static bool tfol_proof_song(TfolProof* proof, uint32_t song) {
     proof->song_record = tfol_module_song(proof->module, song);
@@ -290,8 +268,6 @@ static bool tfol_proof_song(TfolProof* proof, uint32_t song) {
     }
     return tfol_proof_mark_sweeps(proof);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // InitPlayer's second relocation loop: a list of longs at table + $194 that ends at a long with a zero high word; each
 // entry is an address that gets the offset added, and the long at +2 of what it names gets the offset added too. The
@@ -315,8 +291,6 @@ static bool tfol_proof_relocation_list(TfolProof* proof) {
         at += 4;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool tfol_proof_run(TfolProof* proof) {
     const TfolModule* m = proof->module;
@@ -343,8 +317,6 @@ static bool tfol_proof_run(TfolProof* proof) {
     free(table);
     return clean;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool tfol_module_prove(const TfolModule* module) {
     const size_t bits = (module->size + 7) / 8;

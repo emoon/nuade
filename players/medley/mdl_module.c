@@ -71,8 +71,6 @@ typedef enum MdlWaveField {
     MdlWaveField_SecondHalf = 0x16,
 } MdlWaveField;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t mdl_u8(MdlModule* module, uint32_t offset) {
     if (offset >= module->size) {
         module->unmapped = true;
@@ -80,8 +78,6 @@ uint8_t mdl_u8(MdlModule* module, uint32_t offset) {
     }
     return module->bytes[offset];
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t mdl_u16(MdlModule* module, uint32_t offset) {
     if (module->size < 2 || offset > module->size - 2) {
@@ -91,8 +87,6 @@ uint16_t mdl_u16(MdlModule* module, uint32_t offset) {
     return nuade_read_be16(module->bytes + offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t mdl_u32(MdlModule* module, uint32_t offset) {
     if (module->size < 4 || offset > module->size - 4) {
         module->unmapped = true;
@@ -101,7 +95,6 @@ uint32_t mdl_u32(MdlModule* module, uint32_t offset) {
     return nuade_read_be32(module->bytes + offset);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Check2 looks for the magic; InitPlayer turns the four offsets into table addresses and keeps the word before the
 // song table as the subsong count. The port also wants the whole of every table inside the file.
 
@@ -127,15 +120,11 @@ bool mdl_module_open(MdlModule* module, const uint8_t* data, size_t size) {
     return module->subsong_count != 0 && module->subsong_count == data[module->base[MdlTable_Song] - 1];
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t mdl_table_target(MdlModule* module, MdlTable table, uint8_t index) {
     const uint32_t entry = module->base[table] + (uint32_t)index * MDL_ENTRY_BYTES;
     const uint32_t relative = mdl_u32(module, entry);
     return relative == 0 ? MDL_NO_OFFSET : entry + relative;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool mdl_song(MdlModule* module, uint8_t number, MdlSong* out) {
     // InitSound refuses a number above the highest index of the table (the subsong count).
@@ -163,33 +152,23 @@ bool mdl_song(MdlModule* module, uint8_t number, MdlSong* out) {
     return !module->unmapped;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t mdl_track_start(MdlModule* module, uint8_t number) {
     const uint32_t at = mdl_table_target(module, MdlTable_Track, number);
     return at == MDL_NO_OFFSET ? MDL_NO_OFFSET : at + MDL_TRACK_HEADER_BYTES;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint32_t mdl_track_from_table_start(MdlModule* module, uint8_t track) {
     const uint32_t relative = mdl_u32(module, module->base[MdlTable_Track] + track * MDL_ENTRY_BYTES);
     return relative == 0 ? MDL_NO_OFFSET : module->base[MdlTable_Track] + relative;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t mdl_random_list_count(MdlModule* module, uint32_t track_start) {
     return mdl_u8(module, track_start + 1);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t mdl_choice_track(MdlModule* module, uint32_t first_pair, uint16_t choice) {
     return mdl_u8(module, first_pair + choice * 2u + 1);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static MdlModulatorSetup mdl_modulator(MdlModule* module, uint32_t at) {
     return (MdlModulatorSetup) { .kind = (MdlModulatorKind)mdl_u8(module, at + MdlModulatorField_Kind),
@@ -204,8 +183,6 @@ static MdlModulatorSetup mdl_modulator(MdlModule* module, uint32_t at) {
                                  .rise = mdl_u16(module, at + MdlModulatorField_Rise),
                                  .fall = mdl_u16(module, at + MdlModulatorField_Fall) };
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MdlInstrument mdl_instrument(MdlModule* module, uint32_t offset) {
     MdlInstrument instrument = { 0 };
@@ -229,13 +206,9 @@ MdlInstrument mdl_instrument(MdlModule* module, uint32_t offset) {
     return instrument;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint32_t mdl_instrument_offset(MdlModule* module, uint8_t number) {
     return mdl_table_target(module, MdlTable_Instrument, number);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool mdl_wave(MdlModule* module, uint8_t number, MdlWave* out) {
     const uint32_t at = mdl_table_target(module, MdlTable_Wave, number);
@@ -249,8 +222,6 @@ bool mdl_wave(MdlModule* module, uint8_t number, MdlWave* out) {
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t mdl_note_region(uint8_t note) {
     uint8_t region = MDL_REGIONS - 1;
     while (region > 0 && note < mdl_region_start[region]) {
@@ -258,8 +229,6 @@ uint8_t mdl_note_region(uint8_t note) {
     }
     return region;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint8_t mdl_region_wave(const MdlInstrument* instrument, uint8_t region) {
     uint8_t wave = instrument->wave[region];
@@ -269,8 +238,6 @@ uint8_t mdl_region_wave(const MdlInstrument* instrument, uint8_t region) {
     return wave;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 uint8_t mdl_sample_period_index(uint8_t note, const MdlInstrument* instrument, const MdlWave* wave) {
     uint8_t index = (uint8_t)(note - wave->octave * MDL_NOTES_PER_OCTAVE);
     if (instrument->type == MdlInstrumentType_Looped) {
@@ -278,8 +245,6 @@ uint8_t mdl_sample_period_index(uint8_t note, const MdlInstrument* instrument, c
     }
     return (uint8_t)(index + MDL_SAMPLED_PERIOD_BASE);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int64_t mdl_window_offset(const MdlWave* wave, bool second_half, uint16_t position) {
     int64_t offset = wave->data;
@@ -289,32 +254,22 @@ int64_t mdl_window_offset(const MdlWave* wave, bool second_half, uint16_t positi
     return offset + (position & (uint16_t)((wave->length >> 1) - 1));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool mdl_sample_inside(const MdlModule* module, int64_t offset, uint16_t words) {
     const int64_t bytes = words == 0 ? NUADE_PAULA_MAX_SAMPLE_BYTES : (int64_t)words * 2;
     return offset >= 0 && offset + bytes <= module->size;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool mdl_period_is_call_stack_word(uint32_t index) {
     return index >= MDL_PERIOD_CALL_STACK_INDEX && index < MDL_PERIOD_CALL_STACK_INDEX + MDL_PERIOD_CALL_STACK_WORDS;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool mdl_period_index_modelled(uint32_t index) {
     return index < MDL_PERIOD_COUNT || index == MDL_PERIOD_CALL_DEPTH_INDEX || mdl_period_is_call_stack_word(index);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool mdl_voice_flag_valid(uint8_t flag) {
     return flag <= MDL_VOICE_FLAG_COUNT;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 uint8_t mdl_song_voice_instrument(const MdlSong* song, int voice) {
     if (song->instrument[voice] != 0) {
