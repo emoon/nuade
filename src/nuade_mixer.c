@@ -3,6 +3,7 @@
 #include "nuade_mixer.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 // Every voice is scaled by this so that four full-scale voices stay in range; a voice volume of 1 is the sample at
 // full scale, whatever the player. A power of two, so it changes no rounding.
@@ -21,7 +22,11 @@ typedef struct NuadeVoice {
     bool has_event;
     f32 volume;
     f32 pan;
-    bool muted; // left out of the stereo mix; kept across reset
+    bool muted;          // left out of the stereo mix; kept across reset
+    i32 owner;           // the instrument the playing sound belongs to, -1 if unknown
+    i32 queued_owner;    // the same for the queued sound
+    bool started;        // a sound started since the last nuade_mixer_tag_starts
+    bool queued_started; // a sound was queued behind a playing one since then
 } NuadeVoice;
 
 struct NuadeVoices {
@@ -32,6 +37,9 @@ struct NuadeVoices {
     NuadeVoiceObserver observer;
     void* observer_user;
     NuadeVoice* voices;
+    u8* instrument_muted; // by instrument number, grown on demand; kept across reset
+    u32 instrument_cap;
+    u32 instrument_mute_count;
 };
 
 static void emit(const NuadeVoices* mixer, u32 voice, NuadeVoiceEventKind kind, f64 value, const NuadeSample* sample) {
@@ -43,7 +51,7 @@ static void emit(const NuadeVoices* mixer, u32 voice, NuadeVoiceEventKind kind, 
 }
 
 static void reset_voice(NuadeVoice* voice) {
-    *voice = (NuadeVoice) { .volume = 1.0f, .muted = voice->muted };
+    *voice = (NuadeVoice) { .volume = 1.0f, .muted = voice->muted, .owner = -1, .queued_owner = -1 };
 }
 
 NuadeVoices* nuade_mixer_create(u32 voice_count) {
@@ -67,6 +75,7 @@ NuadeVoices* nuade_mixer_create(u32 voice_count) {
 void nuade_mixer_destroy(NuadeVoices* mixer) {
     if (mixer != nullptr) {
         free(mixer->voices);
+        free(mixer->instrument_muted);
         free(mixer);
     }
 }
@@ -96,10 +105,60 @@ bool nuade_mixer_set_muted(NuadeVoices* mixer, u32 voice, bool muted) {
     return true;
 }
 
+bool nuade_mixer_set_instrument_muted(NuadeVoices* mixer, u32 instrument, bool muted) {
+    if (mixer == nullptr || instrument >= NUADE_MAX_INSTRUMENT) {
+        return false;
+    }
+    if (instrument >= mixer->instrument_cap) {
+        if (!muted) {
+            return true;
+        }
+        const u32 cap = instrument + 1;
+        u8* grown = (u8*)realloc(mixer->instrument_muted, cap);
+        if (grown == nullptr) {
+            return false;
+        }
+        memset(grown + mixer->instrument_cap, 0, cap - mixer->instrument_cap);
+        mixer->instrument_muted = grown;
+        mixer->instrument_cap = cap;
+    }
+    if ((mixer->instrument_muted[instrument] != 0) != muted) {
+        mixer->instrument_muted[instrument] = muted;
+        mixer->instrument_mute_count += muted ? 1 : (u32)-1;
+    }
+    return true;
+}
+
+bool nuade_mixer_has_instrument_mutes(const NuadeVoices* mixer) {
+    return mixer->instrument_mute_count != 0;
+}
+
 void nuade_mixer_clear_mutes(NuadeVoices* mixer) {
     for (u32 i = 0; i < mixer->voice_count; i++) {
         mixer->voices[i].muted = false;
     }
+    memset(mixer->instrument_muted, 0, mixer->instrument_cap);
+    mixer->instrument_mute_count = 0;
+}
+
+void nuade_mixer_tag_starts(NuadeVoices* mixer, const NuadeVoiceInfo* info, u32 count) {
+    for (u32 n = 0; n < mixer->voice_count; n++) {
+        NuadeVoice* v = &mixer->voices[n];
+        const i32 instrument = n < count ? info[n].instrument : -1;
+        if (v->started) {
+            v->owner = instrument;
+        }
+        if (v->queued_started) {
+            v->queued_owner = instrument;
+        }
+        v->started = false;
+        v->queued_started = false;
+    }
+}
+
+static bool is_muted(const NuadeVoices* mixer, const NuadeVoice* v) {
+    return v->muted
+           || (v->owner >= 0 && (u32)v->owner < mixer->instrument_cap && mixer->instrument_muted[v->owner] != 0);
 }
 
 // Voice calls
@@ -131,6 +190,8 @@ static void start_sample(NuadeVoice* v, const NuadeSample* sample, u32 start_fra
     v->has_queued = false;
     v->playing = v->current.data != nullptr;
     v->position = (f64)start_frame;
+    v->started = true;
+    v->owner = -1;
 }
 
 void nuade_voice_play(NuadeVoices* mixer, uint32_t voice, const NuadeSample* sample, uint32_t start_frame) {
@@ -150,6 +211,8 @@ void nuade_voice_queue(NuadeVoices* mixer, uint32_t voice, const NuadeSample* sa
     if (v->playing) {
         v->queued = normalized(sample);
         v->has_queued = true;
+        v->queued_started = true;
+        v->queued_owner = -1;
     } else {
         start_sample(v, sample, 0);
     }
@@ -244,6 +307,7 @@ static bool settle(NuadeVoices* mixer, u32 index, NuadeVoice* v) {
         const u32 end = sample_end(&v->current);
         if (v->has_queued) {
             v->current = v->queued;
+            v->owner = v->queued_owner;
             v->has_queued = false;
             v->position -= (f64)end;
             v->wraps++;
@@ -288,7 +352,7 @@ void nuade_mixer_mix(NuadeVoices* mixer, float* stereo, float* const* voice_out,
                 const f32 s = read_sample(&v->current, (u32)v->position) * v->volume;
                 const f32 l = s * (NUADE_HEADROOM * 0.5f * (1.0f - pan));
                 const f32 r = s * (NUADE_HEADROOM * 0.5f * (1.0f + pan));
-                if (!v->muted) {
+                if (!is_muted(mixer, v)) {
                     left += l;
                     right += r;
                 }

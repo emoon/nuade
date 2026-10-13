@@ -168,7 +168,14 @@ bool nuade_set_stereo_separation(NuadeSong* song, float separation);
 // nuade_scope still carry it. A mute stays through nuade_start and nuade_seek. Returns false (and changes nothing)
 // for a voice outside the song or a self-rendering player (NuadePlayer.render_raw), which has no mixer to gate.
 bool nuade_mute_voice(NuadeSong* song, uint32_t voice, bool mute);
-// Unmute every voice.
+// Leave out of the stereo mix every sound that `instrument` started: the number a voice reports in
+// NuadeVoiceInfo.instrument (the `index` of nuade_instrument_name). Like a voice mute the sound plays on, and the voice
+// buffers still carry it. A sound belongs to the instrument its voice reports right after the tick that started it, so
+// set the mute before nuade_start; it stays through nuade_start and nuade_seek. Returns false for a player that
+// reports no instruments, one whose display voices are not the song's voices, a self-rendering player, or an instrument
+// number past 65535.
+bool nuade_mute_instrument(NuadeSong* song, uint32_t instrument, bool mute);
+// Unmute every voice and instrument.
 void nuade_mute_clear(NuadeSong* song);
 
 // Metadata
