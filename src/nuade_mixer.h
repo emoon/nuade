@@ -6,7 +6,9 @@
 #include "nuade_test.h"
 #include <nuade/viz.h>
 
-NuadeVoices* nuade_mixer_create(u32 voice_count);
+// `track_count` is how many voices can be muted (the display voices; at least voice_count). `gates`: the mixer leaves
+// muted voices and instruments out itself; false for a player that applies mutes itself.
+NuadeVoices* nuade_mixer_create(u32 voice_count, u32 track_count, bool gates);
 void nuade_mixer_destroy(NuadeVoices* mixer);
 
 // Silence every voice and restart the frame counter at the given output rate. The observer is kept.
@@ -20,8 +22,8 @@ void nuade_mixer_set_observer(NuadeVoices* mixer, NuadeVoiceObserver observer, v
 void nuade_mixer_set_separation(NuadeVoices* mixer, f32 separation);
 
 // Leave a voice out of the stereo mix. The voice still plays on (position, loops, events) and its voice buffer and
-// meters still see it. Kept across nuade_mixer_reset. False if `voice` is out of range.
-bool nuade_mixer_set_muted(NuadeVoices* mixer, u32 voice, bool muted);
+// meters still see it. Kept across nuade_mixer_reset. False if `track` is out of range.
+bool nuade_mixer_set_muted(NuadeVoices* mixer, u32 track, bool muted);
 
 // Leave out of the stereo mix every sound that `instrument` started (the number the player reports in
 // NuadeVoiceInfo.instrument). A sound belongs to the instrument its voice reports right after the tick that started it

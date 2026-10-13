@@ -22,7 +22,6 @@ typedef struct NuadeVoice {
     bool has_event;
     f32 volume;
     f32 pan;
-    bool muted;          // left out of the stereo mix; kept across reset
     i32 owner;           // the instrument the playing sound belongs to, -1 if unknown
     i32 queued_owner;    // the same for the queued sound
     bool started;        // a sound started since the last nuade_mixer_tag_starts
@@ -37,6 +36,9 @@ struct NuadeVoices {
     NuadeVoiceObserver observer;
     void* observer_user;
     NuadeVoice* voices;
+    u32 track_count;
+    bool gates;           // the mixer applies the mutes; else the player does
+    u8* track_muted;      // by track (display voice); kept across reset
     u8* instrument_muted; // by instrument number, grown on demand; kept across reset
     u32 instrument_cap;
     u32 instrument_mute_count;
@@ -51,10 +53,10 @@ static void emit(const NuadeVoices* mixer, u32 voice, NuadeVoiceEventKind kind, 
 }
 
 static void reset_voice(NuadeVoice* voice) {
-    *voice = (NuadeVoice) { .volume = 1.0f, .muted = voice->muted, .owner = -1, .queued_owner = -1 };
+    *voice = (NuadeVoice) { .volume = 1.0f, .owner = -1, .queued_owner = -1 };
 }
 
-NuadeVoices* nuade_mixer_create(u32 voice_count) {
+NuadeVoices* nuade_mixer_create(u32 voice_count, u32 track_count, bool gates) {
     NuadeVoices* mixer = (NuadeVoices*)calloc(1, sizeof(NuadeVoices));
     if (mixer == nullptr) {
         return nullptr;
@@ -65,6 +67,14 @@ NuadeVoices* nuade_mixer_create(u32 voice_count) {
         return nullptr;
     }
     mixer->voice_count = voice_count;
+    mixer->track_count = track_count > voice_count ? track_count : voice_count;
+    mixer->gates = gates;
+    mixer->track_muted = (u8*)calloc(mixer->track_count ? mixer->track_count : 1, 1);
+    if (mixer->track_muted == nullptr) {
+        free(mixer->voices);
+        free(mixer);
+        return nullptr;
+    }
     mixer->separation = 1.0f;
     for (u32 i = 0; i < voice_count; i++) {
         reset_voice(&mixer->voices[i]);
@@ -76,6 +86,7 @@ void nuade_mixer_destroy(NuadeVoices* mixer) {
     if (mixer != nullptr) {
         free(mixer->voices);
         free(mixer->instrument_muted);
+        free(mixer->track_muted);
         free(mixer);
     }
 }
@@ -97,11 +108,11 @@ void nuade_mixer_set_separation(NuadeVoices* mixer, f32 separation) {
     mixer->separation = separation;
 }
 
-bool nuade_mixer_set_muted(NuadeVoices* mixer, u32 voice, bool muted) {
-    if (mixer == nullptr || voice >= mixer->voice_count) {
+bool nuade_mixer_set_muted(NuadeVoices* mixer, u32 track, bool muted) {
+    if (mixer == nullptr || track >= mixer->track_count) {
         return false;
     }
-    mixer->voices[voice].muted = muted;
+    mixer->track_muted[track] = muted;
     return true;
 }
 
@@ -134,9 +145,7 @@ bool nuade_mixer_has_instrument_mutes(const NuadeVoices* mixer) {
 }
 
 void nuade_mixer_clear_mutes(NuadeVoices* mixer) {
-    for (u32 i = 0; i < mixer->voice_count; i++) {
-        mixer->voices[i].muted = false;
-    }
+    memset(mixer->track_muted, 0, mixer->track_count);
     memset(mixer->instrument_muted, 0, mixer->instrument_cap);
     mixer->instrument_mute_count = 0;
 }
@@ -156,9 +165,17 @@ void nuade_mixer_tag_starts(NuadeVoices* mixer, const NuadeVoiceInfo* info, u32 
     }
 }
 
-static bool is_muted(const NuadeVoices* mixer, const NuadeVoice* v) {
-    return v->muted
-           || (v->owner >= 0 && (u32)v->owner < mixer->instrument_cap && mixer->instrument_muted[v->owner] != 0);
+bool nuade_voice_muted(const NuadeVoices* mixer, uint32_t track) {
+    return mixer != nullptr && track < mixer->track_count && mixer->track_muted[track] != 0;
+}
+
+bool nuade_instrument_muted(const NuadeVoices* mixer, int32_t instrument) {
+    return mixer != nullptr && instrument >= 0 && (u32)instrument < mixer->instrument_cap
+           && mixer->instrument_muted[instrument] != 0;
+}
+
+static bool is_muted(const NuadeVoices* mixer, u32 index, const NuadeVoice* v) {
+    return mixer->gates && (mixer->track_muted[index] != 0 || nuade_instrument_muted(mixer, v->owner));
 }
 
 // Voice calls
@@ -352,7 +369,7 @@ void nuade_mixer_mix(NuadeVoices* mixer, float* stereo, float* const* voice_out,
                 const f32 s = read_sample(&v->current, (u32)v->position) * v->volume;
                 const f32 l = s * (NUADE_HEADROOM * 0.5f * (1.0f - pan));
                 const f32 r = s * (NUADE_HEADROOM * 0.5f * (1.0f + pan));
-                if (!is_muted(mixer, v)) {
+                if (!is_muted(mixer, n, v)) {
                     left += l;
                     right += r;
                 }

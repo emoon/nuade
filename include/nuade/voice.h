@@ -61,6 +61,12 @@ bool nuade_voice_is_playing(const NuadeVoices* voices, uint32_t voice);
 
 void nuade_voice_get_state(const NuadeVoices* voices, uint32_t voice, NuadeVoiceState* state);
 
+// Mute state, for a player that applies mutes itself (NuadeSongInfo.player_mutes). `track` is the song's voice number
+// (a display voice for a player with display voices of its own). A muted track or instrument is to be left out of the
+// stereo mix: the player keeps running it and mixes it as silence. `instrument` is the number voice_info reports.
+bool nuade_voice_muted(const NuadeVoices* voices, uint32_t track);
+bool nuade_instrument_muted(const NuadeVoices* voices, int32_t instrument);
+
 #ifdef __cplusplus
 }
 #endif

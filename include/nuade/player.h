@@ -60,6 +60,11 @@ typedef struct NuadeSongInfo {
     // mixes its own channels into its voices (8 tracks into Paula's 4) gives the number of channels. 0 = the
     // voice_count voices; the framework then sets it to voice_count, so a host can always read it.
     uint32_t display_voices;
+    // The player applies mutes itself: it reads nuade_voice_muted / nuade_instrument_muted (voice.h) where it mixes or
+    // starts a sound and leaves a muted one out. The framework then does not gate the mixer voices, and accepts
+    // nuade_mute_voice for the display voices and nuade_mute_instrument for any instrument number. Without it a player
+    // with display voices of its own cannot be muted.
+    bool player_mutes;
 } NuadeSongInfo;
 
 typedef struct NuadePlayerOpenResult {

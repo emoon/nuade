@@ -290,7 +290,8 @@ NuadeSongResult nuade_open_ex(const NuadeOpenParams* params) {
 
     if (song->player->tick != nullptr) {
         if (song->info.timebase_hz != 0) {
-            song->voices = nuade_mixer_create(song->info.voice_count);
+            song->voices
+                = nuade_mixer_create(song->info.voice_count, song->info.display_voices, !song->info.player_mutes);
         }
         if (song->voices == nullptr) {
             NuadeSongResult result = fail(song->info.timebase_hz ? NuadeStatus_OutOfMemory : NuadeStatus_InvalidData,
@@ -386,7 +387,8 @@ static NuadeGridClock grid_clock(const NuadeSong* song) {
 
 // After a tick, while an instrument is muted: the sounds the tick started belong to the instrument their voice reports.
 static void tag_started_sounds(NuadeSong* song) {
-    if (song->player->voice_info == nullptr || !nuade_mixer_has_instrument_mutes(song->voices)) {
+    if (song->player->voice_info == nullptr || song->info.player_mutes
+        || !nuade_mixer_has_instrument_mutes(song->voices)) {
         return;
     }
     const u32 count = song->info.voice_count;
@@ -900,14 +902,18 @@ bool nuade_set_stereo_separation(NuadeSong* song, float separation) {
 }
 
 bool nuade_mute_voice(NuadeSong* song, uint32_t voice, bool mute) {
-    return song != nullptr && song->voices != nullptr && nuade_mixer_set_muted(song->voices, voice, mute);
+    if (song == nullptr || song->voices == nullptr || (song->own_display && !song->info.player_mutes)) {
+        return false;
+    }
+    return nuade_mixer_set_muted(song->voices, voice, mute);
 }
 
 bool nuade_mute_instrument(NuadeSong* song, uint32_t instrument, bool mute) {
-    if (song == nullptr || song->voices == nullptr || song->player->voice_info == nullptr || song->own_display) {
+    const bool framework_tags = song != nullptr && song->player->voice_info != nullptr && !song->own_display;
+    if (song == nullptr || song->voices == nullptr || !(framework_tags || song->info.player_mutes)) {
         return false;
     }
-    if (mute && song->tag_info == nullptr) {
+    if (mute && framework_tags && song->tag_info == nullptr) {
         song->tag_info
             = (NuadeVoiceInfo*)calloc(song->info.voice_count ? song->info.voice_count : 1, sizeof(NuadeVoiceInfo));
         if (song->tag_info == nullptr) {
