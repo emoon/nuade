@@ -9,6 +9,8 @@
 // last routine is hashed, with the relocated longs left out (they hold module addresses), and compared with the builds
 // it was translated from. The operands that hold the driver's tables are then read at fixed places in that code.
 
+#include "nuade_base.h"
+#include "nuade_paula_channel.h"
 #include "nuade_utils.h"
 #include "rjg_internal.h"
 #include <stdlib.h>

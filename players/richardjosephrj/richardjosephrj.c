@@ -9,6 +9,7 @@
 // four voices, the volume envelopes, then the writes to the Paula registers. A sound plays its sample once, or loops
 // it; the channel's audio interrupt chains the loop pointer or ends the one-shot (see audio_interrupt).
 
+#include "nuade_paula_channel.h"
 #include "nuade_tracker.h"
 #include "rjg_internal.h"
 #include <stdlib.h>

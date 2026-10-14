@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include "nuade_base.h"
-#include "nuade_paula_channel.h"
 #include <nuade/players/richardjosephrj.h>
 
 #define RJG_INSTRUMENT_SIZE 14 // bytes of an instrument row
