@@ -126,6 +126,7 @@ Summary: 133 ported (by 122 nuade players), 12 not ported, 31 skipped on purpose
 - [x] SpeedyA1System → `speedya1system`
 - [x] SpeedySystem → `speedysystem`
 - [x] SteveBarrett → `stevebarrett`
+- [x] SteveTurner → `steveturner`
 - [x] SUN-Tronic → `suntronic`
 - [x] Synth → `synthesis` (Synthesis)
 - [x] SynthDream → `synthdream`
@@ -144,7 +145,6 @@ Summary: 133 ported (by 122 nuade players), 12 not ported, 31 skipped on purpose
 
 ## Not ported
 
-- [ ] SteveTurner
 - [ ] FuturePlayer
 
 Blocked, no module to test with:

@@ -70,3 +70,6 @@ license; the eagleplayers state no license.
   Hanney, adapted by Mr.Larmer/Wanted Team & DEFECT).
 - `players/majortom/mt_data.c`: the noise waveform and period table of the Major-Tom-Player-Module 1.1 (Major Tom of
   Classified, adapted by marley/INFECT & Eagleeye/DEFECT).
+- `players/steveturner/steveturner.c`: the period table, and the player itself, translated from the Steve Turner player
+  module V1.3 ("Steve Turner_v4.asm", engine (c) 1989-90 Steve Turner, adapted by Mr.Larmer/Wanted Team; from the game
+  Off Road Racer).
