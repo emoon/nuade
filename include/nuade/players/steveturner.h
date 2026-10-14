@@ -114,7 +114,7 @@ typedef struct StInstrument {
     uint8_t sustain_ticks;
     int8_t sustain_rate;
     uint8_t period_shift; // the period register gets the pitch shifted right by this
-    uint16_t hold_ticks;
+    uint16_t hold_phase_ticks;
     int8_t hold_rate;
     uint8_t hold_turn_ticks; // the hold phase changes the sign of its rate this often
     int8_t release_rate;
@@ -148,9 +148,14 @@ typedef struct StVoice {
     uint16_t target_period;     // the portamento's goal
 
     // The sound that plays
-    uint8_t playing_number;   // instrument number (1-based), 0 if none
     uint8_t playing_priority; // a note needs at least this priority to replace it
     StInstrument sound;       // the instrument that plays
+
+    // The start slots of the original's voice record. A voice that no track list drives keeps them zeroed: the first
+    // tick starts instrument 1 from the request slot, and the countdown starts it once more when it wraps.
+    bool request_armed;   // the request slot holds instrument 1 (a track list start clears it)
+    bool queued_armed;    // the queued start holds instrument 1 at priority 0
+    uint8_t queued_delay; // ticks until the queued start, counted down from 0 (wrapping)
 
     // Volume envelope
     StEnvelopeState envelope;
@@ -180,7 +185,6 @@ typedef struct StVoice {
 
 struct StPlayer {
     StModule module;
-    uint8_t* pristine; // the image as loaded: a restart goes back to it
     int8_t silence[4]; // the buffer a one-shot sample's repeat points at
 
     // The song
@@ -194,7 +198,8 @@ struct StPlayer {
     bool failed;
 };
 
-// True when the data passes the eagleplayer's module check and its tables fit.
+// True when the data passes the eagleplayer's module check, its tables fit, and so do the track lists, patterns,
+// instruments and samples that its songs reach.
 bool st_probe(const uint8_t* data, size_t size);
 StCreateResult st_create(const uint8_t* data, size_t size);
 void st_destroy(StPlayer* player);

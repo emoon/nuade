@@ -7,7 +7,8 @@
 #include <nuade/players/steveturner.h>
 #include <stdio.h>
 
-// The module is 68k code with fixed table positions; the check of the eagleplayer is specific enough to be sure.
+// The module is 68k code with fixed table positions; the check of the eagleplayer is specific enough to be sure,
+// and the probe walks everything the songs reach.
 static NuadeProbe steveturner_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return st_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;

@@ -22,6 +22,8 @@
 #define ST_MASTER_LEVEL 0xFF // the envelope level of full volume; the eagleplayer fades up to it in its first tick
 #define ST_ONE_SHOT_BYTES 2  // a one-shot sample repeats this many bytes of silence
 #define ST_PITCH_RECORD_BYTES 10
+#define ST_INSTRUMENT_INDEX_BIAS 129 // an instrument index runs from -129 (a chain's next number) to 126
+#define ST_INSTRUMENT_INDEXES 256
 #define ST_SEQUENCE_STEP_LIMIT 0x10000 // control bytes one sequencer call may walk before it gives up
 
 // The pattern, track list and sound parameters of the original.
@@ -139,38 +141,6 @@ static bool st_table_offset(const uint8_t* data, size_t size, size_t pointer_at,
     return true;
 }
 
-// Fills `m` from the image `data`, which the module keeps pointing at; it writes nothing to it.
-static bool st_module_parse(StModule* m, uint8_t* data, size_t size) {
-    if (size > 0x1000000 || !st_check_code(data, size)) {
-        return false;
-    }
-    *m = (StModule) { .data = data, .size = (uint32_t)size, .instruments = ST_CHECK_BYTES };
-    if (!st_table_offset(data, size, 10, ST_SONG_BYTES, &m->songs) || !st_table_offset(data, size, 18, 2, &m->patterns)
-        || !st_table_offset(data, size, 26, 4, &m->samples)) {
-        return false;
-    }
-    m->calc_size = st_calc_size(m);
-    m->subsongs = st_count_subsongs(m);
-    return m->subsongs != 0;
-}
-
-bool st_probe(const uint8_t* data, size_t size) {
-    StModule module;
-    return st_module_parse(&module, (uint8_t*)data, size);
-}
-
-// The eagleplayer corrects one period in the 6802 byte Rainbow Islands module.
-static void st_module_patch(StModule* m) {
-    if (m->calc_size == 6802 && st_u32(m, 3650) == 0x019F019F) {
-        for (uint32_t at = 3650; at <= 3654; at += 4) {
-            m->data[at] = 0x01;
-            m->data[at + 1] = 0xA0;
-            m->data[at + 2] = 0x01;
-            m->data[at + 3] = 0xA0;
-        }
-    }
-}
-
 // The instrument and song records
 
 static StPitchSpec st_read_pitch_spec(const StModule* m, uint32_t at) {
@@ -195,7 +165,7 @@ static StInstrument st_read_instrument(const StModule* m, uint16_t offset) {
         .sustain_ticks = st_u8(m, at + 0x23),
         .sustain_rate = (int8_t)st_u8(m, at + 0x24),
         .period_shift = st_u8(m, at + 0x25),
-        .hold_ticks = st_u16(m, at + 0x26),
+        .hold_phase_ticks = st_u16(m, at + 0x26),
         .hold_rate = (int8_t)st_u8(m, at + 0x28),
         .hold_turn_ticks = st_u8(m, at + 0x29),
         .release_rate = (int8_t)st_u8(m, at + 0x2A),
@@ -226,41 +196,207 @@ static StSongEntry st_read_song(const StModule* m, uint8_t number) {
     return song;
 }
 
-// The sample a sample number selects: the table holds offsets from its own start; a sample is its length in bytes
-// and then its data.
+// Where the sample a sample number selects starts: the table holds offsets from its own start; a sample is its length
+// in bytes and then its data. False if the table entry or the length word lies outside the module.
+static bool st_sample_at(const StModule* m, uint8_t number, uint32_t* at) {
+    const uint32_t entry = m->samples + (uint32_t)number * 4;
+    if (entry > m->size || m->size - entry < 4) {
+        return false;
+    }
+    const uint64_t start = (uint64_t)m->samples + st_u32(m, entry);
+    if (start > m->size || m->size - start < 2) {
+        return false;
+    }
+    *at = (uint32_t)start;
+    return true;
+}
+
 static void st_load_sample(const StModule* m, StVoice* v, uint8_t number) {
-    const uint32_t at = m->samples + st_u32(m, m->samples + (uint32_t)number * 4);
+    uint32_t at;
+    if (!st_sample_at(m, number, &at)) {
+        v->paula.len_words = 0;
+        v->paula.lc = (const int8_t*)m->data + m->size;
+        return;
+    }
     v->paula.len_words = (uint16_t)(st_u16(m, at) >> 1);
-    v->paula.lc = (const int8_t*)m->data + (at + 2 < m->size ? at + 2 : m->size);
+    v->paula.lc = (const int8_t*)m->data + at + 2;
+}
+
+// The module, continued
+
+// What the replayer can reach from the song table: the track lists, the patterns they name, the instruments the
+// patterns start and the chains and samples of those. The probe walks all of it, so that playing never reads past the
+// module for a song that opened.
+typedef struct StWalk {
+    const StModule* module;
+    uint8_t* track_seen;   // one bit per module byte: a track list byte that was read
+    uint8_t* pattern_seen; // the same for pattern bytes
+    bool pattern_done[256];
+    bool instrument_done[ST_INSTRUMENT_INDEXES];
+} StWalk;
+
+static bool st_bit_test_set(uint8_t* bits, uint32_t index) {
+    const bool set = (bits[index >> 3] >> (index & 7) & 1) != 0;
+    bits[index >> 3] |= (uint8_t)(1u << (index & 7));
+    return set;
+}
+
+// The instrument `index` of the table (a signed number: a chain's next instrument counts back from the table),
+// its chain, and its sample.
+static bool st_walk_instrument(StWalk* w, int index) {
+    const StModule* m = w->module;
+    while (!w->instrument_done[index + ST_INSTRUMENT_INDEX_BIAS]) {
+        w->instrument_done[index + ST_INSTRUMENT_INDEX_BIAS] = true;
+        const uint16_t offset = (uint16_t)(index * ST_INSTRUMENT_BYTES);
+        const int64_t at = (int64_t)m->instruments + (int16_t)offset;
+        if (at < 0 || at > (int64_t)m->size - ST_INSTRUMENT_BYTES) {
+            return false;
+        }
+        const StInstrument instrument = st_read_instrument(m, offset);
+        uint32_t sample_at;
+        if (instrument.record_count == 0 || instrument.record_count > ST_PITCH_RECORDS
+            || (instrument.sample < 0x80 && !st_sample_at(m, instrument.sample, &sample_at))) {
+            return false;
+        }
+        if (instrument.next == 0) {
+            break;
+        }
+        index = (int8_t)instrument.next - 1;
+    }
+    return true;
+}
+
+// The pattern table entry `number`: the pattern up to its end byte.
+static bool st_walk_pattern(StWalk* w, uint8_t number) {
+    const StModule* m = w->module;
+    if (w->pattern_done[number]) {
+        return true;
+    }
+    w->pattern_done[number] = true;
+    const uint64_t entry = (uint64_t)m->patterns + (uint32_t)number * 2;
+    if (entry + 2 > m->size) {
+        return false;
+    }
+    const int64_t start = (int64_t)m->patterns + st_s16(m, (uint32_t)entry);
+    if (start < 0 || start >= m->size) {
+        return false;
+    }
+    for (uint64_t at = (uint64_t)start; at < m->size; at++) {
+        if (st_bit_test_set(w->pattern_seen, (uint32_t)at)) {
+            return true;
+        }
+        const uint8_t byte = m->data[at];
+        if (byte >= StPattern_Instrument && byte < StPattern_Portamento) {
+            const int index = byte >= StPattern_Select ? byte - StPattern_Select : byte - StPattern_Instrument;
+            if (!st_walk_instrument(w, index)) {
+                return false;
+            }
+        } else if (byte > StPattern_Portamento + 8 && byte != StPattern_Rest) {
+            return true;
+        }
+    }
+    return true; // the pattern runs to the end of the module (the 17213 byte Paradroid 90 does): the rest reads 0
+}
+
+// A track list up to its stop or end entry.
+static bool st_walk_track(StWalk* w, uint32_t start) {
+    const StModule* m = w->module;
+    for (uint32_t at = start; at < m->size; at++) {
+        if (st_bit_test_set(w->track_seen, at)) {
+            return true;
+        }
+        const uint8_t entry = m->data[at];
+        if (entry >= StTrack_Stop) {
+            return true;
+        }
+        if (!st_walk_pattern(w, entry)) {
+            return false;
+        }
+    }
+    return start < m->size; // a list that runs to the end of the module reads 0 (pattern 0) from there
+}
+
+static bool st_reachable_valid(const StModule* m) {
+    StWalk* w = calloc(1, sizeof(StWalk));
+    const size_t bitmap_bytes = (size_t)m->size / 8 + 1;
+    uint8_t* bitmaps = calloc(2, bitmap_bytes);
+    bool valid = w != nullptr && bitmaps != nullptr;
+    if (valid) {
+        w->module = m;
+        w->track_seen = bitmaps;
+        w->pattern_seen = bitmaps + bitmap_bytes;
+        // Voices that no track list drives start instrument 1 in the first tick, and notes before the first
+        // instrument select play it.
+        valid = st_walk_instrument(w, 0);
+        for (uint32_t number = 1; valid && number <= m->subsongs && number <= UINT8_MAX; number++) {
+            const StSongEntry song = st_read_song(m, (uint8_t)number);
+            for (int i = 0; valid && i < ST_VOICES; i++) {
+                valid = song.track[i] == 0 || st_walk_track(w, st_add_s16(m->songs, (int16_t)song.track[i]));
+            }
+        }
+    }
+    free(bitmaps);
+    free(w);
+    return valid;
+}
+
+// Fills `m` from the image `data`, which the module then points at as it is; the caller replaces that with its own
+// copy before anything writes to it.
+static bool st_module_parse(StModule* m, const uint8_t* data, size_t size) {
+    if (size > 0x1000000 || !st_check_code(data, size)) {
+        return false;
+    }
+    *m = (StModule) { .data = (uint8_t*)data, .size = (uint32_t)size, .instruments = ST_CHECK_BYTES };
+    if (!st_table_offset(data, size, 10, ST_SONG_BYTES, &m->songs) || !st_table_offset(data, size, 18, 2, &m->patterns)
+        || !st_table_offset(data, size, 26, 4, &m->samples)) {
+        return false;
+    }
+    m->calc_size = st_calc_size(m);
+    m->subsongs = st_count_subsongs(m);
+    return m->subsongs != 0 && st_reachable_valid(m);
+}
+
+bool st_probe(const uint8_t* data, size_t size) {
+    StModule module;
+    return st_module_parse(&module, data, size);
+}
+
+// The eagleplayer corrects one period in the 6802 byte Rainbow Islands module.
+static void st_module_patch(StModule* m) {
+    if (m->calc_size == 6802 && st_u32(m, 3650) == 0x019F019F) {
+        for (uint32_t at = 3650; at <= 3654; at += 4) {
+            m->data[at] = 0x01;
+            m->data[at + 1] = 0xA0;
+            m->data[at + 2] = 0x01;
+            m->data[at + 3] = 0xA0;
+        }
+    }
 }
 
 // The voice
 
-static void st_voice_dma_off(StVoice* v) {
-    nuade_paula_channel_dma_off(&v->paula);
-}
-
 // The sound stops sounding, its volume and DMA off. The sequencer goes on.
 static void st_voice_stop_sound(StVoice* v) {
     v->paula.volume = 0;
-    st_voice_dma_off(v);
+    nuade_paula_channel_dma_off(&v->paula);
     v->envelope = StEnvelope_Stopped;
     v->pitch_state = StPitch_Stopped;
     v->portamento = false;
-    v->playing_number = 0;
     v->playing_priority = 0;
 }
 
-// The voice starts a track list: nothing plays, nothing is playing.
+// The voice starts a track list: nothing plays, nothing is playing, and the start slots are cleared.
 static void st_voice_reset(StVoice* v) {
+    v->request_armed = false;
+    v->queued_armed = false;
+    v->queued_delay = 0;
     v->envelope = StEnvelope_Stopped;
     v->pitch_state = StPitch_Stopped;
     v->portamento = false;
     v->sequence = StSequence_Stopped;
-    v->playing_number = 0;
     v->playing_priority = 0;
     v->portamento_shift = 0;
-    st_voice_dma_off(v);
+    nuade_paula_channel_dma_off(&v->paula);
 }
 
 // The vibrato and the period register.
@@ -412,7 +548,6 @@ static uint16_t st_note_period(uint8_t note) {
 static void st_start_instrument(StPlayer* p, StVoice* v, uint16_t offset, uint8_t priority) {
     v->sound = st_read_instrument(&p->module, offset);
     v->playing_priority = priority;
-    v->playing_number = (uint8_t)(offset / ST_INSTRUMENT_BYTES + 1);
     v->envelope = StEnvelope_DmaOff;
     v->pitch_state = StPitch_Stopped;
     v->portamento = false;
@@ -477,7 +612,7 @@ static void st_envelope_run(StPlayer* p, StVoice* v) {
         case StEnvelope_Stopped:
             break;
         case StEnvelope_DmaOff:
-            st_voice_dma_off(v);
+            nuade_paula_channel_dma_off(&v->paula);
             v->envelope = StEnvelope_DmaOn;
             break;
         case StEnvelope_DmaOn:
@@ -502,7 +637,7 @@ static void st_envelope_run(StPlayer* p, StVoice* v) {
         case StEnvelope_Sustain:
             st_envelope_level(v);
             if (--v->phase_ticks == 0) {
-                v->phase_ticks = sound->hold_ticks;
+                v->phase_ticks = sound->hold_phase_ticks;
                 v->turn_ticks = sound->hold_turn_ticks;
                 v->rate = (int8_t)-sound->hold_rate;
                 v->envelope = StEnvelope_Hold;
@@ -525,6 +660,34 @@ static void st_envelope_run(StPlayer* p, StVoice* v) {
             }
             break;
     }
+}
+
+// The start slots
+
+// Every tick counts the queued start down; when it reaches 0 the slot starts instrument 1 if no sound of a higher
+// priority plays, and is spent whether it did or not.
+static void st_queued_start_run(StPlayer* p, StVoice* v) {
+    if (--v->queued_delay != 0 || !v->queued_armed) {
+        return;
+    }
+    if (v->playing_priority == 0) {
+        st_start_instrument(p, v, 0, 0);
+        v->instrument_shown = 0;
+    }
+    v->queued_armed = false;
+}
+
+// The request slot starts instrument 1 once, with the priority of the instrument.
+static void st_request_run(StPlayer* p, StVoice* v) {
+    if (!v->request_armed) {
+        return;
+    }
+    const uint8_t priority = st_read_instrument(&p->module, 0).priority;
+    if (priority >= v->playing_priority) {
+        st_start_instrument(p, v, 0, priority);
+        v->instrument_shown = 0;
+    }
+    v->request_armed = false;
 }
 
 // The sequencer
@@ -663,7 +826,7 @@ static void st_sync(StPlayer* p, NuadeVoices* voices) {
 StCreateResult st_create(const uint8_t* data, size_t size) {
     StCreateResult result = { .status = StStatus_InvalidData };
     StModule probe;
-    if (!st_module_parse(&probe, (uint8_t*)data, size)) {
+    if (!st_module_parse(&probe, data, size)) {
         return result;
     }
     StPlayer* player = calloc(1, sizeof(StPlayer));
@@ -702,6 +865,8 @@ bool st_start(StPlayer* player, int subsong, NuadeVoices* voices) {
     memset(player, 0, sizeof(*player));
     player->module = module;
     for (int i = 0; i < ST_VOICES; i++) {
+        player->voices[i].request_armed = true;
+        player->voices[i].queued_armed = true;
         player->voices[i].note = -1;
         player->voices[i].instrument_shown = -1;
     }
@@ -715,6 +880,7 @@ StTickResult st_tick(StPlayer* player, NuadeVoices* voices) {
     player->speed_count--;
     for (int i = 0; i < ST_VOICES; i++) {
         StVoice* v = &player->voices[i];
+        st_queued_start_run(player, v);
         st_sequence_run(player, v);
         st_envelope_run(player, v);
         st_pitch_run(v);
@@ -727,6 +893,10 @@ StTickResult st_tick(StPlayer* player, NuadeVoices* voices) {
         const uint8_t song = player->restart;
         player->restart = 0;
         st_song_start(player, song);
+    } else {
+        for (int i = 0; i < ST_VOICES; i++) {
+            st_request_run(player, &player->voices[i]);
+        }
     }
     st_sync(player, voices);
     return (StTickResult) { .looped = player->looped, .ended = player->failed };

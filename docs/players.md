@@ -4,7 +4,7 @@ The players UADE ships (its `players/` directory, not counting the `ENV/` config
 them. A UADE player counts as ported when a native nuade player plays its modules; each port is A/B tested
 against UADE. nuade player ids are the directories in `players/`.
 
-Summary: 134 ported (by 123 nuade players), 11 not ported, 31 skipped on purpose.
+Summary: 135 ported (by 124 nuade players), 10 not ported, 31 skipped on purpose.
 
 ## Ported
 
