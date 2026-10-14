@@ -73,3 +73,6 @@ license; the eagleplayers state no license.
 - `players/steveturner/steveturner.c`: the period table, and the player itself, translated from the Steve Turner player
   module V1.3 ("Steve Turner_v4.asm", engine (c) 1989-90 Steve Turner, adapted by Mr.Larmer/Wanted Team; from the game
   Off Road Racer).
+- `players/futureplayer/futureplayer.c`: the period table, and the player itself, translated from the Future Player
+  replayer module V1.0 ("Future Player_v1.asm", (c) 1988-89 Paul van der Valk, adapted by Wanted Team; Hybris replayer
+  (c) 1989 Discovery Software).

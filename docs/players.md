@@ -4,7 +4,7 @@ The players UADE ships (its `players/` directory, not counting the `ENV/` config
 them. A UADE player counts as ported when a native nuade player plays its modules; each port is A/B tested
 against UADE. nuade player ids are the directories in `players/`.
 
-Summary: 133 ported (by 122 nuade players), 12 not ported, 31 skipped on purpose.
+Summary: 134 ported (by 123 nuade players), 11 not ported, 31 skipped on purpose.
 
 ## Ported
 
@@ -47,6 +47,7 @@ Summary: 133 ported (by 122 nuade players), 12 not ported, 31 skipped on purpose
 - [x] FutureComposer-BSI → `fcbsi`
 - [x] FutureComposer1.3 → `futurecomposer`
 - [x] FutureComposer1.4 → `futurecomposer`
+- [x] FuturePlayer → `futureplayer`
 - [x] GlueMon → `gluemon`
 - [x] GMC → `gmc`
 - [x] HowieDavies → `howiedavies`
@@ -144,8 +145,6 @@ Summary: 133 ported (by 122 nuade players), 12 not ported, 31 skipped on purpose
 - [x] ZoundMonitor → `zoundmonitor`
 
 ## Not ported
-
-- [ ] FuturePlayer
 
 Blocked, no module to test with:
 
