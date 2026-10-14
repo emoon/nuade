@@ -168,7 +168,6 @@ Non-Amiga formats, open:
 Other formats:
 
 - [ ] StarTrekker AM (UADE plays these modules through AudioSculpture)
-- [ ] Symphonie (no UADE player)
 
 ## Skipped on purpose
 
@@ -183,6 +182,7 @@ libopenmpt plays the format:
 
 - PTK-Prowiz, NoiseTracker, Soundtracker-IV, UltimateSoundtracker (the MOD family)
 - MED, Octa-MED, Octa-MED-Ss
+- Symphonie (no UADE player; libopenmpt 0.6.9 reads `.symmod`, so it is not ported a second time)
 - DIGI-Booster
 - ImagesMusicSystem
 - ChipTracker
