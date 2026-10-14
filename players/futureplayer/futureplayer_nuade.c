@@ -9,7 +9,8 @@
 
 #define FP_STRING_CAPACITY 256
 
-// The eagleplayer's check (a one-hunk executable with the player's stub) plus a walk of the hunk and the song tables.
+// The eagleplayer's check (a one-hunk executable with the player's stub) plus a walk of the hunk, the song tables and
+// the tracks.
 static NuadeProbe futureplayer_probe(const uint8_t* data, size_t size, const char* filename) {
     (void)filename;
     return fp_probe(data, size) ? NuadeProbe_Supported : NuadeProbe_Unsupported;

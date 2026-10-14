@@ -29,19 +29,37 @@
 #define FP_SONG_BYTES 8
 #define FP_SONG_HEADER_BYTES 0x1A
 #define FP_SEQUENCE_BYTES 12
+#define FP_PARAMS_BYTES 0x3A // the parameters of an instrument: the fields and four modulation records
+#define FP_SAMPLE_BYTES 0x12
 #define FP_MAX_HUNK_BYTES 0x1000000
-#define FP_STACK_LEVELS 8
 #define FP_END_OF_ARPEGGIO 0x80
 #define FP_FADE_FULL 0xFF
 
+// Where the fields of the module's records lie. A sequence or modulation record is 12 bytes or more; an instrument
+// points at a sample set and at its parameters; a sample set holds a flag and the sample record or the sequence of
+// them; an arpeggio is a table of steps.
+enum {
+    FpOffset_RecordData = 8,    // sequence and modulation records: address of the data
+    FpOffset_RecordLength = 12, // modulation records: entries in the data
+    FpOffset_InstrumentSet = 8,
+    FpOffset_InstrumentParams = 12,
+    FpOffset_SetIsSequence = 8,
+    FpOffset_SetTarget = 10,
+    FpOffset_SampleAddress = 8,
+    FpOffset_SampleBytes = 12,
+    FpOffset_SampleFlags = 0x10,
+    FpOffset_SampleNoteOffset = 0x11,
+    FpOffset_ArpeggioSteps = 8,
+};
+
 // The tables of the replayer that the module's pointers can reach, as they lie after the hunk.
 enum {
-    FpStatic_Arpeggio = 0,    // 8 bytes of padding, then the arpeggio of one step: 0, end
+    FpStatic_Arpeggio = 0,    // the arpeggio of one step, 0, then its end
     FpStatic_Silence = 12,    // 4 bytes
-    FpStatic_Instrument = 16, // sample set at +8, parameters at +12
-    FpStatic_Params = 32,     // 58 bytes of zeros
-    FpStatic_SampleSet = 96,  // sample at +10
-    FpStatic_Sample = 112,    // address at +8, length at +12
+    FpStatic_Instrument = 16, // the instrument that voices start with
+    FpStatic_Params = 32,     // its parameters: 58 bytes of zeros
+    FpStatic_SampleSet = 96,  // its sample set
+    FpStatic_Sample = 112,    // its sample: the silent buffer
     FpStatic_Size = 132,
 };
 
@@ -142,7 +160,7 @@ static FpSongHeader fp_read_song_header(const FpModule* m, uint32_t at) {
 
 // A sequence or modulation record: its data is at the address in +8.
 static uint32_t fp_record_data(const FpModule* m, uint32_t sequence) {
-    return fp_u32(m, sequence + 8);
+    return fp_u32(m, sequence + FpOffset_RecordData);
 }
 
 static FpParams fp_read_params(const FpModule* m, uint32_t at) {
@@ -172,30 +190,30 @@ static FpParams fp_read_params(const FpModule* m, uint32_t at) {
 }
 
 static FpSample fp_read_sample(const FpModule* m, uint32_t at) {
-    const uint8_t flags = fp_u8(m, at + 0x10);
-    return (FpSample) { .address = fp_u32(m, at + 8),
-                        .bytes = fp_u16(m, at + 12),
+    const uint8_t flags = fp_u8(m, at + FpOffset_SampleFlags);
+    return (FpSample) { .address = fp_u32(m, at + FpOffset_SampleAddress),
+                        .bytes = fp_u16(m, at + FpOffset_SampleBytes),
                         .dynamic = (flags & 1) != 0,
                         .one_shot = (flags & 2) != 0,
-                        .note_offset = fp_u8(m, at + 0x11) };
+                        .note_offset = fp_u8(m, at + FpOffset_SampleNoteOffset) };
 }
 
-// The instrument record: sample set at +8, parameters at +12. A sample set holds a flag at +8 and, at +10, the sample
-// or (flag set) a sequence of samples.
+// The instrument record and its sample set: the set's target is the sample or, when its flag is set, a sequence of
+// samples.
 static uint32_t fp_instrument_set(const FpModule* m, uint32_t instrument) {
-    return fp_u32(m, instrument + 8);
+    return fp_u32(m, instrument + FpOffset_InstrumentSet);
 }
 
 static uint32_t fp_instrument_params(const FpModule* m, uint32_t instrument) {
-    return fp_u32(m, instrument + 12);
+    return fp_u32(m, instrument + FpOffset_InstrumentParams);
 }
 
 static bool fp_set_is_sequence(const FpModule* m, uint32_t set) {
-    return fp_u8(m, set + 8) != 0;
+    return fp_u8(m, set + FpOffset_SetIsSequence) != 0;
 }
 
 static uint32_t fp_set_target(const FpModule* m, uint32_t set) {
-    return fp_u32(m, set + 10);
+    return fp_u32(m, set + FpOffset_SetTarget);
 }
 
 // The period of table entry `index` (only the first entries are the table; the rest of the 7 bits read other data).
@@ -217,9 +235,46 @@ static bool fp_in_hunk(const FpModule* m, uint32_t address, uint32_t bytes) {
     return address >= FP_BASE_ADDRESS && offset <= m->hunk_size && m->hunk_size - offset >= bytes;
 }
 
+// The relocation blocks that follow the loaded data of the file, then the end of the hunk: each long they name gets the
+// load address added.
+static bool fp_relocate(const uint8_t* file, size_t size, size_t at, uint32_t memory, uint8_t* image) {
+    while (at + 4 <= size) {
+        const uint32_t type = nuade_read_be32(file + at) & 0x3FFFFFFF;
+        at += 4;
+        if (type == FP_HUNK_END) {
+            return true;
+        }
+        if (type != FP_HUNK_RELOC32) {
+            return false;
+        }
+        for (;;) {
+            if (at + 4 > size) {
+                return false;
+            }
+            const uint32_t count = nuade_read_be32(file + at);
+            at += 4;
+            if (count == 0) {
+                break;
+            }
+            if (at + 4 > size || nuade_read_be32(file + at) != 0 || count > (size - at - 4) / 4) {
+                return false;
+            }
+            at += 4;
+            for (uint32_t i = 0; i < count; i++, at += 4) {
+                const uint32_t offset = nuade_read_be32(file + at);
+                if (offset > memory - 4) {
+                    return false;
+                }
+                fp_put32(image + offset, nuade_read_be32(image + offset) + FP_BASE_ADDRESS);
+            }
+        }
+    }
+    return false;
+}
+
 // The module's hunk, relocated. `file` stays as it is; the image is a new buffer.
 static bool fp_hunk_parse(const uint8_t* file, size_t size, uint8_t** image, FpModule* m) {
-    if (size < FP_HEADER_BYTES + 8 || size > FP_MAX_HUNK_BYTES || nuade_read_be32(file) != FP_HUNK_HEADER
+    if (size < FP_HEADER_BYTES + FP_CODE_BYTES || size > FP_MAX_HUNK_BYTES || nuade_read_be32(file) != FP_HUNK_HEADER
         || nuade_read_be32(file + 4) != 0 || nuade_read_be32(file + 8) != 1 || nuade_read_be32(file + 12) != 0
         || nuade_read_be32(file + 16) != 0) {
         return false;
@@ -230,7 +285,7 @@ static bool fp_hunk_parse(const uint8_t* file, size_t size, uint8_t** image, FpM
     }
     const uint32_t memory = (nuade_read_be32(file + 20) & 0x3FFFFFFF) * 4;
     const uint32_t loaded = nuade_read_be32(file + 28) * 4;
-    if (loaded > size - FP_HEADER_BYTES || loaded > memory || memory > FP_MAX_HUNK_BYTES
+    if (loaded > size - FP_HEADER_BYTES || loaded < FP_CODE_BYTES || loaded > memory || memory > FP_MAX_HUNK_BYTES
         || memory < FP_SONG_TABLE + FP_SONG_BYTES) {
         return false;
     }
@@ -244,45 +299,7 @@ static bool fp_hunk_parse(const uint8_t* file, size_t size, uint8_t** image, FpM
         return false;
     }
     memcpy(buffer, code, loaded);
-    // The relocation blocks, then the end of the hunk.
-    size_t at = FP_HEADER_BYTES + loaded;
-    bool ended = false;
-    while (!ended && at + 4 <= size) {
-        const uint32_t type = nuade_read_be32(file + at) & 0x3FFFFFFF;
-        at += 4;
-        if (type == FP_HUNK_END) {
-            ended = true;
-        } else if (type == FP_HUNK_RELOC32) {
-            for (;;) {
-                if (at + 4 > size) {
-                    free(buffer);
-                    return false;
-                }
-                const uint32_t count = nuade_read_be32(file + at);
-                at += 4;
-                if (count == 0) {
-                    break;
-                }
-                if (at + 4 > size || nuade_read_be32(file + at) != 0 || count > (size - at - 4) / 4) {
-                    free(buffer);
-                    return false;
-                }
-                at += 4;
-                for (uint32_t i = 0; i < count; i++, at += 4) {
-                    const uint32_t offset = nuade_read_be32(file + at);
-                    if (offset > memory - 4) {
-                        free(buffer);
-                        return false;
-                    }
-                    fp_put32(buffer + offset, nuade_read_be32(buffer + offset) + FP_BASE_ADDRESS);
-                }
-            }
-        } else {
-            free(buffer);
-            return false;
-        }
-    }
-    if (!ended) {
+    if (!fp_relocate(file, size, FP_HEADER_BYTES + loaded, memory, buffer)) {
         free(buffer);
         return false;
     }
@@ -305,28 +322,141 @@ static bool fp_hunk_parse(const uint8_t* file, size_t size, uint8_t** image, FpM
 static void fp_statics_init(FpModule* m, uint8_t* image) {
     const uint32_t base = m->image_size - FpStatic_Size;
     uint8_t* statics = image + base;
-    statics[FpStatic_Arpeggio + 8] = 0;
-    statics[FpStatic_Arpeggio + 9] = FP_END_OF_ARPEGGIO;
-    statics[FpStatic_Arpeggio + 10] = FP_END_OF_ARPEGGIO;
     const uint32_t address = FP_BASE_ADDRESS + base;
-    fp_put32(statics + FpStatic_Instrument + 8, address + FpStatic_SampleSet);
-    fp_put32(statics + FpStatic_Instrument + 12, address + FpStatic_Params);
-    fp_put32(statics + FpStatic_SampleSet + 10, address + FpStatic_Sample);
-    fp_put32(statics + FpStatic_Sample + 8, address + FpStatic_Silence);
-    fp_put16(statics + FpStatic_Sample + 12, 2);
-    fp_put16(statics + FpStatic_Sample + 14, 2);
+    uint8_t* arpeggio = statics + FpStatic_Arpeggio + FpOffset_ArpeggioSteps;
+    arpeggio[0] = 0;
+    arpeggio[1] = FP_END_OF_ARPEGGIO;
+    arpeggio[2] = FP_END_OF_ARPEGGIO;
+    fp_put32(statics + FpStatic_Instrument + FpOffset_InstrumentSet, address + FpStatic_SampleSet);
+    fp_put32(statics + FpStatic_Instrument + FpOffset_InstrumentParams, address + FpStatic_Params);
+    fp_put32(statics + FpStatic_SampleSet + FpOffset_SetTarget, address + FpStatic_Sample);
+    fp_put32(statics + FpStatic_Sample + FpOffset_SampleAddress, address + FpStatic_Silence);
+    fp_put16(statics + FpStatic_Sample + FpOffset_SampleBytes, 2);
 }
 
-// A song fits when its header and the byte streams of its tracks lie in the hunk.
-static bool fp_song_valid(const FpModule* m, FpSong song) {
+// What the probe walks: the byte streams of the tracks (and the sub-sequences they call or jump to) and the
+// instruments they select. A stream position is decoded once.
+typedef struct FpWalk {
+    const FpModule* module;
+    uint8_t* seen;     // a bit per byte of the hunk: a position where a stream entry was decoded
+    uint32_t* pending; // streams to walk
+    size_t pending_count;
+    size_t pending_capacity;
+} FpWalk;
+
+static bool fp_walk_push(FpWalk* w, uint32_t address) {
+    if (w->pending_count == w->pending_capacity) {
+        const size_t capacity = w->pending_capacity != 0 ? w->pending_capacity * 2 : 64;
+        uint32_t* grown = realloc(w->pending, capacity * sizeof(*grown));
+        if (grown == nullptr) {
+            return false;
+        }
+        w->pending = grown;
+        w->pending_capacity = capacity;
+    }
+    w->pending[w->pending_count++] = address;
+    return true;
+}
+
+// An instrument record, its sample set, its parameters and (for a single sample) its sample record lie in the hunk.
+static bool fp_instrument_valid(const FpModule* m, uint32_t instrument) {
+    if (!fp_in_hunk(m, instrument, FpOffset_InstrumentParams + 4)) {
+        return false;
+    }
+    const uint32_t set = fp_instrument_set(m, instrument);
+    if (!fp_in_hunk(m, set, FpOffset_SetTarget + 4)
+        || !fp_in_hunk(m, fp_instrument_params(m, instrument), FP_PARAMS_BYTES)) {
+        return false;
+    }
+    return fp_set_is_sequence(m, set) || fp_in_hunk(m, fp_set_target(m, set), FP_SAMPLE_BYTES);
+}
+
+// A sequence record and the start of its data lie in the hunk; the data is walked later.
+static bool fp_walk_sequence(FpWalk* w, uint32_t record) {
+    const FpModule* m = w->module;
+    return fp_in_hunk(m, record, FP_SEQUENCE_BYTES) && fp_in_hunk(m, fp_record_data(m, record), 2)
+           && fp_walk_push(w, fp_record_data(m, record));
+}
+
+// The entries of one stream, as fp_sequence_run decodes them, up to where the track ends or leaves for another
+// stream. Every entry (two bytes, then the operand of a command) must lie in the hunk.
+static bool fp_walk_stream(FpWalk* w, uint32_t pos) {
+    const FpModule* m = w->module;
+    for (;;) {
+        if (!fp_in_hunk(m, pos, 2)) {
+            return false;
+        }
+        const uint32_t offset = pos - FP_BASE_ADDRESS;
+        if ((w->seen[offset >> 3] >> (offset & 7) & 1) != 0) {
+            return true;
+        }
+        w->seen[offset >> 3] |= (uint8_t)(1u << (offset & 7));
+        const uint8_t first = m->data[offset];
+        if (first < 0x80) {
+            pos += 2; // a note and its duration
+            continue;
+        }
+        const uint32_t operand = pos + 2;
+        switch (first & 0x3F) {
+            case FpCommand_End:
+            case FpCommand_SongEnd:
+            case FpCommand_LoopForever:
+                return true;
+            case FpCommand_Instrument:
+                if (!fp_in_hunk(m, operand, 4) || !fp_instrument_valid(m, fp_u32(m, operand))) {
+                    return false;
+                }
+                pos += 6;
+                break;
+            case FpCommand_Arpeggio:
+                if (!fp_in_hunk(m, operand, 4) || !fp_in_hunk(m, fp_u32(m, operand) + FpOffset_ArpeggioSteps, 1)) {
+                    return false;
+                }
+                pos += 6;
+                break;
+            case FpCommand_PortamentoSpeed:
+                if (!fp_in_hunk(m, operand, 2)) {
+                    return false;
+                }
+                pos += 4;
+                break;
+            case FpCommand_Call:
+                if (!fp_in_hunk(m, operand, 4) || !fp_walk_sequence(w, fp_u32(m, operand))) {
+                    return false;
+                }
+                pos += 6;
+                break;
+            case FpCommand_Goto:
+                return fp_in_hunk(m, operand, 4) && fp_walk_sequence(w, fp_u32(m, operand));
+            case FpCommand_ArpeggioDefault:
+            case FpCommand_Nop:
+            case FpCommand_LoopStart:
+            case FpCommand_LoopEnd:
+            case FpCommand_Transpose1:
+            case FpCommand_Transpose2:
+            case FpCommand_Nop2:
+                pos += 2;
+                break;
+            default:
+                return true; // a command the replayer cannot run: the song ends there
+        }
+    }
+}
+
+// A song fits when its header lies in the hunk and everything its tracks reach is valid.
+static bool fp_song_valid(FpWalk* w, FpSong song) {
+    const FpModule* m = w->module;
     if (!fp_in_hunk(m, song.header, FP_SONG_HEADER_BYTES + 2)) {
         return false;
     }
     const FpSongHeader header = fp_read_song_header(m, song.header);
     for (int i = 0; i < FP_VOICES; i++) {
-        if (header.track[i] != 0
-            && (!fp_in_hunk(m, header.track[i], FP_SEQUENCE_BYTES)
-                || !fp_in_hunk(m, fp_record_data(m, header.track[i]), 1))) {
+        if (header.track[i] != 0 && !fp_walk_sequence(w, header.track[i])) {
+            return false;
+        }
+    }
+    while (w->pending_count != 0) {
+        if (!fp_walk_stream(w, w->pending[--w->pending_count])) {
             return false;
         }
     }
@@ -338,17 +468,18 @@ static bool fp_module_parse(const uint8_t* file, size_t size, uint8_t** image, F
         return false;
     }
     m->data = *image;
+    FpWalk walk = { .module = m, .seen = calloc(m->hunk_size / 8 + 1, 1) };
     // The songs: the table ends at the first zero header address.
     uint32_t count = 0;
-    while (fp_u32(m, m->song_table + count * FP_SONG_BYTES) != 0 && count < 256) {
-        if (!fp_song_valid(m, fp_read_song(m, count))) {
-            free(*image);
-            return false;
-        }
+    bool valid = walk.seen != nullptr;
+    while (valid && fp_u32(m, m->song_table + count * FP_SONG_BYTES) != 0 && count < 256) {
+        valid = fp_song_valid(&walk, fp_read_song(m, count));
         count++;
     }
+    free(walk.seen);
+    free(walk.pending);
     m->subsongs = count;
-    if (count == 0) {
+    if (!valid || count == 0) {
         free(*image);
         return false;
     }
@@ -436,13 +567,9 @@ static void fp_select_instrument(FpPlayer* p, FpVoice* v, uint32_t instrument) {
 }
 
 typedef enum FpCommandResult {
-    FpCommand_Continue,
-    FpCommand_Return, // the sequencer call is over
+    FpCommandResult_Continue,
+    FpCommandResult_Return, // the sequencer call is over
 } FpCommandResult;
-
-static uint32_t fp_stack_index(const FpVoice* v) {
-    return v->stack_depth / 4;
-}
 
 // A track command; `pos` is the track position after its operand byte.
 static FpCommandResult fp_command_run(FpPlayer* p, int index, uint8_t command, uint8_t operand, uint32_t* pos) {
@@ -450,19 +577,19 @@ static FpCommandResult fp_command_run(FpPlayer* p, int index, uint8_t command, u
     FpVoice* v = &p->voices[index];
     switch (command) {
         case FpCommand_End:
-            if (v->stack_depth != 0) {
-                v->stack_depth -= 4;
-                *pos = v->return_pos[fp_stack_index(v)];
-                return FpCommand_Continue;
+            if (v->stack_level != 0) {
+                v->stack_level--;
+                *pos = v->return_pos[v->stack_level];
+                return FpCommandResult_Continue;
             }
             fp_voice_end(p, index);
-            return FpCommand_Return;
+            return FpCommandResult_Return;
         case FpCommand_SongEnd:
             if (p->prerun) {
-                return FpCommand_Continue;
+                return FpCommandResult_Continue;
             }
             fp_voice_end(p, index);
-            return FpCommand_Return;
+            return FpCommandResult_Return;
         case FpCommand_Instrument:
             fp_select_instrument(p, v, fp_u32(m, *pos));
             *pos += 4;
@@ -480,27 +607,27 @@ static FpCommandResult fp_command_run(FpPlayer* p, int index, uint8_t command, u
             *pos += 2;
             break;
         case FpCommand_Call:
-            v->return_pos[fp_stack_index(v)] = *pos + 4;
-            if (v->stack_depth != 4 * (FP_STACK_LEVELS - 1)) {
-                v->stack_depth += 4;
+            v->return_pos[v->stack_level] = *pos + 4;
+            if (v->stack_level != FP_STACK_LEVELS - 1) {
+                v->stack_level++;
             }
-            v->loop_count[fp_stack_index(v)] = 1;
+            v->loop_count[v->stack_level] = 1;
             *pos = fp_record_data(m, fp_u32(m, *pos));
             break;
         case FpCommand_Goto:
             *pos = fp_record_data(m, fp_u32(m, *pos));
             break;
         case FpCommand_LoopStart:
-            v->loop_start[fp_stack_index(v)] = *pos;
-            v->loop_count[fp_stack_index(v)] = operand;
+            v->loop_start[v->stack_level] = *pos;
+            v->loop_count[v->stack_level] = operand;
             break;
         case FpCommand_LoopEnd:
-            if (--v->loop_count[fp_stack_index(v)] != 0) {
-                *pos = v->loop_start[fp_stack_index(v)];
+            if (--v->loop_count[v->stack_level] != 0) {
+                *pos = v->loop_start[v->stack_level];
             }
             break;
         case FpCommand_LoopForever:
-            *pos = v->loop_start[fp_stack_index(v)];
+            *pos = v->loop_start[v->stack_level];
             break;
         case FpCommand_Transpose1:
             v->transpose1 = operand;
@@ -514,9 +641,9 @@ static FpCommandResult fp_command_run(FpPlayer* p, int index, uint8_t command, u
         default:
             // The jump table ends at 15 entries; the replayer would run whatever lies after it.
             p->failed = true;
-            return FpCommand_Return;
+            return FpCommandResult_Return;
     }
-    return FpCommand_Continue;
+    return FpCommandResult_Continue;
 }
 
 // Read the track up to the next note or rest.
@@ -540,7 +667,7 @@ static void fp_sequence_run(FpPlayer* p, int index) {
                 return;
             }
             const uint8_t operand = fp_u8(m, pos++);
-            if (fp_command_run(p, index, (uint8_t)first & 0x3F, operand, &pos) == FpCommand_Return) {
+            if (fp_command_run(p, index, (uint8_t)first & 0x3F, operand, &pos) == FpCommandResult_Return) {
                 return;
             }
             continue;
@@ -599,7 +726,7 @@ static uint32_t fp_sample_select(FpVoice* v, const FpModule* m, uint32_t set) {
 // The period of the note: the arpeggio step added to the note, or the slide towards it.
 static uint16_t fp_pitch(FpVoice* v, const FpModule* m, uint8_t note) {
     if (v->portamento_speed == 0) {
-        const uint32_t table = v->arpeggio + 8;
+        const uint32_t table = v->arpeggio + FpOffset_ArpeggioSteps;
         uint16_t pos = v->arpeggio_pos;
         uint8_t step = fp_u8(m, table + (uint32_t)(int32_t)(int16_t)pos);
         if (step == FP_END_OF_ARPEGGIO) {
@@ -619,8 +746,19 @@ static uint16_t fp_pitch(FpVoice* v, const FpModule* m, uint8_t note) {
     return (current < speed || current - speed <= target) ? target : (uint16_t)(current - speed);
 }
 
+// Step to the next entry of the table; at its end the table starts over, or stops (flag bit 7).
+static void fp_modulation_step(FpVoice* v, const FpModule* m, FpModulationKind kind, const FpModulation* mod,
+                               uint16_t pos) {
+    pos++;
+    if (pos >= fp_u16(m, mod->table + FpOffset_RecordLength)) {
+        pos = (mod->flags & 0x80) != 0 ? 0xFFFF : 0;
+    }
+    v->modulation_pos[kind] = pos;
+}
+
 // The modulation of the period: a table whose entries (shifted, maybe negated) are added to it.
-static uint16_t fp_period_modulate(FpVoice* v, const FpModule* m, const FpParams* params, int kind, uint16_t period) {
+static uint16_t fp_period_modulate(FpVoice* v, const FpModule* m, const FpParams* params, FpModulationKind kind,
+                                   uint16_t period) {
     const FpModulation* mod = &params->modulation[kind];
     if (mod->table == 0) {
         return period;
@@ -638,16 +776,13 @@ static uint16_t fp_period_modulate(FpVoice* v, const FpModule* m, const FpParams
         entry = (int16_t)-entry;
     }
     period = (uint16_t)(period + fp_shift_left((uint16_t)entry, mod->shift));
-    pos++;
-    if (pos >= fp_u16(m, mod->table + 12)) {
-        pos = (mod->flags & 0x80) != 0 ? 0xFFFF : 0;
-    }
-    v->modulation_pos[kind] = pos;
+    fp_modulation_step(v, m, kind, mod, pos);
     return period;
 }
 
 // The modulation of the sample address of a dynamic sample.
-static uint32_t fp_address_modulate(FpVoice* v, const FpModule* m, const FpParams* params, int kind, uint32_t address) {
+static uint32_t fp_address_modulate(FpVoice* v, const FpModule* m, const FpParams* params, FpModulationKind kind,
+                                    uint32_t address) {
     const FpModulation* mod = &params->modulation[kind];
     if (mod->table == 0) {
         return address;
@@ -666,11 +801,7 @@ static uint32_t fp_address_modulate(FpVoice* v, const FpModule* m, const FpParam
     }
     const uint16_t entry = fp_u8(m, fp_record_data(m, mod->table) + pos);
     address += fp_shift_left(entry, (uint8_t)(mod->shift + 1));
-    pos++;
-    if (pos >= fp_u16(m, mod->table + 12)) {
-        pos = (mod->flags & 0x80) != 0 ? 0xFFFF : 0;
-    }
-    v->modulation_pos[kind] = pos;
+    fp_modulation_step(v, m, kind, mod, pos);
     return address;
 }
 
@@ -842,7 +973,7 @@ static void fp_song_init(FpPlayer* p, FpSong song) {
             FpVoice* v = &p->voices[i];
             v->track_pos = fp_record_data(m, header.track[i]);
             v->return_pos[0] = v->track_pos;
-            v->stack_depth = 0;
+            v->stack_level = 0;
             v->stopped = false;
             v->finished = false;
         }
@@ -920,17 +1051,15 @@ bool fp_start(FpPlayer* player, int subsong, NuadeVoices* voices) {
     player->fade_speed = song.fade_speed;
     if (song.fade_speed == 0) {
         fp_set_master(player, FP_FADE_FULL);
-        player->fade_mode = 0;
-    } else {
-        player->fade_mode = 1;
     }
+    player->fading_in = song.fade_speed != 0;
     fp_song_init(player, song);
     player->prerun = true;
     for (uint32_t i = 0; i < song.prerun_ticks; i++) {
         fp_sequence_all(player);
     }
     player->prerun = false;
-    if (player->fade_mode == 0) {
+    if (!player->fading_in) {
         fp_set_master(player, FP_FADE_FULL);
     }
     player->looped = false;
@@ -940,12 +1069,12 @@ bool fp_start(FpPlayer* player, int subsong, NuadeVoices* voices) {
 
 FpTickResult fp_tick(FpPlayer* player, NuadeVoices* voices) {
     player->looped = false;
-    if (player->fade_mode != 0) {
+    if (player->fading_in) {
         // Fading in: the level rises by the speed each tick up to full
         const uint32_t level = (uint32_t)player->fade_level + player->fade_speed;
         if (player->fade_speed == 0 || level > 0xFF) {
             fp_set_master(player, FP_FADE_FULL);
-            player->fade_mode = 0;
+            player->fading_in = false;
         } else {
             fp_set_master(player, (uint8_t)level);
         }

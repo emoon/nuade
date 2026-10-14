@@ -25,6 +25,9 @@ extern "C" {
 // The addresses the module's pointers hold: the hunk loaded at this address, as if relocated.
 #define FP_BASE_ADDRESS 0x10000u
 
+// Levels of the call stack of sub-sequences and loops that a voice's track keeps.
+#define FP_STACK_LEVELS 8
+
 // Instruments a player numbers for the display; a module has far fewer.
 #define FP_MAX_INSTRUMENTS 256
 
@@ -138,10 +141,10 @@ typedef struct FpVoice {
     uint16_t arpeggio_pos;
     uint16_t portamento_speed; // 0: notes set the period; else the period slides to the note by this much a tick
     // The call stack of sub-sequences and loops
-    uint16_t stack_depth; // 4 per level
-    uint32_t return_pos[8];
-    uint8_t loop_count[8];
-    uint32_t loop_start[8];
+    uint8_t stack_level; // the level the track runs at, below FP_STACK_LEVELS
+    uint32_t return_pos[FP_STACK_LEVELS];
+    uint8_t loop_count[FP_STACK_LEVELS];
+    uint32_t loop_start[FP_STACK_LEVELS];
 
     // The sound
     int16_t detune;
@@ -172,9 +175,9 @@ struct FpPlayer {
     // The song
     uint8_t tempo; // ticks per step of the track
     uint8_t tempo_count;
-    uint16_t timer;    // CIA timer value of one tick
-    bool prerun;       // the song start runs the sequencers ahead
-    uint8_t fade_mode; // 0: none, 1: fading in
+    uint16_t timer; // CIA timer value of one tick
+    bool prerun;    // the song start runs the sequencers ahead
+    bool fading_in;
     uint8_t fade_level;
     uint8_t fade_speed;
     bool voice_present[FP_VOICES]; // the song has a track for the voice
@@ -184,7 +187,8 @@ struct FpPlayer {
     bool failed;
 };
 
-// True when the data is a Future Player module: the eagleplayer's check, and the hunk and the song tables fit.
+// True when the data is a Future Player module: the eagleplayer's check, the hunk and the song tables fit, and so do
+// the track streams of every song and the instruments they select.
 bool fp_probe(const uint8_t* data, size_t size);
 FpCreateResult fp_create(const uint8_t* data, size_t size);
 void fp_destroy(FpPlayer* player);
