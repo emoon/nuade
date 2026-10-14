@@ -4,7 +4,7 @@ The players UADE ships (its `players/` directory, not counting the `ENV/` config
 them. A UADE player counts as ported when a native nuade player plays its modules; each port is A/B tested
 against UADE. nuade player ids are the directories in `players/`.
 
-Summary: 135 ported (by 124 nuade players), 10 not ported, 31 skipped on purpose.
+Summary: 136 ported (by 124 nuade players), 9 not ported, 31 skipped on purpose.
 
 ## Ported
 
@@ -127,6 +127,7 @@ Summary: 135 ported (by 124 nuade players), 10 not ported, 31 skipped on purpose
 - [x] SpeedyA1System → `speedya1system`
 - [x] SpeedySystem → `speedysystem`
 - [x] SteveBarrett → `stevebarrett`
+- [x] StarTrekker AM → `audiosculpture` (UADE plays these modules through AudioSculpture; 42 of the 47 corpus modules open with it)
 - [x] SteveTurner → `steveturner`
 - [x] SUN-Tronic → `suntronic`
 - [x] Synth → `synthesis` (Synthesis)
@@ -163,10 +164,6 @@ Non-Amiga formats, open:
 - [ ] Sierra-AGI (`agi`)
 - [ ] ADPCM_mono (`adpcm`)
 - [ ] CustomMade `cm` files (the `rk` and `rkb` files of the same player are ported in `ronklaren`)
-
-Other formats:
-
-- [ ] StarTrekker AM (UADE plays these modules through AudioSculpture)
 
 ## Skipped on purpose
 
