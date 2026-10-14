@@ -4,7 +4,7 @@ The players UADE ships (its `players/` directory, not counting the `ENV/` config
 them. A UADE player counts as ported when a native nuade player plays its modules; each port is A/B tested
 against UADE. nuade player ids are the directories in `players/`.
 
-Summary: 136 ported (by 124 nuade players), 9 not ported, 31 skipped on purpose.
+Summary: 137 ported (by 125 nuade players), 8 not ported, 31 skipped on purpose.
 
 ## Ported
 
@@ -100,6 +100,7 @@ Summary: 136 ported (by 124 nuade players), 9 not ported, 31 skipped on purpose.
 - [x] PumaTracker → `pumatracker`
 - [x] QuadraComposer → `quadracomposer`
 - [x] Quartet → `quartet`
+- [x] RichardJoseph (`rj`) → `richardjosephrj` (the converted drivers of Cadaver, The Lure of the Temptress and Moonstone, four driver builds; the Gods build is refused (its UADE render depends on the load address) and the DeliTracker custom modules of Cadaver and James Pond 2 are not read)
 - [x] RichardJoseph_Player → `richardjoseph`
 - [x] RiffRaff → `riffraff`
 - [x] RobHubbard → `robhubbard`
@@ -150,7 +151,6 @@ Summary: 136 ported (by 124 nuade players), 9 not ported, 31 skipped on purpose.
 Blocked, no module to test with:
 
 - [ ] Paul_Tonge: the replayer is in each module, and none was found in any corpus.
-- [ ] RichardJoseph (`rj`): no module exists; `richardjoseph` plays the `rjp` format of RichardJoseph_Player.
 
 Non-Amiga formats, open:
 
