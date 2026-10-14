@@ -23,6 +23,7 @@ Fred Editor and Future Composer 1.3 module converters.
 - `players/oktalyzer`
 - `players/quadracomposer`
 - `players/ronklaren`
+- `players/sidmon1`
 - `players/sidmon2`
 - `players/sonicarranger`
 - `players/soundcontrol`

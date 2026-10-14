@@ -4,7 +4,7 @@ The players UADE ships (its `players/` directory, not counting the `ENV/` config
 them. A UADE player counts as ported when a native nuade player plays its modules; each port is A/B tested
 against UADE. nuade player ids are the directories in `players/`.
 
-Summary: 132 ported (by 121 nuade players), 13 not ported, 31 skipped on purpose.
+Summary: 133 ported (by 122 nuade players), 12 not ported, 31 skipped on purpose.
 
 ## Ported
 
@@ -107,6 +107,7 @@ Summary: 132 ported (by 121 nuade players), 13 not ported, 31 skipped on purpose
 - [x] SCUMM → `scumm`
 - [x] SeanConnolly → `seanconnolly`
 - [x] SeanConran → `seanconran`
+- [x] SIDMon1.0 → `sidmon1`
 - [x] SIDMon2.0 → `sidmon2`
 - [x] Silmarils → `silmarils`
 - [x] SonicArranger → `sonicarranger` (the packed `@OARV` modules are not supported)
@@ -143,7 +144,6 @@ Summary: 132 ported (by 121 nuade players), 13 not ported, 31 skipped on purpose
 
 ## Not ported
 
-- [ ] SIDMon1.0
 - [ ] SteveTurner
 - [ ] FuturePlayer
 
