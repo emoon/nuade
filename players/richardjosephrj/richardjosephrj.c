@@ -308,7 +308,7 @@ static Step run_command(RjgPlayer* p, RjgVoice* v, Command command, uint32_t* cu
         case Command_SkipA:
         case Command_SkipB:
         case Command_SkipC:
-            (*cursor)++;
+            (void)read_byte(m, cursor);
             break;
         case Command_Restart:
             *cursor = v->sequence_start;
