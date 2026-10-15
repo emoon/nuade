@@ -21,6 +21,9 @@
 #define HUNK_RELOC32 0x3EC
 #define HUNK_END 0x3F2
 #define HUNK_SIZE_MASK 0x3FFFFFFFu
+// The largest body the port reads: a table address plus a row offset stays far from the wrap of 32 bits. The game
+// modules are well below 1 MB.
+#define MAX_BODY_SIZE 0x10000000u
 
 #define HUNK_HEADER_SIZE 32 // the header up to the first byte of the code hunk with the standard layout
 #define ID_MOVEQ_RTS 0x70FF4E75u
@@ -38,13 +41,17 @@
 #define INITSONG_MAP_DISPLACEMENT 10
 #define INITSONG_START 18
 
+#define MAX_ALSO_AT 4
+#define MAX_SUBSONGS 256
+
 #define FNV_OFFSET 0xCBF29CE484222325ull
 #define FNV_PRIME 0x100000001B3ull
 
 // A driver build: where its code sits relative to the Play entry, the hash of its code and the places in it that hold
-// the operands the port needs (offsets from the start of the code).
+// the operands the port needs (offsets from the start of the code). The builds differ in where the tune start sits, in
+// whether a sequence start ends with the voice's DMA off and in how much of the voice record it clears; the sequencer
+// is the same.
 typedef struct BuildSpec {
-    RjgBuild build;
     RjgStart start_kind;
     uint32_t play_to_start;
     uint32_t window_size;
@@ -55,6 +62,11 @@ typedef struct BuildSpec {
     uint32_t modulation_at;
     uint32_t envelopes_at;
     uint32_t instruments_at;
+    // Other places of the code that hold the same addresses (0 ends a list): a table whose sites disagree is not the
+    // driver's, and the port could not say which site the original follows.
+    uint32_t dummy_also_at[MAX_ALSO_AT];
+    uint32_t sequences_also_at[MAX_ALSO_AT];
+    uint32_t instruments_also_at[MAX_ALSO_AT];
     uint32_t tunes_at; // long: the tune table; 0 for none
     uint32_t tempo_at; // the tempo word: a pc-relative word or an absolute long
     bool tempo_absolute;
@@ -67,8 +79,7 @@ typedef struct BuildSpec {
 
 static const BuildSpec k_builds[] = {
     // Cadaver, main image
-    { .build = RjgBuild_Cadaver1,
-      .start_kind = RjgStart_Tune,
+    { .start_kind = RjgStart_Tune,
       .play_to_start = 0x74,
       .window_size = 0x8b4,
       .hash = 0xa236aa58d55fb992ull,
@@ -78,6 +89,9 @@ static const BuildSpec k_builds[] = {
       .modulation_at = 0x74e,
       .envelopes_at = 0x836,
       .instruments_at = 0x852,
+      .dummy_also_at = { 0x41c },
+      .sequences_also_at = { 0x43a, 0x878 },
+      .instruments_also_at = { 0x452, 0x4fe, 0x5ac },
       .tunes_at = 0x3a6,
       .tempo_at = 0x4c0,
       .tempo_absolute = true,
@@ -87,8 +101,7 @@ static const BuildSpec k_builds[] = {
       .tune_start_at = 0x39c,
       .start_voice_at = 0x3d6 },
     // Cadaver, sound sets 2-4
-    { .build = RjgBuild_Cadaver,
-      .start_kind = RjgStart_Tune,
+    { .start_kind = RjgStart_Tune,
       .play_to_start = 0x60,
       .window_size = 0x8c8,
       .hash = 0xcf3871e6c1f19e41ull,
@@ -98,6 +111,9 @@ static const BuildSpec k_builds[] = {
       .modulation_at = 0x74c,
       .envelopes_at = 0x84a,
       .instruments_at = 0x866,
+      .dummy_also_at = { 0x4a, 0x434 },
+      .sequences_also_at = { 0x44e, 0x88c },
+      .instruments_also_at = { 0x466, 0x508, 0x5b2 },
       .tunes_at = 0x3be,
       .tempo_at = 0x4cc,
       .tempo_absolute = false,
@@ -107,8 +123,7 @@ static const BuildSpec k_builds[] = {
       .tune_start_at = 0x3b4,
       .start_voice_at = 0x3ee },
     // The Lure of the Temptress
-    { .build = RjgBuild_Lure,
-      .start_kind = RjgStart_TuneFour,
+    { .start_kind = RjgStart_TuneFour,
       .play_to_start = 0xee,
       .window_size = 0x924,
       .hash = 0x459d90170be14c46ull,
@@ -118,6 +133,9 @@ static const BuildSpec k_builds[] = {
       .modulation_at = 0x7be,
       .envelopes_at = 0x8a6,
       .instruments_at = 0x8c2,
+      .dummy_also_at = { 0xd8, 0x4a8 },
+      .sequences_also_at = { 0x8e8 },
+      .instruments_also_at = { 0x4d8, 0x57a, 0x624 },
       .tunes_at = 0x42c,
       .tempo_at = 0x53e,
       .tempo_absolute = false,
@@ -127,8 +145,7 @@ static const BuildSpec k_builds[] = {
       .tune_start_at = 0x422,
       .start_voice_at = 0x462 },
     // Moonstone
-    { .build = RjgBuild_Moonstone,
-      .start_kind = RjgStart_Sequence,
+    { .start_kind = RjgStart_Sequence,
       .play_to_start = 0xf2,
       .window_size = 0x922,
       .hash = 0x63381630926040f8ull,
@@ -138,6 +155,9 @@ static const BuildSpec k_builds[] = {
       .modulation_at = 0x7bc,
       .envelopes_at = 0x8a4,
       .instruments_at = 0x8c0,
+      .dummy_also_at = { 0xda, 0x48e },
+      .sequences_also_at = { 0x8e6 },
+      .instruments_also_at = { 0x4c2, 0x56c, 0x61a },
       .tunes_at = 0,
       .tempo_at = 0x530,
       .tempo_absolute = false,
@@ -194,6 +214,50 @@ static int compare_offsets(const void* a, const void* b) {
     return x < y ? -1 : x > y;
 }
 
+// The relocation blocks behind the code hunk, from `at` to the end of the hunk. The caller frees hunk->relocs.
+static bool read_relocs(const uint8_t* data, size_t size, size_t at, Hunk* hunk) {
+    uint32_t capacity = 0;
+    for (;;) {
+        const uint32_t type = be32_at(data, size, at) & HUNK_SIZE_MASK;
+        at += 4;
+        if (type == HUNK_END) {
+            return true;
+        }
+        if (type != HUNK_RELOC32) {
+            return false;
+        }
+        for (;;) {
+            if (at > size || size - at < 4) {
+                return false;
+            }
+            const uint32_t count = nuade_read_be32(data + at);
+            at += 4;
+            if (count == 0) {
+                break;
+            }
+            if (size - at < 4 || nuade_read_be32(data + at) != 0 || count > (size - at - 4) / 4) {
+                return false;
+            }
+            at += 4;
+            if (hunk->reloc_count + count > capacity) {
+                capacity = hunk->reloc_count + count;
+                uint32_t* grown = realloc(hunk->relocs, (size_t)capacity * sizeof(uint32_t));
+                if (grown == nullptr) {
+                    return false;
+                }
+                hunk->relocs = grown;
+            }
+            for (uint32_t i = 0; i < count; i++, at += 4) {
+                const uint32_t offset = nuade_read_be32(data + at);
+                if (offset > hunk->body_size - 4 || (offset & 1) != 0) {
+                    return false;
+                }
+                hunk->relocs[hunk->reloc_count++] = offset;
+            }
+        }
+    }
+}
+
 // The file's one code hunk and its relocations. The eagleplayer's check wants the standard header: no resident
 // library names, one hunk, and a size entry that asks for chip memory.
 static bool parse_hunk(const uint8_t* data, size_t size, Hunk* hunk) {
@@ -204,59 +268,17 @@ static bool parse_hunk(const uint8_t* data, size_t size, Hunk* hunk) {
     }
     const uint32_t table_words = nuade_read_be32(data + 20) & HUNK_SIZE_MASK;
     const uint32_t words = nuade_read_be32(data + 28);
-    if (words > table_words || words > (size - HUNK_HEADER_SIZE) / 4 || words * 4 < HEADER_SIZE) {
+    if (words > table_words || words > (size - HUNK_HEADER_SIZE) / 4 || words * 4 < HEADER_SIZE
+        || words * 4 > MAX_BODY_SIZE) {
         return false;
     }
     hunk->body = data + HUNK_HEADER_SIZE;
     hunk->body_size = words * 4;
     hunk->relocs = nullptr;
     hunk->reloc_count = 0;
-
-    size_t at = HUNK_HEADER_SIZE + (size_t)hunk->body_size;
-    uint32_t capacity = 0;
-    for (;;) {
-        const uint32_t type = be32_at(data, size, at) & HUNK_SIZE_MASK;
-        at += 4;
-        if (type == HUNK_END) {
-            break;
-        }
-        if (type != HUNK_RELOC32) {
-            free(hunk->relocs);
-            return false;
-        }
-        for (;;) {
-            if (at > size || size - at < 4) {
-                free(hunk->relocs);
-                return false;
-            }
-            const uint32_t count = nuade_read_be32(data + at);
-            at += 4;
-            if (count == 0) {
-                break;
-            }
-            if (size - at < 4 || nuade_read_be32(data + at) != 0 || count > (size - at - 4) / 4) {
-                free(hunk->relocs);
-                return false;
-            }
-            at += 4;
-            if (hunk->reloc_count + count > capacity) {
-                capacity = hunk->reloc_count + count;
-                uint32_t* grown = realloc(hunk->relocs, (size_t)capacity * sizeof(uint32_t));
-                if (grown == nullptr) {
-                    free(hunk->relocs);
-                    return false;
-                }
-                hunk->relocs = grown;
-            }
-            for (uint32_t i = 0; i < count; i++, at += 4) {
-                const uint32_t offset = nuade_read_be32(data + at);
-                if (offset > hunk->body_size - 4 || (offset & 1) != 0) {
-                    free(hunk->relocs);
-                    return false;
-                }
-                hunk->relocs[hunk->reloc_count++] = offset;
-            }
-        }
+    if (!read_relocs(data, size, HUNK_HEADER_SIZE + (size_t)hunk->body_size, hunk)) {
+        free(hunk->relocs);
+        return false;
     }
     if (hunk->reloc_count != 0) {
         qsort(hunk->relocs, hunk->reloc_count, sizeof(uint32_t), compare_offsets);
@@ -341,6 +363,11 @@ static bool read_subsong_list(RjgModule* module, const Hunk* hunk, const BuildSp
     const int32_t displacement = (int16_t)nuade_read_be16(b + at + INITSONG_MAP_DISPLACEMENT);
     const int64_t map = (int64_t)at + INITSONG_MAP_DISPLACEMENT + displacement;
     module->subsong_count = nuade_read_be32(b + HEADER_SUBSONGS);
+    // The stub's move.b into d0 keeps the high byte of the subsong number, which the start routine then uses: with
+    // more than 256 subsongs the byte map is not the whole argument. The game modules have 10 or 15.
+    if (module->subsong_count > MAX_SUBSONGS) {
+        return false;
+    }
     if (map < 0 || (uint64_t)map > hunk->body_size || module->subsong_count > hunk->body_size - (uint64_t)map) {
         return false;
     }
@@ -352,12 +379,23 @@ static uint32_t operand_long(const Hunk* hunk, uint32_t window, uint32_t at) {
     return be32_at(hunk->body, hunk->body_size, (size_t)window + at);
 }
 
+// The operand at each of the sites must hold the same table address.
+static bool sites_agree(const Hunk* hunk, uint32_t window, uint32_t value, const uint32_t* also_at) {
+    for (size_t i = 0; i < MAX_ALSO_AT && also_at[i] != 0; i++) {
+        if (operand_long(hunk, window, also_at[i]) != value) {
+            return false;
+        }
+    }
+    return true;
+}
+
 static bool read_tables(RjgModule* module, const Hunk* hunk, const BuildSpec* spec, uint32_t window) {
+    uint32_t stack_top[RJG_VOICES];
     for (uint32_t i = 0; i < RJG_VOICES; i++) {
-        module->stack_top[i] = operand_long(hunk, window, spec->stack_top_at[i]);
+        stack_top[i] = operand_long(hunk, window, spec->stack_top_at[i]);
     }
     for (uint32_t i = 1; i < RJG_VOICES; i++) {
-        if (module->stack_top[i] - module->stack_top[i - 1] != RJG_STACK_SPACING) {
+        if (stack_top[i] - stack_top[i - 1] != RJG_STACK_SPACING) {
             return false;
         }
     }
@@ -369,22 +407,36 @@ static bool read_tables(RjgModule* module, const Hunk* hunk, const BuildSpec* sp
     module->tunes = spec->tunes_at != 0 ? operand_long(hunk, window, spec->tunes_at) : 0;
     module->tempo_scale = operand_long(hunk, window, spec->tempo_scale_at);
     module->clear_longs = nuade_read_be16(hunk->body + window + spec->clear_longs_at);
+    if (!sites_agree(hunk, window, module->dummy, spec->dummy_also_at)
+        || !sites_agree(hunk, window, module->sequences, spec->sequences_also_at)
+        || !sites_agree(hunk, window, module->instruments, spec->instruments_also_at)) {
+        return false;
+    }
+    uint32_t tempo_address;
     if (spec->tempo_absolute) {
-        module->tempo_address = operand_long(hunk, window, spec->tempo_at);
+        tempo_address = operand_long(hunk, window, spec->tempo_at);
     } else {
         const int32_t displacement = (int16_t)nuade_read_be16(hunk->body + window + spec->tempo_at);
-        module->tempo_address = (uint32_t)((int64_t)window + spec->tempo_at + displacement);
+        tempo_address = (uint32_t)((int64_t)window + spec->tempo_at + displacement);
     }
     const uint32_t size = hunk->body_size;
-    // The tables lie inside the module; a read past its end gives 0 either way.
-    const uint32_t bases[] = { module->dummy,       module->sequences, module->modulation,   module->envelopes,
-                               module->instruments, module->tunes,     module->tempo_address };
+    // The tables lie inside the module; a read past its end gives 0 either way. A tune table cannot be where the
+    // header is.
+    const uint32_t bases[] = { module->dummy,       module->sequences, module->modulation, module->envelopes,
+                               module->instruments, module->tunes,     tempo_address };
     for (size_t i = 0; i < nuade_sizeof_array(bases); i++) {
         if (bases[i] > size) {
             return false;
         }
     }
-    return module->tempo_address <= size - 2 && module->stack_top[0] >= RJG_STACK_SPACING;
+    if (spec->tunes_at != 0 && module->tunes < HEADER_SIZE) {
+        return false;
+    }
+    if (tempo_address > size - 2 || stack_top[0] < RJG_STACK_SPACING) {
+        return false;
+    }
+    module->tempo_initial = nuade_read_be16(hunk->body + tempo_address);
+    return true;
 }
 
 bool rjg_module_load(RjgModule* module, const uint8_t* data, size_t size) {
@@ -396,14 +448,13 @@ bool rjg_module_load(RjgModule* module, const uint8_t* data, size_t size) {
     const BuildSpec* spec = check_header(&hunk) ? find_build(&hunk) : nullptr;
     if (spec != nullptr) {
         const uint32_t window = nuade_read_be32(hunk.body + HEADER_PLAY) - spec->play_to_start;
-        *module = (RjgModule) { .size = hunk.body_size, .build = spec->build, .start_kind = spec->start_kind };
+        *module = (RjgModule) { .size = hunk.body_size, .start_kind = spec->start_kind };
         module->stop_dma_after_start = spec->stop_dma_after_start;
         ok = read_tables(module, &hunk, spec, window) && read_subsong_list(module, &hunk, spec, window);
         if (ok) {
             module->data = nuade_paula_padded_copy(hunk.body, hunk.body_size);
             ok = module->data != nullptr;
             if (ok) {
-                module->tempo_initial = rjg_u16(module, module->tempo_address);
                 // InitPlayer of the conversion clears the first long: it is the empty sample
                 memset(module->data, 0, 4);
             }

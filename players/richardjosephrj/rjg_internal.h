@@ -10,7 +10,6 @@
 #define RJG_ENVELOPE_SIZE 8    // bytes of a volume envelope row
 #define RJG_SEQUENCE_ENTRY 4   // bytes of an entry of the sequence table
 #define RJG_TUNE_SIZE 4        // bytes of a tune row
-#define RJG_STACK_SPACING 0x80 // bytes between the tops of the call stacks
 
 // The note byte of a sequence is 0..0x7F; 0x80 and above are commands, four apart.
 #define RJG_COMMAND_FIRST 0x80

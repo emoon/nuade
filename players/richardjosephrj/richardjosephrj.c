@@ -15,7 +15,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Commands a voice may run in one tick before the player gives up on its sequence (the original would hang).
+// What a voice may do in one tick before the player gives up on its sequence (the original would hang): a command
+// costs one, and the sequence bytes a duration sum adds up cost one each.
 #define COMMAND_BUDGET (1u << 18)
 
 // Ticks of the driver run to find a subsong's tempo, and the longest row of the grid
@@ -46,7 +47,7 @@ typedef enum Command {
     Command_Modulation,  // operand: row of the modulation table
     Command_SkipB,
     Command_SkipC,
-    Command_Flags, // operand: modulation flags to set
+    Command_Flags, // operand: bit 0 sets the volume slots to reload when idle, bit 1 the pitch slots
     Command_End,   // the voice stops
     Command_Call,  // operand: sequence number; return with Command_Return
     Command_Return,
@@ -60,8 +61,9 @@ typedef enum Command {
     Command_Jump,       // operand: sequence number
 } Command;
 
-static const int8_t* sample_pointer(const RjgModule* m, uint32_t offset) {
-    return offset <= m->size ? (const int8_t*)m->data + offset : nullptr;
+// Paula ignores the low bit of an AUDxLC address.
+static const int8_t* sample_pointer(const RjgModule* m, uint64_t offset) {
+    return offset <= m->size ? (const int8_t*)m->data + (offset & ~(uint64_t)1) : nullptr;
 }
 
 // --- the call stacks: the four 0x80-byte blocks next to each other, a voice's pointer counts down
@@ -136,7 +138,7 @@ static void audio_interrupt(const RjgModule* m, RjgVoice* v) {
     }
     v->interrupt_phase--;
     if (v->instrument.loops < 0) {
-        v->paula.lc = sample_pointer(m, v->instrument.sample + v->instrument.loop_offset);
+        v->paula.lc = sample_pointer(m, (uint64_t)v->instrument.sample + v->instrument.loop_offset);
         v->paula.len_words = (uint16_t)(v->instrument.length_words - (v->instrument.loop_offset >> 1));
         v->interrupt_enabled = false;
     } else if (v->interrupt_phase == 0) {
@@ -191,7 +193,7 @@ static void run_volume_slots(RjgVoice* v) {
     }
     if (!active) {
         v->volume_offset = 0;
-        if (v->modulation_flags & 1) {
+        if (v->volume_slots_reload) {
             reload_volume_slots(v);
         }
     }
@@ -210,7 +212,7 @@ static void run_pitch_slots(RjgVoice* v) {
             active = true;
         }
     }
-    if (!active && (v->modulation_flags & 2)) {
+    if (!active && v->pitch_slots_reload) {
         reload_pitch_slots(v);
     }
 }
@@ -219,7 +221,8 @@ static void run_pitch_slots(RjgVoice* v) {
 
 // The row of the modulation table: 15 signed bytes that fill the slot tables in the order of the record.
 static void load_modulation(const RjgModule* m, RjgVoice* v, uint8_t row) {
-    v->modulation_flags &= 0xFC;
+    v->volume_slots_reload = false;
+    v->pitch_slots_reload = false;
     uint16_t word[RJG_MODULATION_SIZE];
     const uint64_t at = (uint64_t)m->modulation + (uint32_t)row * RJG_MODULATION_SIZE;
     for (uint32_t j = 0; j < RJG_MODULATION_SIZE; j++) {
@@ -259,7 +262,7 @@ static void start_note(const RjgModule* m, RjgVoice* v, uint8_t note) {
         v->volume = 0;
         v->envelope_timer = 0;
     }
-    uint16_t index = (uint16_t)(note * 2 * 2);
+    uint16_t index = (uint16_t)(note * RJG_PERIODS_PER_NOTE);
     index = (uint16_t)(index + (uint16_t)v->transpose);
     index = (uint16_t)(index + index);
     v->base_period = rjg_u16(m, (int64_t)v->instrument.period_table + (int16_t)index);
@@ -285,34 +288,40 @@ typedef enum Step {
     Step_Stop,     // the sequence cannot go on
 } Step;
 
+// The cursor stays at the largest address once it gets there, so a sequence that starts at the end of the address
+// space reads zeros and does not wrap to the start of the module.
 static uint8_t read_byte(const RjgModule* m, uint32_t* cursor) {
-    return rjg_u8(m, (*cursor)++);
+    const uint8_t byte = rjg_u8(m, *cursor);
+    if (*cursor != UINT32_MAX) {
+        (*cursor)++;
+    }
+    return byte;
 }
 
-// Runs one command; `a2` is the cursor behind the command byte.
-static Step run_command(RjgPlayer* p, RjgVoice* v, Command command, uint32_t* a2) {
+// Runs one command; `cursor` is behind the command byte. The sequence bytes a command adds up are charged to `budget`.
+static Step run_command(RjgPlayer* p, RjgVoice* v, Command command, uint32_t* cursor, uint32_t* budget) {
     const RjgModule* m = &p->module;
     switch (command) {
         case Command_Volume:
-            v->max_volume = read_byte(m, a2);
+            v->max_volume = read_byte(m, cursor);
             break;
         case Command_SkipA:
         case Command_SkipB:
         case Command_SkipC:
-            (*a2)++;
+            (*cursor)++;
             break;
         case Command_Restart:
-            *a2 = v->sequence_start;
-            v->sequence = *a2;
+            *cursor = v->sequence_start;
+            v->sequence = *cursor;
             v->passed_end = true;
             break;
         case Command_Duration:
-            v->duration = (uint16_t)(read_byte(m, a2) * p->tempo);
+            v->duration = (uint16_t)(read_byte(m, cursor) * p->tempo);
             break;
         case Command_Rest:
             return Step_Wait;
         case Command_Tempo: {
-            const uint8_t divisor = read_byte(m, a2);
+            const uint8_t divisor = read_byte(m, cursor);
             if (divisor == 0) { // the original divides by zero
                 return Step_Stop;
             }
@@ -323,49 +332,57 @@ static Step run_command(RjgPlayer* p, RjgVoice* v, Command command, uint32_t* a2
         }
         case Command_DurationSum: {
             // dbra over a count of 0 runs 65536 times
-            uint16_t count = (uint16_t)(read_byte(m, a2) - 1);
+            const uint16_t count = (uint16_t)(read_byte(m, cursor) - 1);
+            const uint32_t numbers = (uint32_t)count + 1;
+            if (numbers > *budget) {
+                return Step_Stop;
+            }
+            *budget -= numbers;
             uint16_t sum = 0;
-            for (uint32_t n = (uint32_t)count + 1; n > 0; n--) {
-                sum = (uint16_t)(sum + read_byte(m, a2));
+            for (uint32_t n = numbers; n > 0; n--) {
+                sum = (uint16_t)(sum + read_byte(m, cursor));
             }
             v->duration = (uint16_t)((uint32_t)sum * p->tempo);
             break;
         }
         case Command_Modulation:
-            load_modulation(m, v, read_byte(m, a2));
+            load_modulation(m, v, read_byte(m, cursor));
             break;
-        case Command_Flags:
-            v->modulation_flags |= read_byte(m, a2);
+        case Command_Flags: {
+            const uint8_t flags = read_byte(m, cursor);
+            v->volume_slots_reload |= (flags & 1) != 0;
+            v->pitch_slots_reload |= (flags & 2) != 0;
             break;
+        }
         case Command_End:
             v->sequence_start = 0;
             end_sequence(v);
-            *a2 = 0;
+            *cursor = 0;
             return Step_Wait;
         case Command_Call: {
-            const uint8_t number = read_byte(m, a2);
-            if (!stack_push_long(p, v, *a2)) {
+            const uint8_t number = read_byte(m, cursor);
+            if (!stack_push_long(p, v, *cursor)) {
                 return Step_Stop;
             }
-            *a2 = rjg_sequence_offset(m, number);
+            *cursor = rjg_sequence_offset(m, number);
             break;
         }
         case Command_Return: {
-            *a2 = stack_peek_long(p, v->stack);
+            *cursor = stack_peek_long(p, v->stack);
             v->stack += STACK_LONG;
             break;
         }
         case Command_TransposeAdd: {
-            const int8_t amount = (int8_t)read_byte(m, a2);
+            const int8_t amount = (int8_t)read_byte(m, cursor);
             v->transpose = amount == 0 ? 0 : (int16_t)(v->transpose + amount);
             break;
         }
         case Command_Transpose:
-            v->transpose = (int8_t)read_byte(m, a2);
+            v->transpose = (int8_t)read_byte(m, cursor);
             break;
         case Command_LoopBegin: {
-            const uint8_t count = read_byte(m, a2);
-            const uint32_t restart = count != 0 ? *a2 : 0;
+            const uint8_t count = read_byte(m, cursor);
+            const uint32_t restart = count != 0 ? *cursor : 0;
             if (!stack_push_long(p, v, restart) || !stack_push_word(p, v, count)) {
                 return Step_Stop;
             }
@@ -377,7 +394,7 @@ static Step run_command(RjgPlayer* p, RjgVoice* v, Command command, uint32_t* a2
                 v->stack += STACK_LONG + STACK_WORD;
                 break;
             }
-            *a2 = restart;
+            *cursor = restart;
             const uint16_t left = (uint16_t)(stack_peek_word(p, v->stack) - 1);
             stack_poke_word(p, v->stack, left);
             if (left == 0) {
@@ -386,17 +403,17 @@ static Step run_command(RjgPlayer* p, RjgVoice* v, Command command, uint32_t* a2
             break;
         }
         case Command_Envelope:
-            v->envelope = m->envelopes + (uint32_t)(uint16_t)(read_byte(m, a2) << 3);
+            v->envelope = m->envelopes + (uint32_t)read_byte(m, cursor) * RJG_ENVELOPE_SIZE;
             break;
         case Command_EnvelopeOff:
             v->envelope = 0;
             break;
         case Command_Instrument:
-            select_instrument(m, v, read_byte(m, a2));
+            select_instrument(m, v, read_byte(m, cursor));
             break;
         case Command_Jump: {
-            const uint8_t number = read_byte(m, a2);
-            *a2 = rjg_sequence_offset(m, number);
+            const uint8_t number = read_byte(m, cursor);
+            *cursor = rjg_sequence_offset(m, number);
             break;
         }
     }
@@ -408,12 +425,14 @@ static Step run_command(RjgPlayer* p, RjgVoice* v, Command command, uint32_t* a2
 // more commands than any song does in one tick.
 static void run_sequence(RjgPlayer* p, RjgVoice* v) {
     const RjgModule* m = &p->module;
-    uint32_t a2 = v->sequence;
-    for (uint32_t budget = COMMAND_BUDGET; budget > 0; budget--) {
-        const uint8_t byte = read_byte(m, &a2);
+    uint32_t cursor = v->sequence;
+    uint32_t budget = COMMAND_BUDGET;
+    while (budget > 0) {
+        budget--;
+        const uint8_t byte = read_byte(m, &cursor);
         if (byte < RJG_COMMAND_FIRST) {
             start_note(m, v, byte);
-            v->sequence = a2;
+            v->sequence = cursor;
             v->wait = v->duration;
             return;
         }
@@ -421,12 +440,12 @@ static void run_sequence(RjgPlayer* p, RjgVoice* v) {
         if ((offset & 3) != 0 || offset / 4 >= RJG_COMMAND_COUNT) {
             break;
         }
-        const Step step = run_command(p, v, (Command)(offset / 4), &a2);
+        const Step step = run_command(p, v, (Command)(offset / 4), &cursor, &budget);
         if (step == Step_Stop) {
             break;
         }
         if (step == Step_Wait) {
-            v->sequence = a2;
+            v->sequence = cursor;
             v->wait = v->duration;
             return;
         }
@@ -639,9 +658,14 @@ static void init_driver(RjgPlayer* p) {
     }
 }
 
+// The row of a tune in the tune table: the tune number times four, in 16 bits.
+static uint64_t tune_row(const RjgModule* m, uint8_t tune) {
+    return (uint64_t)m->tunes + (uint16_t)(tune * RJG_TUNE_SIZE);
+}
+
 static void start_tune(RjgPlayer* p, uint8_t tune) {
     const RjgModule* m = &p->module;
-    const uint64_t row = (uint64_t)m->tunes + (uint16_t)(tune * RJG_TUNE_SIZE);
+    const uint64_t row = tune_row(m, tune);
     for (uint32_t i = 0; i < RJG_VOICES; i++) {
         const uint8_t number = rjg_u8(m, row + i);
         start_voice(p, number, i);
@@ -659,23 +683,29 @@ bool rjg_probe(const uint8_t* data, size_t size) {
     return created.player != nullptr;
 }
 
+// A sequence start reads an entry of the sequence table. The offset in it may lie beyond the module (the game's tables
+// have such entries for sequences the module does not carry): the cursor then reads zeros.
+static bool sequence_entry_fits(const RjgModule* m, uint8_t number) {
+    const uint64_t entry = (uint64_t)m->sequences + (uint64_t)number * RJG_SEQUENCE_ENTRY;
+    return entry + RJG_SEQUENCE_ENTRY <= m->size;
+}
+
 // A subsong's start reads a tune row (or just a sequence number) and the sequence table entries it names.
 static bool subsongs_fit(const RjgModule* m) {
     for (uint32_t i = 0; i < m->subsong_count; i++) {
         const uint8_t argument = rjg_subsong_argument(m, i);
         if (m->start_kind == RjgStart_Sequence) {
-            if ((uint64_t)m->sequences + (uint64_t)argument * RJG_SEQUENCE_ENTRY + RJG_SEQUENCE_ENTRY > m->size) {
+            if (!sequence_entry_fits(m, argument)) {
                 return false;
             }
             continue;
         }
-        const uint64_t row = (uint64_t)m->tunes + (uint16_t)(argument * RJG_TUNE_SIZE);
+        const uint64_t row = tune_row(m, argument);
         if (row + RJG_TUNE_SIZE > m->size) {
             return false;
         }
         for (uint32_t v = 0; v < RJG_VOICES; v++) {
-            const uint8_t number = rjg_u8(m, row + v);
-            if ((uint64_t)m->sequences + (uint64_t)number * RJG_SEQUENCE_ENTRY + RJG_SEQUENCE_ENTRY > m->size) {
+            if (!sequence_entry_fits(m, rjg_u8(m, row + v))) {
                 return false;
             }
         }

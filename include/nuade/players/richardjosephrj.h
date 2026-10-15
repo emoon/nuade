@@ -54,16 +54,6 @@ typedef struct RjgVoiceState {
     int instrument;
 } RjgVoiceState;
 
-// The driver builds the port knows, told apart by a hash of their code. They differ in where the tune start sits, in
-// whether a sequence start ends with the voice's DMA off and in how much of the voice record it clears; the sequencer
-// is the same.
-typedef enum RjgBuild {
-    RjgBuild_Cadaver1,  // Cadaver, main sound image (record stride 0x92)
-    RjgBuild_Cadaver,   // Cadaver sound sets 2-4 and Cadaver: The Pay Off
-    RjgBuild_Lure,      // The Lure of the Temptress
-    RjgBuild_Moonstone, // Moonstone
-} RjgBuild;
-
 // What the subsong start of a module calls.
 typedef enum RjgStart {
     RjgStart_Tune,     // a tune: four sequence numbers, one per voice; a 0 starts the null sequence and ends the row
@@ -76,20 +66,17 @@ typedef enum RjgStart {
 typedef struct RjgModule {
     uint8_t* data;
     uint32_t size;
-    RjgBuild build;
     RjgStart start_kind;
 
     // The tables the driver's code points at (offsets in the body)
-    uint32_t stack_top[RJG_VOICES]; // each voice's sequence call stack grows down from here; 0x80 bytes apart
-    uint32_t dummy;                 // the empty word a sequence start and the audio interrupt point a channel at
-    uint32_t sequences;             // longs: the offset of each sequence
-    uint32_t modulation;            // 15-byte rows of volume and pitch modulation
-    uint32_t envelopes;             // 8-byte volume envelope rows
-    uint32_t instruments;           // 14-byte instrument rows
-    uint32_t tunes;                 // 4 sequence numbers per tune (RjgStart_Tune*), else 0
-    uint32_t tempo_address;         // the tempo word
-    uint16_t tempo_initial;         // its value in the module
-    uint32_t tempo_scale;           // the tempo command divides this by its operand
+    uint32_t dummy;            // the empty word a sequence start and the audio interrupt point a channel at
+    uint32_t sequences;        // longs: the offset of each sequence
+    uint32_t modulation;       // 15-byte rows of volume and pitch modulation
+    uint32_t envelopes;        // 8-byte volume envelope rows
+    uint32_t instruments;      // 14-byte instrument rows
+    uint32_t tunes;            // 4 sequence numbers per tune (RjgStart_Tune*), else 0
+    uint16_t tempo_initial;    // the tempo word as the module has it
+    uint32_t tempo_scale;      // the tempo command divides this by its operand
     uint32_t clear_longs;      // the loop count of the clear a sequence start does from record offset 0x10: longs - 1
     bool stop_dma_after_start; // a sequence start ends with the voice's DMA off
 
@@ -156,15 +143,17 @@ typedef struct RjgVoice {
     uint16_t pitch_delay_reload[RJG_PITCH_SLOTS];
     uint16_t volume_offset;
     uint16_t pitch_offset;
-    uint8_t modulation_flags; // bit 0: the volume slots reload when idle; bit 1: the pitch slots do
+    bool volume_slots_reload; // the volume slots reload when idle
+    bool pitch_slots_reload;  // the pitch slots reload when idle
 
     // Display
     int shown_note;
     int shown_instrument;
 } RjgVoice;
 
-// The sequence call stacks: four of 0x80 bytes, voice n's from the top of block n
-#define RJG_STACK_BYTES (RJG_VOICES * 0x80)
+// The sequence call stacks: four blocks next to each other, voice n's grows down from the top of block n
+#define RJG_STACK_SPACING 0x80 // bytes of a block (the tops are this far apart)
+#define RJG_STACK_BYTES (RJG_VOICES * RJG_STACK_SPACING)
 
 struct RjgPlayer {
     RjgModule module;
