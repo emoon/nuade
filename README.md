@@ -94,6 +94,15 @@ int main(int argc, char** argv) {
 }
 ```
 
+## Exporting samples
+
+A host can write out the PCM sounds a song holds: `nuade_samples_supported`, `nuade_sample_count` and
+`nuade_sample_get` (`NuadeExportSample` in `include/nuade/player.h`). A player that generates all its sounds at run
+time, or does not keep them as discrete sounds, leaves the hooks unset; an entry with no PCM (a synth instrument, an
+empty slot) makes `nuade_sample_get` return false, so a host can report how many were left out. The sample `index` is
+the format's own number for the sound; for most players it is the instrument number the voices report, see the notes
+in each player's `sample_get`.
+
 The full API is in `include/nuade/nuade.h`. Each player's own state (for custom displays) is in
 `include/nuade/players/`.
 
