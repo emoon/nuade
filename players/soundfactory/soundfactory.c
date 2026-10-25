@@ -1249,15 +1249,92 @@ static void sf_initialize_sound(SfModule* m, int sub_song) {
 // Load
 
 // The module header: total length, 16 sub-song channel masks, then 4 absolute opcode offsets per used sub-song.
-// The opcode offsets of every enabled channel must point into the module.
+// The opcode offsets of every enabled channel must point into the module, and the opcode stream found there must
+// decode as Sound Factory opcodes. The stated length must match the file (a module is written out whole, with at
+// most a few bytes of padding), so a file that merely starts with small numbers is not taken for a module.
 #define SF_HEADER_SIZE 276
+#define SF_MAX_TRAILING_BYTES 16
+#define SF_PROBE_OPCODES 64
+
+// Operand bytes that always follow an opcode byte, or -1 when the byte is not an opcode. For opcodes whose first
+// operand is an on/off flag, `flag_extra` is the number of bytes that follow when the flag is non-zero.
+static int sf_operand_size(uint8_t op, int* flag_extra) {
+    *flag_extra = 0;
+    if ((op & 0x80) == 0)
+        return 2; // note: 16 bit duration
+    switch (op) {
+        case SF_OP_PAUSE:
+        case SF_OP_STOP_AND_PAUSE: return 2;
+        case SF_OP_SET_VOLUME:
+        case SF_OP_SET_FINE_TUNE:
+        case SF_OP_USE_INSTRUMENT:
+        case SF_OP_FOR:
+        case SF_OP_FADE_OUT:
+        case SF_OP_FADE_IN:
+        case SF_OP_LED:
+        case SF_OP_WAIT_FOR_REQ:
+        case SF_OP_SET_TRANSPOSE: return 1;
+        case SF_OP_NEXT:
+        case SF_OP_NOP:
+        case SF_OP_REQUEST:
+        case SF_OP_ONE_SHOT:
+        case SF_OP_LOOPING: return 0;
+        case SF_OP_SET_ADSR: return 4; // the fourth operand is the release flag, one more byte follows when set
+        case SF_OP_VIBRATO: *flag_extra = 4; return 1;
+        case SF_OP_ARPEGGIO: *flag_extra = 1; return 1;
+        case SF_OP_PHASING: *flag_extra = 4; return 1;
+        case SF_OP_PORTAMENTO: *flag_extra = 3; return 1;
+        case SF_OP_TREMOLO: *flag_extra = 3; return 1;
+        case SF_OP_FILTER: *flag_extra = 3; return 1;
+        default: return -1;
+    }
+}
+
+// Walk the opcodes from `start` up to the first opcode that leaves straight-line flow. Every byte must be a known
+// opcode and every operand must lie inside the module.
+static bool sf_check_opcode_stream(const uint8_t* data, uint32_t mod_length, uint32_t start) {
+    uint32_t pos = start;
+    for (int n = 0; n < SF_PROBE_OPCODES; n++) {
+        if (pos >= mod_length)
+            return false;
+        const uint8_t op = data[pos++];
+        if (op == SF_OP_RETURN || op == SF_OP_LOOP || op == SF_OP_END)
+            return true;
+        if (op == SF_OP_GOSUB || op == SF_OP_GOTO) {
+            // 32 bit relative offset, relative to the position after it
+            if (pos + 4 > mod_length)
+                return false;
+            const uint32_t rel
+                = ((uint32_t)data[pos] << 24) | (data[pos + 1] << 16) | (data[pos + 2] << 8) | data[pos + 3];
+            return pos + 4 + rel < mod_length;
+        }
+        if (op == SF_OP_DEFINE_INSTR) {
+            // instrument number, then its length in words; the instrument data lies inside the module
+            if (pos + 3 > mod_length)
+                return false;
+            const uint32_t words = ((uint32_t)data[pos + 1] << 8) | data[pos + 2];
+            return words >= 2 && pos + 3 + words * 2 - 4 <= mod_length;
+        }
+        int flag_extra;
+        const int operands = sf_operand_size(op, &flag_extra);
+        if (operands < 0 || pos + (uint32_t)operands > mod_length)
+            return false;
+        if (op == SF_OP_SET_ADSR)
+            pos += (uint32_t)operands + (data[pos + 3] != 0 ? 1U : 0U);
+        else if (flag_extra > 0)
+            pos += (uint32_t)operands + (data[pos] != 0 ? (uint32_t)flag_extra : 0U);
+        else
+            pos += (uint32_t)operands;
+    }
+    return true;
+}
 
 static bool sf_check_header(const uint8_t* data, size_t size, int* song_count_out) {
     if (!data || size < SF_HEADER_SIZE)
         return false;
 
     const uint32_t mod_length = ((uint32_t)data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
-    if (mod_length < SF_HEADER_SIZE || mod_length > size)
+    if (mod_length < SF_HEADER_SIZE || mod_length > size || size - mod_length > SF_MAX_TRAILING_BYTES)
         return false;
 
     int song_count = 0;
@@ -1278,7 +1355,9 @@ static bool sf_check_header(const uint8_t* data, size_t size, int* song_count_ou
         for (int j = 0; j < 4; j++, pos += 4) {
             const uint32_t off
                 = ((uint32_t)data[pos] << 24) | (data[pos + 1] << 16) | (data[pos + 2] << 8) | data[pos + 3];
-            if ((channels >> j & 1) && (off < SF_HEADER_SIZE || off >= mod_length))
+            if (!(channels >> j & 1))
+                continue;
+            if (off < SF_HEADER_SIZE || off >= mod_length || !sf_check_opcode_stream(data, mod_length, off))
                 return false;
         }
         si++;
