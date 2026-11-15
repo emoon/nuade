@@ -209,7 +209,7 @@ struct DwModule {
     int current_song;
     bool ended;                 // the song asked to stop
     uint32_t loop_count;        // times every channel has wrapped its position list
-    uint32_t end_reached_count; // channels that reached the end of their position list
+    uint32_t end_reached_mask; // channels that reached the end of their position list
 
     // Copy of raw module data for loading
     uint8_t* raw_data;
