@@ -1340,7 +1340,7 @@ static void initialize_sound(DwModule* m, int sub_song) {
 
     m->ended = false;
     m->loop_count = 0;
-    m->end_reached_count = 0;
+    m->end_reached_mask = 0;
 }
 
 // Paula channel helpers
@@ -1428,9 +1428,8 @@ static void handle_end_of_track_effect(DwModule* m, DwChannelInfo* ch) {
         ch->current_position = (uint16_t)(ch->restart_position + 1);
 
         // OnEndReached per channel
-        m->end_reached_count++;
-        if (m->end_reached_count >= (uint32_t)m->number_of_channels) {
-            if (m->end_reached_count % (uint32_t)m->number_of_channels == 0)
+        m->end_reached_mask |= 1u << ch->channel_number;
+        if (m->end_reached_mask == (1u << m->number_of_channels) - 1u) {
                 m->loop_count++;
 
             m->playing_info.transpose = 0;
